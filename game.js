@@ -11,19 +11,21 @@ const TABLE = {
 const ball = {
   x: canvas.width / 2,
   y: 90,
-  vx: 90,
+  vx: 0,
   vy: 0,
   radius: 10
 };
 
-const gravity = 760;      // px/s²
+const gravity = 760;      // px/s², straight down the playfield
 const restitution = 0.82; // energy retained after wall bounce
-const airDrag = 0.999;
+const rollingDrag = 0.999;
 
 function resetBall() {
+  // Neutral test: no built-in sideways motion. Any future lateral motion
+  // should come from a collision, flipper, bumper, or other table geometry.
   ball.x = canvas.width / 2;
   ball.y = 90;
-  ball.vx = 90;
+  ball.vx = 0;
   ball.vy = 0;
 }
 
@@ -33,8 +35,9 @@ function update(dt) {
   ball.x += ball.vx * dt;
   ball.y += ball.vy * dt;
 
-  ball.vx *= airDrag;
-  ball.vy *= airDrag;
+  // Simple rolling resistance for now. Spin/English is deliberately deferred.
+  ball.vx *= rollingDrag;
+  ball.vy *= rollingDrag;
 
   if (ball.x - ball.radius < TABLE.left) {
     ball.x = TABLE.left + ball.radius;
