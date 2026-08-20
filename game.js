@@ -29,9 +29,11 @@ function makeFlipper(side) {
   const isLeft = side === 'left';
   return {
     side,
-    pivotX: isLeft ? 155 : 325,
+    // A real physical gap remains between the rounded flipper tips so the
+    // ball can drain through the center without any special-case logic.
+    pivotX: isLeft ? 145 : 335,
     pivotY: 620,
-    length: 92,
+    length: 74,
     radius: 11,
     restAngle: isLeft ? 0.34 : Math.PI - 0.34,
     activeAngle: isLeft ? -0.48 : Math.PI + 0.48,
@@ -44,8 +46,8 @@ function makeFlipper(side) {
 const flippers = [makeFlipper('left'), makeFlipper('right')];
 
 const sideBumpers = [
-  { x1: 56, y1: 525, x2: 145, y2: 574, radius: 10, kick: 220 },
-  { x1: canvas.width - 56, y1: 525, x2: canvas.width - 145, y2: 574, radius: 10, kick: 220 }
+  { x1: 56, y1: 525, x2: 145, y2: 574, radius: 10, kick: 125, touching: false },
+  { x1: canvas.width - 56, y1: 525, x2: canvas.width - 145, y2: 574, radius: 10, kick: 125, touching: false }
 ];
 
 function resetBall() {
@@ -55,6 +57,10 @@ function resetBall() {
   ball.y = 90;
   ball.vx = 0;
   ball.vy = 0;
+
+  for (const bumper of sideBumpers) {
+    bumper.touching = false;
+  }
 }
 
 function clamp(value, min, max) {
@@ -134,7 +140,9 @@ function resolveSegmentCollision(segment, surfaceVelocity = { x: 0, y: 0 }, rest
 function updateFlipper(flipper, dt) {
   flipper.pressed = flipper.side === 'left' ? keys.left : keys.right;
   const target = flipper.pressed ? flipper.activeAngle : flipper.restAngle;
-  const maxSpeed = flipper.pressed ? 18 : 12; // rad/s
+
+  // Still brisk, but less explosive than the first test pass.
+  const maxSpeed = flipper.pressed ? 14 : 10; // rad/s
   const delta = target - flipper.angle;
   const step = clamp(delta, -maxSpeed * dt, maxSpeed * dt);
 
@@ -170,11 +178,21 @@ function collideWithFlipper(flipper) {
     y: flipper.angularVelocity * rx
   };
 
-  resolveSegmentCollision(segment, surfaceVelocity, 0.92);
+  resolveSegmentCollision(segment, surfaceVelocity, 0.86);
 }
 
 function collideWithSideBumper(bumper) {
-  resolveSegmentCollision(bumper, { x: 0, y: 0 }, 0.88, bumper.kick);
+  // Fire the powered kick only when the ball first enters contact. Remaining
+  // overlapped for another physics step does not create free extra energy.
+  const kick = bumper.touching ? 0 : bumper.kick;
+  const touchingNow = resolveSegmentCollision(
+    bumper,
+    { x: 0, y: 0 },
+    0.84,
+    kick
+  );
+
+  bumper.touching = touchingNow;
 }
 
 function update(dt) {
