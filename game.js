@@ -564,5 +564,6 @@ canvas.addEventListener('pointerleave', (event) => {
     releasePointer();
   }
 });
+window.addEventListener('blur', releasePointer);
 
 requestAnimationFrame(frame);
