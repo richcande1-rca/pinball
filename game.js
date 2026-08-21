@@ -68,17 +68,9 @@ function makeFlipper(side) {
 const flippers = [makeFlipper('left'), makeFlipper('right')];
 
 const sideBumpers = [
-  { side: 'left', x1: 56, y1: 553, x2: 115, y2: 602, radius: 10, kick: 65, armed: true },
-  { side: 'right', x1: 364, y1: 553, x2: 305, y2: 602, radius: 10, kick: 65, armed: true }
+  { x1: 56, y1: 553, x2: 115, y2: 602, radius: 10, kick: 65, armed: true },
+  { x1: 364, y1: 553, x2: 305, y2: 602, radius: 10, kick: 65, armed: true }
 ];
-
-const cradle = {
-  timer: 0,
-  sleepDelay: 0.12,
-  zoneRadius: 34,
-  sleeping: false,
-  side: null
-};
 
 const shooterDivider = {
   x1: SHOOTER.dividerX,
@@ -108,10 +100,6 @@ function resetBall() {
   plunger.charge = 0;
   plunger.charging = false;
 
-  cradle.timer = 0;
-  cradle.sleeping = false;
-  cradle.side = null;
-
   for (const bumper of sideBumpers) {
     bumper.armed = true;
   }
@@ -136,29 +124,6 @@ function closestPointOnSegment(px, py, x1, y1, x2, y2) {
     y: y1 + dy * t,
     t
   };
-}
-
-function isInCradlePocket(flipper) {
-  // The actual resting pocket is just inward and above the flipper pivot,
-  // where the raised bat meets the inner end of its sling. Use position, not
-  // exact contact or speed, so tiny solver bounces cannot keep resetting rest.
-  const inward = flipper.side === 'left' ? 1 : -1;
-  const pocketX = flipper.pivotX + inward * 15;
-  const pocketY = flipper.pivotY - 31;
-  const dx = ball.x - pocketX;
-  const dy = ball.y - pocketY;
-
-  const onInwardSide = flipper.side === 'left'
-    ? ball.x >= flipper.pivotX - 2 && ball.x <= flipper.pivotX + 48
-    : ball.x <= flipper.pivotX + 2 && ball.x >= flipper.pivotX - 48;
-
-  const nearBase = ball.y >= flipper.pivotY - 62 && ball.y <= flipper.pivotY + 4;
-
-  return (
-    onInwardSide &&
-    nearBase &&
-    Math.hypot(dx, dy) <= cradle.zoneRadius
-  );
 }
 
 function resolveSegmentCollision(segment, surfaceVelocity = { x: 0, y: 0 }, restitution = 0.9, extraKick = 0) {
@@ -283,7 +248,11 @@ function collideWithFlipper(flipper) {
     incomingNormalSpeed < 45;
 
   const restitution = restingImpact ? 0 : 0.38 + 0.42 * motion;
-  resolveSegmentCollision(segment, surfaceVelocity, restitution);
+  const touching = resolveSegmentCollision(segment, surfaceVelocity, restitution);
+
+  // Let gravity move the ball freely along a held flipper. The separate
+  // cradle sleep condition below handles true rest at the sling/flipper wedge.
+  return touching && heldStill;
 }
 
 function collideWithSideBumper(bumper) {
@@ -323,7 +292,7 @@ function collideWithSideBumper(bumper) {
 
   // Slow settling contact is dead rubber: no bounce and no powered kick.
   const restitution = incomingNormalSpeed < 60 ? 0 : 0.68;
-  resolveSegmentCollision(
+  const touching = resolveSegmentCollision(
     bumper,
     { x: 0, y: 0 },
     restitution,
@@ -333,6 +302,8 @@ function collideWithSideBumper(bumper) {
   if (shouldKick) {
     bumper.armed = false;
   }
+
+  return touching;
 }
 
 function launchBall() {
@@ -353,26 +324,6 @@ function launchBall() {
 function update(dt) {
   for (const flipper of flippers) {
     updateFlipper(flipper, dt);
-  }
-
-  // A sleeping cradle ignores gravity entirely. Releasing or moving the held
-  // flipper wakes the ball immediately, then normal physics resumes.
-  if (cradle.sleeping) {
-    const sleepingFlipper = flippers.find(flipper => flipper.side === cradle.side);
-    const stillHolding =
-      sleepingFlipper &&
-      sleepingFlipper.pressed &&
-      Math.abs(sleepingFlipper.angularVelocity) < 0.25;
-
-    if (stillHolding) {
-      ball.vx = 0;
-      ball.vy = 0;
-      return;
-    }
-
-    cradle.sleeping = false;
-    cradle.side = null;
-    cradle.timer = 0;
   }
 
   if (ball.ready) {
@@ -413,39 +364,26 @@ function update(dt) {
   resolveSegmentCollision(shooterDivider, { x: 0, y: 0 }, 0.86);
   resolveSegmentCollision(shooterGuide, { x: 0, y: 0 }, 0.92);
 
+  let touchingSling = false;
   for (const bumper of sideBumpers) {
-    collideWithSideBumper(bumper);
+    touchingSling = collideWithSideBumper(bumper) || touchingSling;
   }
 
+  let touchingHeldFlipper = false;
   for (const flipper of flippers) {
-    collideWithFlipper(flipper);
+    touchingHeldFlipper = collideWithFlipper(flipper) || touchingHeldFlipper;
   }
 
-  // Final-boss cradle rule: once a ball stays in the actual base pocket of a
-  // held flipper for a moment, residual solver bounce is declared finished.
-  // There is deliberately no velocity threshold and no exact-contact test.
-  let cradleSide = null;
-
-  for (const flipper of flippers) {
-    const heldStill = flipper.pressed && Math.abs(flipper.angularVelocity) < 0.25;
-    if (heldStill && isInCradlePocket(flipper)) {
-      cradleSide = flipper.side;
-      break;
-    }
-  }
-
-  if (cradleSide) {
-    cradle.timer += dt;
-
-    if (cradle.timer >= cradle.sleepDelay) {
-      cradle.sleeping = true;
-      cradle.side = cradleSide;
-      cradle.timer = 0;
-      ball.vx = 0;
-      ball.vy = 0;
-    }
-  } else {
-    cradle.timer = 0;
+  // A ball settled into the wedge between a held flipper and its sling enters
+  // static resting contact. Gravity may press on it next step, but it will be
+  // returned to rest until the flipper moves or the ball leaves the cradle.
+  if (
+    touchingSling &&
+    touchingHeldFlipper &&
+    Math.hypot(ball.vx, ball.vy) < 35
+  ) {
+    ball.vx = 0;
+    ball.vy = 0;
   }
 
   // Open drain below the flippers.
@@ -557,6 +495,7 @@ let previousTime = performance.now();
 function frame(now) {
   let frameTime = (now - previousTime) / 1000;
   previousTime = now;
+
   // Avoid giant physics jumps after the tab has been inactive.
   frameTime = Math.min(frameTime, 0.05);
   accumulator += frameTime;
