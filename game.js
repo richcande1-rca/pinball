@@ -68,8 +68,8 @@ function makeFlipper(side) {
 const flippers = [makeFlipper('left'), makeFlipper('right')];
 
 const sideBumpers = [
-  { x1: 56, y1: 553, x2: 115, y2: 602, radius: 10, kick: 65, touching: false },
-  { x1: 364, y1: 553, x2: 305, y2: 602, radius: 10, kick: 65, touching: false }
+  { x1: 56, y1: 553, x2: 115, y2: 602, radius: 10, kick: 65, armed: true },
+  { x1: 364, y1: 553, x2: 305, y2: 602, radius: 10, kick: 65, armed: true }
 ];
 
 const shooterDivider = {
@@ -101,7 +101,7 @@ function resetBall() {
   plunger.charging = false;
 
   for (const bumper of sideBumpers) {
-    bumper.touching = false;
+    bumper.armed = true;
   }
 }
 
@@ -229,17 +229,52 @@ function collideWithFlipper(flipper) {
 }
 
 function collideWithSideBumper(bumper) {
-  // Fire the powered kick only when the ball first enters contact. Remaining
-  // overlapped for another physics step does not create free extra energy.
-  const kick = bumper.touching ? 0 : bumper.kick;
-  const touchingNow = resolveSegmentCollision(
+  const closest = closestPointOnSegment(
+    ball.x,
+    ball.y,
+    bumper.x1,
+    bumper.y1,
+    bumper.x2,
+    bumper.y2
+  );
+
+  const dx = ball.x - closest.x;
+  const dy = ball.y - closest.y;
+  const distance = Math.hypot(dx, dy);
+  const contactDistance = ball.radius + bumper.radius;
+  const rearmDistance = contactDistance + 8;
+
+  // Once a sling fires, the ball must move clearly away from it before the
+  // sling can arm again. Tiny contact/no-contact jitter in a cradle therefore
+  // cannot manufacture another powered hit.
+  if (!bumper.armed && distance > rearmDistance) {
+    bumper.armed = true;
+  }
+
+  let incomingNormalSpeed = 0;
+  if (distance > 0.0001) {
+    const nx = dx / distance;
+    const ny = dy / distance;
+    incomingNormalSpeed = -(ball.vx * nx + ball.vy * ny);
+  }
+
+  // A sling only powers a genuine impact. Gentle settling contact remains a
+  // passive rubber collision so the ball can come to rest on a held flipper.
+  const shouldKick =
+    bumper.armed &&
+    distance < contactDistance &&
+    incomingNormalSpeed >= 60;
+
+  resolveSegmentCollision(
     bumper,
     { x: 0, y: 0 },
     0.68,
-    kick
+    shouldKick ? bumper.kick : 0
   );
 
-  bumper.touching = touchingNow;
+  if (shouldKick) {
+    bumper.armed = false;
+  }
 }
 
 function launchBall() {
