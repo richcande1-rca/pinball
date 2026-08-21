@@ -75,7 +75,7 @@ const sideBumpers = [
 const cradle = {
   timer: 0,
   sleepDelay: 0.12,
-  maxSettleSpeed: 120,
+  zoneRadius: 34,
   sleeping: false,
   side: null
 };
@@ -138,18 +138,27 @@ function closestPointOnSegment(px, py, x1, y1, x2, y2) {
   };
 }
 
-function isNearSegment(segment, margin = 2) {
-  const closest = closestPointOnSegment(
-    ball.x,
-    ball.y,
-    segment.x1,
-    segment.y1,
-    segment.x2,
-    segment.y2
-  );
+function isInCradlePocket(flipper) {
+  // The actual resting pocket is just inward and above the flipper pivot,
+  // where the raised bat meets the inner end of its sling. Use position, not
+  // exact contact or speed, so tiny solver bounces cannot keep resetting rest.
+  const inward = flipper.side === 'left' ? 1 : -1;
+  const pocketX = flipper.pivotX + inward * 15;
+  const pocketY = flipper.pivotY - 31;
+  const dx = ball.x - pocketX;
+  const dy = ball.y - pocketY;
 
-  const distance = Math.hypot(ball.x - closest.x, ball.y - closest.y);
-  return distance <= ball.radius + segment.radius + margin;
+  const onInwardSide = flipper.side === 'left'
+    ? ball.x >= flipper.pivotX - 2 && ball.x <= flipper.pivotX + 48
+    : ball.x <= flipper.pivotX + 2 && ball.x >= flipper.pivotX - 48;
+
+  const nearBase = ball.y >= flipper.pivotY - 62 && ball.y <= flipper.pivotY + 4;
+
+  return (
+    onInwardSide &&
+    nearBase &&
+    Math.hypot(dx, dy) <= cradle.zoneRadius
+  );
 }
 
 function resolveSegmentCollision(segment, surfaceVelocity = { x: 0, y: 0 }, restitution = 0.9, extraKick = 0) {
@@ -412,31 +421,20 @@ function update(dt) {
     collideWithFlipper(flipper);
   }
 
-  // Cradle detection uses a tiny contact margin so alternating solver ticks do
-  // not reset the timer. The ball must be near the same-side sling and a fully
-  // held flipper, and remain reasonably slow there for a short time.
+  // Final-boss cradle rule: once a ball stays in the actual base pocket of a
+  // held flipper for a moment, residual solver bounce is declared finished.
+  // There is deliberately no velocity threshold and no exact-contact test.
   let cradleSide = null;
 
   for (const flipper of flippers) {
     const heldStill = flipper.pressed && Math.abs(flipper.angularVelocity) < 0.25;
-    if (!heldStill) {
-      continue;
-    }
-
-    const bumper = sideBumpers.find(item => item.side === flipper.side);
-    const flipperSegment = getFlipperSegment(flipper);
-
-    if (
-      bumper &&
-      isNearSegment(bumper, 2) &&
-      isNearSegment(flipperSegment, 2)
-    ) {
+    if (heldStill && isInCradlePocket(flipper)) {
       cradleSide = flipper.side;
       break;
     }
   }
 
-  if (cradleSide && Math.hypot(ball.vx, ball.vy) < cradle.maxSettleSpeed) {
+  if (cradleSide) {
     cradle.timer += dt;
 
     if (cradle.timer >= cradle.sleepDelay) {
