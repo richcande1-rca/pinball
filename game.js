@@ -8,17 +8,37 @@ const TABLE = {
   bottom: canvas.height - 24
 };
 
+const SHOOTER = {
+  dividerX: 396,
+  dividerTop: 158,
+  dividerBottom: TABLE.bottom,
+  ballX: 430,
+  ballY: 650
+};
+
 const ball = {
-  x: canvas.width / 2,
-  y: 90,
+  x: SHOOTER.ballX,
+  y: SHOOTER.ballY,
   vx: 0,
   vy: 0,
-  radius: 10
+  radius: 10,
+  ready: true
 };
 
 const gravity = 760;      // px/s², straight down the playfield
 const wallRestitution = 0.82;
 const rollingDrag = 0.9992;
+
+const plunger = {
+  x: SHOOTER.ballX,
+  topY: 668,
+  charge: 0,
+  charging: false,
+  chargeRate: 0.9,        // reaches full pull in a little over one second
+  minSpeed: 760,
+  maxSpeed: 1140,
+  maxPull: 30
+};
 
 const keys = {
   left: false,
@@ -47,16 +67,37 @@ const flippers = [makeFlipper('left'), makeFlipper('right')];
 
 const sideBumpers = [
   { x1: 56, y1: 525, x2: 145, y2: 574, radius: 10, kick: 125, touching: false },
-  { x1: canvas.width - 56, y1: 525, x2: canvas.width - 145, y2: 574, radius: 10, kick: 125, touching: false }
+  // Shortened slightly so the new shooter lane has a clean physical channel.
+  { x1: 378, y1: 525, x2: 335, y2: 574, radius: 10, kick: 125, touching: false }
 ];
 
+const shooterDivider = {
+  x1: SHOOTER.dividerX,
+  y1: SHOOTER.dividerTop,
+  x2: SHOOTER.dividerX,
+  y2: SHOOTER.dividerBottom,
+  radius: 4
+};
+
+// A shallow guide near the top of the shooter lane turns some of the ball's
+// upward speed into leftward speed without teleporting or directly steering it.
+const shooterGuide = {
+  x1: 446,
+  y1: 146,
+  x2: 407,
+  y2: 72,
+  radius: 4
+};
+
 function resetBall() {
-  // Neutral reset: no built-in sideways motion. Lateral velocity must come
-  // from the table, a bumper, or a flipper.
-  ball.x = canvas.width / 2;
-  ball.y = 90;
+  ball.x = SHOOTER.ballX;
+  ball.y = SHOOTER.ballY;
   ball.vx = 0;
   ball.vy = 0;
+  ball.ready = true;
+
+  plunger.charge = 0;
+  plunger.charging = false;
 
   for (const bumper of sideBumpers) {
     bumper.touching = false;
@@ -195,9 +236,36 @@ function collideWithSideBumper(bumper) {
   bumper.touching = touchingNow;
 }
 
+function launchBall() {
+  if (!ball.ready) {
+    return;
+  }
+
+  const launchSpeed = plunger.minSpeed +
+    (plunger.maxSpeed - plunger.minSpeed) * plunger.charge;
+
+  ball.ready = false;
+  ball.vx = 0;
+  ball.vy = -launchSpeed;
+  plunger.charge = 0;
+  plunger.charging = false;
+}
+
 function update(dt) {
   for (const flipper of flippers) {
     updateFlipper(flipper, dt);
+  }
+
+  if (ball.ready) {
+    ball.x = SHOOTER.ballX;
+    ball.y = SHOOTER.ballY;
+    ball.vx = 0;
+    ball.vy = 0;
+
+    if (plunger.charging) {
+      plunger.charge = clamp(plunger.charge + plunger.chargeRate * dt, 0, 1);
+    }
+    return;
   }
 
   ball.vy += gravity * dt;
@@ -223,6 +291,9 @@ function update(dt) {
     ball.vy = Math.abs(ball.vy) * wallRestitution;
   }
 
+  resolveSegmentCollision(shooterDivider, { x: 0, y: 0 }, 0.86);
+  resolveSegmentCollision(shooterGuide, { x: 0, y: 0 }, 0.92);
+
   for (const bumper of sideBumpers) {
     collideWithSideBumper(bumper);
   }
@@ -245,6 +316,42 @@ function drawTable() {
   ctx.lineTo(TABLE.left, TABLE.top);
   ctx.lineTo(TABLE.right, TABLE.top);
   ctx.lineTo(TABLE.right, TABLE.bottom);
+  ctx.stroke();
+}
+
+function drawShooterLane() {
+  ctx.strokeStyle = '#777';
+  ctx.lineWidth = shooterDivider.radius * 2;
+  ctx.lineCap = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(shooterDivider.x1, shooterDivider.y1);
+  ctx.lineTo(shooterDivider.x2, shooterDivider.y2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(shooterGuide.x1, shooterGuide.y1);
+  ctx.lineTo(shooterGuide.x2, shooterGuide.y2);
+  ctx.stroke();
+}
+
+function drawPlunger() {
+  const pull = plunger.charge * plunger.maxPull;
+  const tipY = plunger.topY + pull;
+
+  ctx.strokeStyle = '#aaa';
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(plunger.x, tipY);
+  ctx.lineTo(plunger.x, Math.min(canvas.height - 8, tipY + 36));
+  ctx.stroke();
+
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(plunger.x - 12, plunger.topY - 2);
+  ctx.lineTo(plunger.x + 12, plunger.topY - 2);
   ctx.stroke();
 }
 
@@ -290,6 +397,8 @@ function drawBall() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawTable();
+  drawShooterLane();
+  drawPlunger();
   drawSideBumpers();
   drawFlippers();
   drawBall();
@@ -335,7 +444,14 @@ window.addEventListener('keydown', (event) => {
     event.preventDefault();
   }
 
-  if (event.code === 'Space' || event.code === 'KeyR') {
+  if (event.code === 'Space') {
+    event.preventDefault();
+    if (ball.ready && !event.repeat) {
+      plunger.charging = true;
+    }
+  }
+
+  if (event.code === 'KeyR') {
     event.preventDefault();
     resetBall();
   }
@@ -344,6 +460,13 @@ window.addEventListener('keydown', (event) => {
 window.addEventListener('keyup', (event) => {
   if (setKeyState(event.code, false)) {
     event.preventDefault();
+  }
+
+  if (event.code === 'Space') {
+    event.preventDefault();
+    if (ball.ready && plunger.charging) {
+      launchBall();
+    }
   }
 });
 
