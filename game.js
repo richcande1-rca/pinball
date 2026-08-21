@@ -213,6 +213,11 @@ function collideWithFlipper(flipper) {
     segment.y2
   );
 
+  const dx = ball.x - closest.x;
+  const dy = ball.y - closest.y;
+  const distance = Math.hypot(dx, dy);
+  const contactDistance = ball.radius + segment.radius;
+
   const rx = closest.x - flipper.pivotX;
   const ry = closest.y - flipper.pivotY;
   const surfaceVelocity = {
@@ -220,12 +225,44 @@ function collideWithFlipper(flipper) {
     y: flipper.angularVelocity * rx
   };
 
-  // A moving flipper still hits hard because its surface velocity transfers
-  // energy into the ball. Once it stops, lower restitution lets the ball
-  // settle instead of rebounding forever, which makes a cradle possible.
+  let incomingNormalSpeed = 0;
+  if (distance > 0.0001) {
+    const nx = dx / distance;
+    const ny = dy / distance;
+    incomingNormalSpeed = -(
+      (ball.vx - surfaceVelocity.x) * nx +
+      (ball.vy - surfaceVelocity.y) * ny
+    );
+  }
+
   const motion = clamp(Math.abs(flipper.angularVelocity) / 14, 0, 1);
-  const restitution = 0.38 + 0.42 * motion;
-  resolveSegmentCollision(segment, surfaceVelocity, restitution);
+  const heldStill = flipper.pressed && Math.abs(flipper.angularVelocity) < 0.25;
+
+  // A gently settling ball on a held flipper should not bounce at all. Fast
+  // impacts retain the livelier restitution, and a moving flipper still adds
+  // energy through its actual surface velocity.
+  const restingImpact =
+    heldStill &&
+    distance < contactDistance &&
+    incomingNormalSpeed >= 0 &&
+    incomingNormalSpeed < 45;
+
+  const restitution = restingImpact ? 0 : 0.38 + 0.42 * motion;
+  const touching = resolveSegmentCollision(segment, surfaceVelocity, restitution);
+
+  if (touching && heldStill && Math.hypot(ball.vx, ball.vy) < 110) {
+    // Contact friction removes the slow sliding component along a held bat.
+    const sx = segment.x2 - segment.x1;
+    const sy = segment.y2 - segment.y1;
+    const sl = Math.hypot(sx, sy) || 1;
+    const tx = sx / sl;
+    const ty = sy / sl;
+    const tangentSpeed = ball.vx * tx + ball.vy * ty;
+    ball.vx -= tx * tangentSpeed * 0.28;
+    ball.vy -= ty * tangentSpeed * 0.28;
+  }
+
+  return touching && heldStill;
 }
 
 function collideWithSideBumper(bumper) {
@@ -258,23 +295,25 @@ function collideWithSideBumper(bumper) {
     incomingNormalSpeed = -(ball.vx * nx + ball.vy * ny);
   }
 
-  // A sling only powers a genuine impact. Gentle settling contact remains a
-  // passive rubber collision so the ball can come to rest on a held flipper.
   const shouldKick =
     bumper.armed &&
     distance < contactDistance &&
     incomingNormalSpeed >= 60;
 
-  resolveSegmentCollision(
+  // Slow settling contact is dead rubber: no bounce and no powered kick.
+  const restitution = incomingNormalSpeed < 60 ? 0 : 0.68;
+  const touching = resolveSegmentCollision(
     bumper,
     { x: 0, y: 0 },
-    0.68,
+    restitution,
     shouldKick ? bumper.kick : 0
   );
 
   if (shouldKick) {
     bumper.armed = false;
   }
+
+  return touching;
 }
 
 function launchBall() {
@@ -335,12 +374,26 @@ function update(dt) {
   resolveSegmentCollision(shooterDivider, { x: 0, y: 0 }, 0.86);
   resolveSegmentCollision(shooterGuide, { x: 0, y: 0 }, 0.92);
 
+  let touchingSling = false;
   for (const bumper of sideBumpers) {
-    collideWithSideBumper(bumper);
+    touchingSling = collideWithSideBumper(bumper) || touchingSling;
   }
 
+  let touchingHeldFlipper = false;
   for (const flipper of flippers) {
-    collideWithFlipper(flipper);
+    touchingHeldFlipper = collideWithFlipper(flipper) || touchingHeldFlipper;
+  }
+
+  // A ball settled into the wedge between a held flipper and its sling enters
+  // static resting contact. Gravity may press on it next step, but it will be
+  // returned to rest until the flipper moves or the ball leaves the cradle.
+  if (
+    touchingSling &&
+    touchingHeldFlipper &&
+    Math.hypot(ball.vx, ball.vy) < 35
+  ) {
+    ball.vx = 0;
+    ball.vy = 0;
   }
 
   // Open drain below the flippers.
