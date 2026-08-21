@@ -7,8 +7,11 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100svh;
   display: grid;
   place-items: center;
+  padding: 8px;
+  box-sizing: border-box;
 }
 
 .game-shell {
@@ -24,8 +27,12 @@ h1 {
 
 canvas {
   display: block;
-  width: 100%;
+  width: auto;
   height: auto;
+  max-width: 100%;
+  max-height: calc(100vh - 120px);
+  max-height: calc(100svh - 120px);
+  margin: 0 auto;
   background: #181818;
   border: 2px solid #777;
   box-sizing: border-box;
