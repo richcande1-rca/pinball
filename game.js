@@ -250,8 +250,7 @@ function collideWithFlipper(flipper) {
   const restitution = restingImpact ? 0 : 0.38 + 0.42 * motion;
   const touching = resolveSegmentCollision(segment, surfaceVelocity, restitution);
 
-  // Let gravity move the ball freely along a held flipper. The separate
-  // cradle sleep condition below handles true rest at the sling/flipper wedge.
+  // Let gravity move the ball freely along a held flipper.
   return touching && heldStill;
 }
 
@@ -269,7 +268,7 @@ function collideWithSideBumper(bumper) {
   const dy = ball.y - closest.y;
   const distance = Math.hypot(dx, dy);
   const contactDistance = ball.radius + bumper.radius;
-  const rearmDistance = contactDistance + 8;
+  const rearmDistance = contactDistance + 18;
 
   // Once a sling fires, the ball must move clearly away from it before the
   // sling can arm again. Tiny contact/no-contact jitter in a cradle therefore
@@ -364,26 +363,12 @@ function update(dt) {
   resolveSegmentCollision(shooterDivider, { x: 0, y: 0 }, 0.86);
   resolveSegmentCollision(shooterGuide, { x: 0, y: 0 }, 0.92);
 
-  let touchingSling = false;
   for (const bumper of sideBumpers) {
-    touchingSling = collideWithSideBumper(bumper) || touchingSling;
+    collideWithSideBumper(bumper);
   }
 
-  let touchingHeldFlipper = false;
   for (const flipper of flippers) {
-    touchingHeldFlipper = collideWithFlipper(flipper) || touchingHeldFlipper;
-  }
-
-  // A ball settled into the wedge between a held flipper and its sling enters
-  // static resting contact. Gravity may press on it next step, but it will be
-  // returned to rest until the flipper moves or the ball leaves the cradle.
-  if (
-    touchingSling &&
-    touchingHeldFlipper &&
-    Math.hypot(ball.vx, ball.vy) < 35
-  ) {
-    ball.vx = 0;
-    ball.vy = 0;
+    collideWithFlipper(flipper);
   }
 
   // Open drain below the flippers.
@@ -579,5 +564,6 @@ canvas.addEventListener('pointerleave', (event) => {
     releasePointer();
   }
 });
+window.addEventListener('blur', releasePointer);
 
 requestAnimationFrame(frame);
