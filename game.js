@@ -72,6 +72,14 @@ const sideBumpers = [
   { x1: 364, y1: 525, x2: 305, y2: 574, radius: 10, kick: 65, touching: false }
 ];
 
+// These rails close the open space behind each flipper pivot. Without them a
+// ball sitting on a raised flipper can roll around the rounded base and fall
+// behind the bat. The center between the flipper tips remains the real drain.
+const flipperBaseGuards = [
+  { x1: 115, y1: 574, x2: 115, y2: 642, radius: 5 },
+  { x1: 305, y1: 574, x2: 305, y2: 642, radius: 5 }
+];
+
 const shooterDivider = {
   x1: SHOOTER.dividerX,
   y1: SHOOTER.dividerTop,
@@ -304,6 +312,12 @@ function update(dt) {
     collideWithSideBumper(bumper);
   }
 
+  for (const guard of flipperBaseGuards) {
+    // The base rails are passive, fairly dead rubber/metal surfaces. They stop
+    // the ball from rolling behind a flipper without adding useful energy.
+    resolveSegmentCollision(guard, { x: 0, y: 0 }, 0.42);
+  }
+
   for (const flipper of flippers) {
     collideWithFlipper(flipper);
   }
@@ -374,6 +388,19 @@ function drawSideBumpers() {
   }
 }
 
+function drawFlipperBaseGuards() {
+  ctx.strokeStyle = '#8f8f8f';
+  ctx.lineWidth = 10;
+  ctx.lineCap = 'round';
+
+  for (const guard of flipperBaseGuards) {
+    ctx.beginPath();
+    ctx.moveTo(guard.x1, guard.y1);
+    ctx.lineTo(guard.x2, guard.y2);
+    ctx.stroke();
+  }
+}
+
 function drawFlippers() {
   ctx.lineCap = 'round';
 
@@ -406,6 +433,7 @@ function draw() {
   drawShooterLane();
   drawPlunger();
   drawSideBumpers();
+  drawFlipperBaseGuards();
   drawFlippers();
   drawBall();
 }
