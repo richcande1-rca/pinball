@@ -250,18 +250,8 @@ function collideWithFlipper(flipper) {
   const restitution = restingImpact ? 0 : 0.38 + 0.42 * motion;
   const touching = resolveSegmentCollision(segment, surfaceVelocity, restitution);
 
-  if (touching && heldStill && Math.hypot(ball.vx, ball.vy) < 110) {
-    // Contact friction removes the slow sliding component along a held bat.
-    const sx = segment.x2 - segment.x1;
-    const sy = segment.y2 - segment.y1;
-    const sl = Math.hypot(sx, sy) || 1;
-    const tx = sx / sl;
-    const ty = sy / sl;
-    const tangentSpeed = ball.vx * tx + ball.vy * ty;
-    ball.vx -= tx * tangentSpeed * 0.28;
-    ball.vy -= ty * tangentSpeed * 0.28;
-  }
-
+  // Let gravity move the ball freely along a held flipper. The separate
+  // cradle sleep condition below handles true rest at the sling/flipper wedge.
   return touching && heldStill;
 }
 
