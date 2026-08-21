@@ -72,6 +72,11 @@ const sideBumpers = [
   { x1: 364, y1: 553, x2: 305, y2: 602, radius: 10, kick: 65, armed: true }
 ];
 
+const lowerGuides = [
+  { x1: 65, y1: 590, x2: 72, y2: 640, radius: 4 },
+  { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 }
+];
+
 const shooterDivider = {
   x1: SHOOTER.dividerX,
   y1: SHOOTER.dividerTop,
@@ -363,6 +368,10 @@ function update(dt) {
   resolveSegmentCollision(shooterDivider, { x: 0, y: 0 }, 0.86);
   resolveSegmentCollision(shooterGuide, { x: 0, y: 0 }, 0.92);
 
+  for (const guide of lowerGuides) {
+    resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
+  }
+
   for (const bumper of sideBumpers) {
     collideWithSideBumper(bumper);
   }
@@ -437,6 +446,19 @@ function drawSideBumpers() {
   }
 }
 
+function drawLowerGuides() {
+  ctx.strokeStyle = '#777';
+  ctx.lineWidth = lowerGuides[0].radius * 2;
+  ctx.lineCap = 'round';
+
+  for (const guide of lowerGuides) {
+    ctx.beginPath();
+    ctx.moveTo(guide.x1, guide.y1);
+    ctx.lineTo(guide.x2, guide.y2);
+    ctx.stroke();
+  }
+}
+
 function drawFlippers() {
   ctx.lineCap = 'round';
 
@@ -469,6 +491,7 @@ function draw() {
   drawShooterLane();
   drawPlunger();
   drawSideBumpers();
+  drawLowerGuides();
   drawFlippers();
   drawBall();
 }
