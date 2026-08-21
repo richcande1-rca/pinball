@@ -16,6 +16,8 @@ const SHOOTER = {
   ballY: 650
 };
 
+const PLAYFIELD_CENTER = (TABLE.left + SHOOTER.dividerX) / 2;
+
 const ball = {
   x: SHOOTER.ballX,
   y: SHOOTER.ballY,
@@ -49,9 +51,9 @@ function makeFlipper(side) {
   const isLeft = side === 'left';
   return {
     side,
-    // A real physical gap remains between the rounded flipper tips so the
-    // ball can drain through the center without any special-case logic.
-    pivotX: isLeft ? 145 : 335,
+    // Keep the original pivot spacing, but center the pair on the main
+    // playfield rather than on the full canvas including the shooter lane.
+    pivotX: PLAYFIELD_CENTER + (isLeft ? -95 : 95),
     pivotY: 620,
     length: 74,
     radius: 11,
@@ -66,9 +68,8 @@ function makeFlipper(side) {
 const flippers = [makeFlipper('left'), makeFlipper('right')];
 
 const sideBumpers = [
-  { x1: 56, y1: 525, x2: 145, y2: 574, radius: 10, kick: 125, touching: false },
-  // Shortened slightly so the new shooter lane has a clean physical channel.
-  { x1: 378, y1: 525, x2: 335, y2: 574, radius: 10, kick: 125, touching: false }
+  { x1: 56, y1: 525, x2: 115, y2: 574, radius: 10, kick: 65, touching: false },
+  { x1: 364, y1: 525, x2: 305, y2: 574, radius: 10, kick: 65, touching: false }
 ];
 
 const shooterDivider = {
@@ -219,7 +220,12 @@ function collideWithFlipper(flipper) {
     y: flipper.angularVelocity * rx
   };
 
-  resolveSegmentCollision(segment, surfaceVelocity, 0.86);
+  // A moving flipper still hits hard because its surface velocity transfers
+  // energy into the ball. Once it stops, lower restitution lets the ball
+  // settle instead of rebounding forever, which makes a cradle possible.
+  const motion = clamp(Math.abs(flipper.angularVelocity) / 14, 0, 1);
+  const restitution = 0.38 + 0.42 * motion;
+  resolveSegmentCollision(segment, surfaceVelocity, restitution);
 }
 
 function collideWithSideBumper(bumper) {
@@ -229,7 +235,7 @@ function collideWithSideBumper(bumper) {
   const touchingNow = resolveSegmentCollision(
     bumper,
     { x: 0, y: 0 },
-    0.84,
+    0.68,
     kick
   );
 
