@@ -455,58 +455,156 @@ function update(dt) {
 }
 
 function drawTable() {
-  ctx.strokeStyle = '#888';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(TABLE.left, TABLE.bottom);
-  ctx.lineTo(TABLE.left, TABLE.top);
-  ctx.lineTo(TABLE.right, TABLE.top);
-  ctx.lineTo(TABLE.right, TABLE.bottom);
-  ctx.stroke();
+  const background = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  background.addColorStop(0, '#081925');
+  background.addColorStop(0.55, '#07131c');
+  background.addColorStop(1, '#050a0f');
+  ctx.fillStyle = background;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const playfield = ctx.createRadialGradient(
+    PLAYFIELD_CENTER,
+    300,
+    30,
+    PLAYFIELD_CENTER,
+    360,
+    410
+  );
+  playfield.addColorStop(0, '#102433');
+  playfield.addColorStop(1, '#08131c');
+  ctx.fillStyle = playfield;
+  ctx.fillRect(
+    TABLE.left,
+    TABLE.top,
+    TABLE.right - TABLE.left,
+    TABLE.bottom - TABLE.top
+  );
+
+  // Slightly separate the shooter lane visually without changing geometry.
+  ctx.fillStyle = 'rgba(76, 125, 153, 0.075)';
+  ctx.fillRect(
+    SHOOTER.dividerX,
+    TABLE.top,
+    TABLE.right - SHOOTER.dividerX,
+    TABLE.bottom - TABLE.top
+  );
+
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  const traceTable = () => {
+    ctx.beginPath();
+    ctx.moveTo(TABLE.left, TABLE.bottom);
+    ctx.lineTo(TABLE.left, TABLE.top);
+    ctx.lineTo(TABLE.right, TABLE.top);
+    ctx.lineTo(TABLE.right, TABLE.bottom);
+    ctx.stroke();
+  };
+
+  ctx.strokeStyle = '#182632';
+  ctx.lineWidth = 10;
+  traceTable();
+
+  ctx.strokeStyle = '#7e99aa';
+  ctx.lineWidth = 4;
+  traceTable();
+
+  ctx.strokeStyle = 'rgba(222, 242, 255, 0.45)';
+  ctx.lineWidth = 1.2;
+  traceTable();
 }
 
 function drawShooterLane() {
-  ctx.strokeStyle = '#777';
-  ctx.lineWidth = shooterDivider.radius * 2;
   ctx.lineCap = 'round';
 
-  ctx.beginPath();
-  ctx.moveTo(shooterDivider.x1, shooterDivider.y1);
-  ctx.lineTo(shooterDivider.x2, shooterDivider.y2);
-  ctx.stroke();
+  const drawMetalSegment = (segment) => {
+    ctx.strokeStyle = '#17232d';
+    ctx.lineWidth = segment.radius * 2 + 7;
+    ctx.beginPath();
+    ctx.moveTo(segment.x1, segment.y1);
+    ctx.lineTo(segment.x2, segment.y2);
+    ctx.stroke();
 
-  ctx.beginPath();
-  ctx.moveTo(shooterGuide.x1, shooterGuide.y1);
-  ctx.lineTo(shooterGuide.x2, shooterGuide.y2);
-  ctx.stroke();
+    ctx.strokeStyle = '#8da7b8';
+    ctx.lineWidth = segment.radius * 2;
+    ctx.beginPath();
+    ctx.moveTo(segment.x1, segment.y1);
+    ctx.lineTo(segment.x2, segment.y2);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(235, 249, 255, 0.48)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(segment.x1, segment.y1);
+    ctx.lineTo(segment.x2, segment.y2);
+    ctx.stroke();
+  };
+
+  drawMetalSegment(shooterDivider);
+  drawMetalSegment(shooterGuide);
 }
 
 function drawPlunger() {
   const pull = plunger.charge * plunger.maxPull;
   const tipY = plunger.topY + pull;
 
-  ctx.strokeStyle = '#aaa';
-  ctx.lineWidth = 8;
+  // Dark groove behind the plunger shaft.
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.48)';
+  ctx.lineWidth = 14;
   ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(plunger.x, plunger.topY - 4);
+  ctx.lineTo(plunger.x, canvas.height - 10);
+  ctx.stroke();
+
+  const shaft = ctx.createLinearGradient(plunger.x - 6, 0, plunger.x + 6, 0);
+  shaft.addColorStop(0, '#566673');
+  shaft.addColorStop(0.45, '#d7e3ea');
+  shaft.addColorStop(0.7, '#8b9ca8');
+  shaft.addColorStop(1, '#4e5c66');
+
+  ctx.strokeStyle = shaft;
+  ctx.lineWidth = 8;
   ctx.beginPath();
   ctx.moveTo(plunger.x, tipY);
   ctx.lineTo(plunger.x, Math.min(canvas.height - 8, tipY + 36));
   ctx.stroke();
 
-  ctx.strokeStyle = '#666';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#8da7b8';
+  ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(plunger.x - 12, plunger.topY - 2);
-  ctx.lineTo(plunger.x + 12, plunger.topY - 2);
+  ctx.moveTo(plunger.x - 13, plunger.topY - 2);
+  ctx.lineTo(plunger.x + 13, plunger.topY - 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(232, 248, 255, 0.65)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(plunger.x - 10, plunger.topY - 4);
+  ctx.lineTo(plunger.x + 10, plunger.topY - 4);
   ctx.stroke();
 }
 
 function drawSideBumpers() {
-  ctx.strokeStyle = '#b8b8b8';
-  ctx.lineWidth = 20;
   ctx.lineCap = 'round';
 
   for (const bumper of sideBumpers) {
+    ctx.strokeStyle = '#451a21';
+    ctx.lineWidth = 26;
+    ctx.beginPath();
+    ctx.moveTo(bumper.x1, bumper.y1);
+    ctx.lineTo(bumper.x2, bumper.y2);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#d94a55';
+    ctx.lineWidth = 19;
+    ctx.beginPath();
+    ctx.moveTo(bumper.x1, bumper.y1);
+    ctx.lineTo(bumper.x2, bumper.y2);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(255, 180, 147, 0.72)';
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(bumper.x1, bumper.y1);
     ctx.lineTo(bumper.x2, bumper.y2);
@@ -519,25 +617,77 @@ function drawFlippers() {
 
   for (const flipper of flippers) {
     const segment = getFlipperSegment(flipper);
-    ctx.strokeStyle = flipper.pressed ? '#f2f2f2' : '#cfcfcf';
+
+    ctx.strokeStyle = '#3d161b';
+    ctx.lineWidth = flipper.radius * 2 + 8;
+    ctx.beginPath();
+    ctx.moveTo(segment.x1, segment.y1);
+    ctx.lineTo(segment.x2, segment.y2);
+    ctx.stroke();
+
+    ctx.strokeStyle = flipper.pressed ? '#ff665d' : '#df414b';
     ctx.lineWidth = flipper.radius * 2;
     ctx.beginPath();
     ctx.moveTo(segment.x1, segment.y1);
     ctx.lineTo(segment.x2, segment.y2);
     ctx.stroke();
 
-    ctx.fillStyle = '#999';
+    ctx.strokeStyle = flipper.pressed
+      ? 'rgba(255, 225, 200, 0.78)'
+      : 'rgba(255, 180, 160, 0.58)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(segment.x1, segment.y1);
+    ctx.lineTo(segment.x2, segment.y2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#17212a';
+    ctx.beginPath();
+    ctx.arc(flipper.pivotX, flipper.pivotY, 11, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#95aab8';
     ctx.beginPath();
     ctx.arc(flipper.pivotX, flipper.pivotY, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#dbe8ef';
+    ctx.beginPath();
+    ctx.arc(flipper.pivotX - 1.5, flipper.pivotY - 1.5, 2.2, 0, Math.PI * 2);
     ctx.fill();
   }
 }
 
 function drawBall() {
-  ctx.fillStyle = '#ddd';
+  ctx.save();
+  ctx.shadowColor = 'rgba(160, 220, 255, 0.34)';
+  ctx.shadowBlur = 8;
+
+  const metal = ctx.createRadialGradient(
+    ball.x - 4,
+    ball.y - 5,
+    1.5,
+    ball.x,
+    ball.y,
+    ball.radius
+  );
+  metal.addColorStop(0, '#ffffff');
+  metal.addColorStop(0.24, '#dbe6ec');
+  metal.addColorStop(0.68, '#9cabb5');
+  metal.addColorStop(1, '#53616c');
+
+  ctx.fillStyle = metal;
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
   ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.62)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(ball.x - 2, ball.y - 2, ball.radius - 2.5, Math.PI * 1.08, Math.PI * 1.7);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function draw() {
