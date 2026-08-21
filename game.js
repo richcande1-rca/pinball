@@ -72,6 +72,11 @@ const sideBumpers = [
   { x1: 364, y1: 553, x2: 305, y2: 602, radius: 10, kick: 65, armed: true }
 ];
 
+const lowerGuides = [
+  { x1: 65, y1: 590, x2: 72, y2: 640, radius: 4 },
+  { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 }
+];
+
 const shooterDivider = {
   x1: SHOOTER.dividerX,
   y1: SHOOTER.dividerTop,
@@ -250,8 +255,7 @@ function collideWithFlipper(flipper) {
   const restitution = restingImpact ? 0 : 0.38 + 0.42 * motion;
   const touching = resolveSegmentCollision(segment, surfaceVelocity, restitution);
 
-  // Let gravity move the ball freely along a held flipper. The separate
-  // cradle sleep condition below handles true rest at the sling/flipper wedge.
+  // Let gravity move the ball freely along a held flipper.
   return touching && heldStill;
 }
 
@@ -269,7 +273,7 @@ function collideWithSideBumper(bumper) {
   const dy = ball.y - closest.y;
   const distance = Math.hypot(dx, dy);
   const contactDistance = ball.radius + bumper.radius;
-  const rearmDistance = contactDistance + 8;
+  const rearmDistance = contactDistance + 18;
 
   // Once a sling fires, the ball must move clearly away from it before the
   // sling can arm again. Tiny contact/no-contact jitter in a cradle therefore
@@ -364,26 +368,16 @@ function update(dt) {
   resolveSegmentCollision(shooterDivider, { x: 0, y: 0 }, 0.86);
   resolveSegmentCollision(shooterGuide, { x: 0, y: 0 }, 0.92);
 
-  let touchingSling = false;
+  for (const guide of lowerGuides) {
+    resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
+  }
+
   for (const bumper of sideBumpers) {
-    touchingSling = collideWithSideBumper(bumper) || touchingSling;
+    collideWithSideBumper(bumper);
   }
 
-  let touchingHeldFlipper = false;
   for (const flipper of flippers) {
-    touchingHeldFlipper = collideWithFlipper(flipper) || touchingHeldFlipper;
-  }
-
-  // A ball settled into the wedge between a held flipper and its sling enters
-  // static resting contact. Gravity may press on it next step, but it will be
-  // returned to rest until the flipper moves or the ball leaves the cradle.
-  if (
-    touchingSling &&
-    touchingHeldFlipper &&
-    Math.hypot(ball.vx, ball.vy) < 35
-  ) {
-    ball.vx = 0;
-    ball.vy = 0;
+    collideWithFlipper(flipper);
   }
 
   // Open drain below the flippers.
@@ -452,6 +446,19 @@ function drawSideBumpers() {
   }
 }
 
+function drawLowerGuides() {
+  ctx.strokeStyle = '#777';
+  ctx.lineWidth = lowerGuides[0].radius * 2;
+  ctx.lineCap = 'round';
+
+  for (const guide of lowerGuides) {
+    ctx.beginPath();
+    ctx.moveTo(guide.x1, guide.y1);
+    ctx.lineTo(guide.x2, guide.y2);
+    ctx.stroke();
+  }
+}
+
 function drawFlippers() {
   ctx.lineCap = 'round';
 
@@ -484,6 +491,7 @@ function draw() {
   drawShooterLane();
   drawPlunger();
   drawSideBumpers();
+  drawLowerGuides();
   drawFlippers();
   drawBall();
 }
@@ -579,5 +587,6 @@ canvas.addEventListener('pointerleave', (event) => {
     releasePointer();
   }
 });
+window.addEventListener('blur', releasePointer);
 
 requestAnimationFrame(frame);
