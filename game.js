@@ -140,25 +140,13 @@ function closestPointOnSegment(px, py, x1, y1, x2, y2) {
 
 function isInCradlePocket(flipper) {
   // The actual resting pocket is just inward and above the flipper pivot,
-  // where the raised bat meets the inner end of its sling.
+  // where the raised bat meets the inner end of its sling. Use position, not
+  // exact contact or speed, so tiny solver bounces cannot keep resetting rest.
   const inward = flipper.side === 'left' ? 1 : -1;
   const pocketX = flipper.pivotX + inward * 15;
   const pocketY = flipper.pivotY - 31;
   const dx = ball.x - pocketX;
   const dy = ball.y - pocketY;
-
-  const segment = getFlipperSegment(flipper);
-  const closest = closestPointOnSegment(
-    ball.x,
-    ball.y,
-    segment.x1,
-    segment.y1,
-    segment.x2,
-    segment.y2
-  );
-  const contactDistance = ball.radius + segment.radius + 1;
-  const touchingFlipper = Math.hypot(ball.x - closest.x, ball.y - closest.y) <= contactDistance;
-  const movingSlowly = Math.hypot(ball.vx, ball.vy) < 45;
 
   const onInwardSide = flipper.side === 'left'
     ? ball.x >= flipper.pivotX - 2 && ball.x <= flipper.pivotX + 48
@@ -169,9 +157,7 @@ function isInCradlePocket(flipper) {
   return (
     onInwardSide &&
     nearBase &&
-    Math.hypot(dx, dy) <= cradle.zoneRadius &&
-    touchingFlipper &&
-    movingSlowly
+    Math.hypot(dx, dy) <= cradle.zoneRadius
   );
 }
 
@@ -437,6 +423,7 @@ function update(dt) {
 
   // Final-boss cradle rule: once a ball stays in the actual base pocket of a
   // held flipper for a moment, residual solver bounce is declared finished.
+  // There is deliberately no velocity threshold and no exact-contact test.
   let cradleSide = null;
 
   for (const flipper of flippers) {
@@ -570,7 +557,6 @@ let previousTime = performance.now();
 function frame(now) {
   let frameTime = (now - previousTime) / 1000;
   previousTime = now;
-
   // Avoid giant physics jumps after the tab has been inactive.
   frameTime = Math.min(frameTime, 0.05);
   accumulator += frameTime;
