@@ -1,44 +1,81 @@
 // Miami Nights visual layer only. No gameplay or collision logic lives here.
 
 function drawMiamiArtwork() {
-  ctx.save();
-  ctx.globalAlpha = 0.32;
+  const sunX = PLAYFIELD_CENTER;
+  const sunY = 350;
+  const sunRadius = 58;
 
-  const sunset = ctx.createLinearGradient(0, 300, 0, 402);
+  ctx.save();
+  ctx.globalAlpha = 0.4;
+
+  const sunset = ctx.createLinearGradient(0, sunY - sunRadius, 0, sunY + sunRadius);
   sunset.addColorStop(0, MIAMI_COLORS.magenta);
-  sunset.addColorStop(0.58, '#ff6f91');
+  sunset.addColorStop(0.48, '#ff6f91');
   sunset.addColorStop(1, MIAMI_COLORS.lavender);
   ctx.fillStyle = sunset;
   ctx.beginPath();
-  ctx.arc(PLAYFIELD_CENTER, 350, 52, 0, Math.PI * 2);
+  ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.globalCompositeOperation = 'destination-out';
-  for (let y = 354; y <= 394; y += 8) {
-    ctx.fillRect(PLAYFIELD_CENTER - 54, y, 108, 3);
-  }
-  ctx.globalCompositeOperation = 'source-over';
-
-  ctx.fillStyle = '#050916';
-  ctx.strokeStyle = '#050916';
-  ctx.lineCap = 'round';
-  ctx.lineWidth = 4;
+  ctx.save();
   ctx.beginPath();
-  ctx.moveTo(PLAYFIELD_CENTER - 4, 392);
-  ctx.quadraticCurveTo(PLAYFIELD_CENTER - 15, 350, PLAYFIELD_CENTER - 8, 320);
-  ctx.stroke();
+  ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.globalAlpha = 0.34;
+  ctx.fillStyle = '#050916';
+  for (let y = sunY + 4; y <= sunY + 46; y += 9) {
+    ctx.fillRect(sunX - sunRadius - 2, y, sunRadius * 2 + 4, 3);
+  }
+  ctx.restore();
 
-  const crownX = PLAYFIELD_CENTER - 8;
-  const crownY = 320;
-  for (const [dx, dy, bend] of [
-    [-34, -8, -18], [-29, 9, -17], [-17, -22, -10],
-    [18, -25, 10], [34, -10, 18], [29, 10, 18]
-  ]) {
+  const crownX = sunX + 7;
+  const crownY = sunY - 31;
+  const baseX = sunX + 22;
+  const baseY = sunY + 50;
+
+  ctx.globalAlpha = 0.9;
+  ctx.fillStyle = '#030712';
+  ctx.strokeStyle = '#030712';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(baseX - 3, baseY);
+  ctx.bezierCurveTo(baseX - 8, sunY + 25, crownX - 4, crownY + 13, crownX - 1, crownY);
+  ctx.lineTo(crownX + 2, crownY);
+  ctx.bezierCurveTo(crownX + 2, crownY + 15, baseX + 1, sunY + 27, baseX + 3, baseY);
+  ctx.closePath();
+  ctx.fill();
+
+  const fronds = [
+    [-48, 18, -18, 2, -35, 17],
+    [-51, -3, -18, -7, -36, -9],
+    [-31, -28, -11, -14, -24, -28],
+    [-8, -39, -3, -16, -7, -31],
+    [7, -41, 4, -15, 6, -32],
+    [30, -30, 13, -13, 24, -26],
+    [49, -8, 20, -6, 37, -13],
+    [44, 17, 18, 2, 34, 15]
+  ];
+
+  ctx.lineWidth = 2.6;
+  for (const [endX, endY, control1X, control1Y, control2X, control2Y] of fronds) {
     ctx.beginPath();
     ctx.moveTo(crownX, crownY);
-    ctx.quadraticCurveTo(crownX + bend, crownY - 12, crownX + dx, crownY + dy);
+    ctx.bezierCurveTo(
+      crownX + control1X,
+      crownY + control1Y,
+      crownX + control2X,
+      crownY + control2Y,
+      crownX + endX,
+      crownY + endY
+    );
     ctx.stroke();
   }
+
+  ctx.beginPath();
+  ctx.arc(crownX, crownY, 3.5, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 
   ctx.save();
