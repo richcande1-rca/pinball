@@ -538,6 +538,8 @@ function drawMiamiArtwork() {
   ctx.moveTo(PLAYFIELD_CENTER - 4, 392);
   ctx.quadraticCurveTo(PLAYFIELD_CENTER - 15, 350, PLAYFIELD_CENTER - 8, 320);
   ctx.stroke();
+  ctx.restore();
+}
 
   const crownX = PLAYFIELD_CENTER - 8;
   const crownY = 320;
