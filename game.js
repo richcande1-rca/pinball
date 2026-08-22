@@ -418,11 +418,42 @@ function update(dt) {
   }
 }
 
+const MIAMI_COLORS = {
+  playfield: '#070b18',
+  shooterLane: '#0b1222',
+  structure: '#20283a',
+  cyan: '#22dff3',
+  magenta: '#ff3cac',
+  lavender: '#c9b8ff'
+};
+
+function drawNeonSegment(segment, accent = MIAMI_COLORS.cyan, bodyWidth = 6, accentWidth = 2) {
+  ctx.save();
+  ctx.lineCap = 'round';
+
+  ctx.strokeStyle = MIAMI_COLORS.structure;
+  ctx.lineWidth = bodyWidth;
+  ctx.beginPath();
+  ctx.moveTo(segment.x1, segment.y1);
+  ctx.lineTo(segment.x2, segment.y2);
+  ctx.stroke();
+
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = accentWidth;
+  ctx.shadowColor = accent;
+  ctx.shadowBlur = 4;
+  ctx.beginPath();
+  ctx.moveTo(segment.x1, segment.y1);
+  ctx.lineTo(segment.x2, segment.y2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawTable() {
-  ctx.fillStyle = '#141414';
+  ctx.fillStyle = MIAMI_COLORS.playfield;
   ctx.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
 
-  ctx.fillStyle = '#1d1d1d';
+  ctx.fillStyle = MIAMI_COLORS.shooterLane;
   ctx.fillRect(
     shooterDivider.x1 + shooterDivider.radius,
     shooterDivider.y1,
@@ -430,100 +461,104 @@ function drawTable() {
     TABLE.bottom - shooterDivider.y1
   );
 
-  ctx.strokeStyle = '#888';
-  ctx.lineWidth = 3;
+  ctx.strokeStyle = MIAMI_COLORS.structure;
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(TABLE.left, TABLE.bottom);
   ctx.lineTo(TABLE.left, TABLE.top);
   ctx.lineTo(TABLE.right, TABLE.top);
   ctx.lineTo(TABLE.right, TABLE.bottom);
   ctx.stroke();
+
+  ctx.save();
+  ctx.strokeStyle = MIAMI_COLORS.cyan;
+  ctx.lineWidth = 1;
+  ctx.shadowColor = MIAMI_COLORS.cyan;
+  ctx.shadowBlur = 3;
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawShooterLane() {
-  ctx.strokeStyle = '#777';
-  ctx.lineWidth = shooterDivider.radius * 2;
-  ctx.lineCap = 'round';
-
-  ctx.beginPath();
-  ctx.moveTo(shooterDivider.x1, shooterDivider.y1);
-  ctx.lineTo(shooterDivider.x2, shooterDivider.y2);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(shooterGuide.x1, shooterGuide.y1);
-  ctx.lineTo(shooterGuide.x2, shooterGuide.y2);
-  ctx.stroke();
+  drawNeonSegment(shooterDivider, MIAMI_COLORS.cyan);
+  drawNeonSegment(shooterGuide, MIAMI_COLORS.cyan);
 }
 
 function drawPlunger() {
+  ctx.save();
   const pull = plunger.charge * plunger.maxPull;
   const tipY = plunger.topY + pull;
 
-  ctx.strokeStyle = '#aaa';
-  ctx.lineWidth = 8;
+  ctx.strokeStyle = MIAMI_COLORS.structure;
+  ctx.lineWidth = 6;
   ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(plunger.x, tipY);
   ctx.lineTo(plunger.x, Math.min(canvas.height - 8, tipY + 36));
   ctx.stroke();
 
-  ctx.strokeStyle = '#666';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = MIAMI_COLORS.cyan;
+  ctx.lineWidth = 1;
+  ctx.shadowColor = MIAMI_COLORS.cyan;
+  ctx.shadowBlur = 3;
   ctx.beginPath();
   ctx.moveTo(plunger.x - 12, plunger.topY - 2);
   ctx.lineTo(plunger.x + 12, plunger.topY - 2);
   ctx.stroke();
+  ctx.restore();
 }
 
 function drawSideBumpers() {
-  ctx.strokeStyle = '#b8b8b8';
-  ctx.lineWidth = 20;
-  ctx.lineCap = 'round';
-
   for (const bumper of sideBumpers) {
-    ctx.beginPath();
-    ctx.moveTo(bumper.x1, bumper.y1);
-    ctx.lineTo(bumper.x2, bumper.y2);
-    ctx.stroke();
+    drawNeonSegment(bumper, MIAMI_COLORS.magenta, 10, 3);
   }
 }
 
 function drawLowerGuides() {
-  ctx.strokeStyle = '#777';
-  ctx.lineWidth = lowerGuides[0].radius * 2;
-  ctx.lineCap = 'round';
-
   for (const guide of lowerGuides) {
-    ctx.beginPath();
-    ctx.moveTo(guide.x1, guide.y1);
-    ctx.lineTo(guide.x2, guide.y2);
-    ctx.stroke();
+    drawNeonSegment(guide);
   }
 }
 
 function drawPassivePlayfieldGeometry() {
-  ctx.strokeStyle = '#777';
-  ctx.lineCap = 'round';
-
-  for (const guide of [...upperArchGuides, ...midPlayfieldGuides]) {
-    ctx.lineWidth = guide.radius * 2;
-    ctx.beginPath();
-    ctx.moveTo(guide.x1, guide.y1);
-    ctx.lineTo(guide.x2, guide.y2);
-    ctx.stroke();
+  for (const guide of upperArchGuides) {
+    drawNeonSegment(guide);
   }
 
-  ctx.fillStyle = '#aaa';
-  for (const post of upperPosts) {
+  for (const guide of midPlayfieldGuides) {
+    drawNeonSegment(guide, MIAMI_COLORS.magenta);
+  }
+
+  for (const [index, post] of upperPosts.entries()) {
+    const accent = index === 0
+      ? MIAMI_COLORS.cyan
+      : index === 1
+        ? MIAMI_COLORS.magenta
+        : MIAMI_COLORS.lavender;
+
+    ctx.fillStyle = MIAMI_COLORS.structure;
     ctx.beginPath();
-    ctx.arc(post.x1, (post.y1 + post.y2) / 2, post.radius, 0, Math.PI * 2);
+    ctx.arc(post.x1, (post.y1 + post.y2) / 2, 5, 0, Math.PI * 2);
     ctx.fill();
+
+    ctx.save();
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 3;
+    ctx.stroke();
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.arc(post.x1, (post.y1 + post.y2) / 2, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 }
 
 function drawLowerApron() {
-  ctx.fillStyle = '#202020';
+  ctx.fillStyle = '#0b1020';
+  ctx.strokeStyle = '#28314b';
+  ctx.lineWidth = 1.5;
 
   ctx.beginPath();
   ctx.moveTo(24, 670);
@@ -532,6 +567,7 @@ function drawLowerApron() {
   ctx.lineTo(24, 696);
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
 
   ctx.beginPath();
   ctx.moveTo(396, 670);
@@ -540,15 +576,20 @@ function drawLowerApron() {
   ctx.lineTo(396, 696);
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
 
-  ctx.strokeStyle = '#555';
-  ctx.lineWidth = 2;
+  ctx.save();
+  ctx.strokeStyle = MIAMI_COLORS.magenta;
+  ctx.lineWidth = 1;
+  ctx.shadowColor = MIAMI_COLORS.magenta;
+  ctx.shadowBlur = 3;
   ctx.beginPath();
   ctx.moveTo(32, 666);
   ctx.lineTo(62, 666);
   ctx.moveTo(358, 666);
   ctx.lineTo(388, 666);
   ctx.stroke();
+  ctx.restore();
 }
 
 function drawFlippers() {
@@ -556,22 +597,40 @@ function drawFlippers() {
 
   for (const flipper of flippers) {
     const segment = getFlipperSegment(flipper);
-    ctx.strokeStyle = flipper.pressed ? '#f2f2f2' : '#cfcfcf';
-    ctx.lineWidth = flipper.radius * 2;
+    const accent = flipper.side === 'left' ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
+
+    ctx.strokeStyle = MIAMI_COLORS.structure;
+    ctx.lineWidth = 14;
     ctx.beginPath();
     ctx.moveTo(segment.x1, segment.y1);
     ctx.lineTo(segment.x2, segment.y2);
     ctx.stroke();
 
-    ctx.fillStyle = '#999';
+    ctx.strokeStyle = flipper.pressed ? '#f1efff' : MIAMI_COLORS.lavender;
+    ctx.lineWidth = 8;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 4;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = MIAMI_COLORS.structure;
     ctx.beginPath();
-    ctx.arc(flipper.pivotX, flipper.pivotY, 6, 0, Math.PI * 2);
+    ctx.arc(flipper.pivotX, flipper.pivotY, 4, 0, Math.PI * 2);
     ctx.fill();
+
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
   }
 }
 
 function drawBall() {
-  ctx.fillStyle = '#ddd';
+  ctx.fillStyle = '#eef4ff';
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
   ctx.fill();
