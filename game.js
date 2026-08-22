@@ -23,7 +23,7 @@ const ball = {
   y: SHOOTER.ballY,
   vx: 0,
   vy: 0,
-  radius: 10,
+  radius: 8,
   ready: true
 };
 
