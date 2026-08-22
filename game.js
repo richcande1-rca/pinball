@@ -293,7 +293,7 @@ function collideWithSideBumper(bumper) {
   const dy = ball.y - closest.y;
   const distance = Math.hypot(dx, dy);
   const contactDistance = ball.radius + bumper.radius;
-  const rearmDistance = contactDistance + 18;
+  const rearmDistance = contactDistance + 36;
 
   // Once a sling fires, the ball must move clearly away from it before the
   // sling can arm again. Tiny contact/no-contact jitter in a cradle therefore
