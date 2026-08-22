@@ -23,7 +23,7 @@ const ball = {
   y: SHOOTER.ballY,
   vx: 0,
   vy: 0,
-  radius: 10,
+  radius: 8,
   ready: true
 };
 
@@ -70,6 +70,31 @@ const flippers = [makeFlipper('left'), makeFlipper('right')];
 const sideBumpers = [
   { x1: 56, y1: 553, x2: 115, y2: 602, radius: 10, kick: 65, armed: true },
   { x1: 364, y1: 553, x2: 305, y2: 602, radius: 10, kick: 65, armed: true }
+];
+
+const lowerGuides = [
+  { x1: 65, y1: 590, x2: 72, y2: 640, radius: 4 },
+  { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 }
+];
+
+const upperArchGuides = [
+  { x1: 42, y1: 174, x2: 42, y2: 104, radius: 4 },
+  { x1: 42, y1: 104, x2: 68, y2: 62, radius: 4 },
+  { x1: 68, y1: 62, x2: 126, y2: 38, radius: 4 },
+  { x1: 294, y1: 38, x2: 352, y2: 62, radius: 4 },
+  { x1: 352, y1: 62, x2: 370, y2: 82, radius: 4 },
+  { x1: 370, y1: 82, x2: 407, y2: 72, radius: 4 }
+];
+
+const upperPosts = [
+  { x1: 146, y1: 236, x2: 146, y2: 238, radius: 7 },
+  { x1: 274, y1: 236, x2: 274, y2: 238, radius: 7 },
+  { x1: 210, y1: 302, x2: 210, y2: 304, radius: 7 }
+];
+
+const midPlayfieldGuides = [
+  { x1: 86, y1: 402, x2: 122, y2: 430, radius: 4 },
+  { x1: 334, y1: 402, x2: 298, y2: 430, radius: 4 }
 ];
 
 const shooterDivider = {
@@ -250,8 +275,7 @@ function collideWithFlipper(flipper) {
   const restitution = restingImpact ? 0 : 0.38 + 0.42 * motion;
   const touching = resolveSegmentCollision(segment, surfaceVelocity, restitution);
 
-  // Let gravity move the ball freely along a held flipper. The separate
-  // cradle sleep condition below handles true rest at the sling/flipper wedge.
+  // Let gravity move the ball freely along a held flipper.
   return touching && heldStill;
 }
 
@@ -269,7 +293,7 @@ function collideWithSideBumper(bumper) {
   const dy = ball.y - closest.y;
   const distance = Math.hypot(dx, dy);
   const contactDistance = ball.radius + bumper.radius;
-  const rearmDistance = contactDistance + 8;
+  const rearmDistance = contactDistance + 36;
 
   // Once a sling fires, the ball must move clearly away from it before the
   // sling can arm again. Tiny contact/no-contact jitter in a cradle therefore
@@ -364,26 +388,28 @@ function update(dt) {
   resolveSegmentCollision(shooterDivider, { x: 0, y: 0 }, 0.86);
   resolveSegmentCollision(shooterGuide, { x: 0, y: 0 }, 0.92);
 
-  let touchingSling = false;
+  for (const guide of upperArchGuides) {
+    resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
+  }
+
+  for (const post of upperPosts) {
+    resolveSegmentCollision(post, { x: 0, y: 0 }, wallRestitution);
+  }
+
+  for (const guide of midPlayfieldGuides) {
+    resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
+  }
+
+  for (const guide of lowerGuides) {
+    resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
+  }
+
   for (const bumper of sideBumpers) {
-    touchingSling = collideWithSideBumper(bumper) || touchingSling;
+    collideWithSideBumper(bumper);
   }
 
-  let touchingHeldFlipper = false;
   for (const flipper of flippers) {
-    touchingHeldFlipper = collideWithFlipper(flipper) || touchingHeldFlipper;
-  }
-
-  // A ball settled into the wedge between a held flipper and its sling enters
-  // static resting contact. Gravity may press on it next step, but it will be
-  // returned to rest until the flipper moves or the ball leaves the cradle.
-  if (
-    touchingSling &&
-    touchingHeldFlipper &&
-    Math.hypot(ball.vx, ball.vy) < 35
-  ) {
-    ball.vx = 0;
-    ball.vy = 0;
+    collideWithFlipper(flipper);
   }
 
   // Open drain below the flippers.
@@ -392,64 +418,178 @@ function update(dt) {
   }
 }
 
+const MIAMI_COLORS = {
+  playfield: '#070b18',
+  shooterLane: '#0b1222',
+  structure: '#20283a',
+  cyan: '#22dff3',
+  magenta: '#ff3cac',
+  lavender: '#c9b8ff'
+};
+
+function drawNeonSegment(segment, accent = MIAMI_COLORS.cyan, bodyWidth = 6, accentWidth = 2) {
+  ctx.save();
+  ctx.lineCap = 'round';
+
+  ctx.strokeStyle = MIAMI_COLORS.structure;
+  ctx.lineWidth = bodyWidth;
+  ctx.beginPath();
+  ctx.moveTo(segment.x1, segment.y1);
+  ctx.lineTo(segment.x2, segment.y2);
+  ctx.stroke();
+
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = accentWidth;
+  ctx.shadowColor = accent;
+  ctx.shadowBlur = 4;
+  ctx.beginPath();
+  ctx.moveTo(segment.x1, segment.y1);
+  ctx.lineTo(segment.x2, segment.y2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawTable() {
-  ctx.strokeStyle = '#888';
-  ctx.lineWidth = 3;
+  ctx.fillStyle = MIAMI_COLORS.playfield;
+  ctx.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
+
+  ctx.fillStyle = MIAMI_COLORS.shooterLane;
+  ctx.fillRect(
+    shooterDivider.x1 + shooterDivider.radius,
+    shooterDivider.y1,
+    TABLE.right - shooterDivider.x1 - shooterDivider.radius,
+    TABLE.bottom - shooterDivider.y1
+  );
+
+  ctx.strokeStyle = MIAMI_COLORS.structure;
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(TABLE.left, TABLE.bottom);
   ctx.lineTo(TABLE.left, TABLE.top);
   ctx.lineTo(TABLE.right, TABLE.top);
   ctx.lineTo(TABLE.right, TABLE.bottom);
   ctx.stroke();
+
+  ctx.save();
+  ctx.strokeStyle = MIAMI_COLORS.cyan;
+  ctx.lineWidth = 1;
+  ctx.shadowColor = MIAMI_COLORS.cyan;
+  ctx.shadowBlur = 3;
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawShooterLane() {
-  ctx.strokeStyle = '#777';
-  ctx.lineWidth = shooterDivider.radius * 2;
-  ctx.lineCap = 'round';
-
-  ctx.beginPath();
-  ctx.moveTo(shooterDivider.x1, shooterDivider.y1);
-  ctx.lineTo(shooterDivider.x2, shooterDivider.y2);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(shooterGuide.x1, shooterGuide.y1);
-  ctx.lineTo(shooterGuide.x2, shooterGuide.y2);
-  ctx.stroke();
+  drawNeonSegment(shooterDivider, MIAMI_COLORS.cyan);
+  drawNeonSegment(shooterGuide, MIAMI_COLORS.cyan);
 }
 
 function drawPlunger() {
+  ctx.save();
   const pull = plunger.charge * plunger.maxPull;
   const tipY = plunger.topY + pull;
 
-  ctx.strokeStyle = '#aaa';
-  ctx.lineWidth = 8;
+  ctx.strokeStyle = MIAMI_COLORS.structure;
+  ctx.lineWidth = 6;
   ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(plunger.x, tipY);
   ctx.lineTo(plunger.x, Math.min(canvas.height - 8, tipY + 36));
   ctx.stroke();
 
-  ctx.strokeStyle = '#666';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = MIAMI_COLORS.cyan;
+  ctx.lineWidth = 1;
+  ctx.shadowColor = MIAMI_COLORS.cyan;
+  ctx.shadowBlur = 3;
   ctx.beginPath();
   ctx.moveTo(plunger.x - 12, plunger.topY - 2);
   ctx.lineTo(plunger.x + 12, plunger.topY - 2);
   ctx.stroke();
+  ctx.restore();
 }
 
 function drawSideBumpers() {
-  ctx.strokeStyle = '#b8b8b8';
-  ctx.lineWidth = 20;
-  ctx.lineCap = 'round';
-
   for (const bumper of sideBumpers) {
-    ctx.beginPath();
-    ctx.moveTo(bumper.x1, bumper.y1);
-    ctx.lineTo(bumper.x2, bumper.y2);
-    ctx.stroke();
+    drawNeonSegment(bumper, MIAMI_COLORS.magenta, 10, 3);
   }
+}
+
+function drawLowerGuides() {
+  for (const guide of lowerGuides) {
+    drawNeonSegment(guide);
+  }
+}
+
+function drawPassivePlayfieldGeometry() {
+  for (const guide of upperArchGuides) {
+    drawNeonSegment(guide);
+  }
+
+  for (const guide of midPlayfieldGuides) {
+    drawNeonSegment(guide, MIAMI_COLORS.magenta);
+  }
+
+  for (const [index, post] of upperPosts.entries()) {
+    const accent = index === 0
+      ? MIAMI_COLORS.cyan
+      : index === 1
+        ? MIAMI_COLORS.magenta
+        : MIAMI_COLORS.lavender;
+
+    ctx.fillStyle = MIAMI_COLORS.structure;
+    ctx.beginPath();
+    ctx.arc(post.x1, (post.y1 + post.y2) / 2, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 3;
+    ctx.stroke();
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.arc(post.x1, (post.y1 + post.y2) / 2, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawLowerApron() {
+  ctx.fillStyle = '#0b1020';
+  ctx.strokeStyle = '#28314b';
+  ctx.lineWidth = 1.5;
+
+  ctx.beginPath();
+  ctx.moveTo(24, 670);
+  ctx.lineTo(164, 670);
+  ctx.lineTo(190, 696);
+  ctx.lineTo(24, 696);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(396, 670);
+  ctx.lineTo(256, 670);
+  ctx.lineTo(230, 696);
+  ctx.lineTo(396, 696);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.save();
+  ctx.strokeStyle = MIAMI_COLORS.magenta;
+  ctx.lineWidth = 1;
+  ctx.shadowColor = MIAMI_COLORS.magenta;
+  ctx.shadowBlur = 3;
+  ctx.beginPath();
+  ctx.moveTo(32, 666);
+  ctx.lineTo(62, 666);
+  ctx.moveTo(358, 666);
+  ctx.lineTo(388, 666);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawFlippers() {
@@ -457,22 +597,40 @@ function drawFlippers() {
 
   for (const flipper of flippers) {
     const segment = getFlipperSegment(flipper);
-    ctx.strokeStyle = flipper.pressed ? '#f2f2f2' : '#cfcfcf';
-    ctx.lineWidth = flipper.radius * 2;
+    const accent = flipper.side === 'left' ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
+
+    ctx.strokeStyle = MIAMI_COLORS.structure;
+    ctx.lineWidth = 14;
     ctx.beginPath();
     ctx.moveTo(segment.x1, segment.y1);
     ctx.lineTo(segment.x2, segment.y2);
     ctx.stroke();
 
-    ctx.fillStyle = '#999';
+    ctx.strokeStyle = flipper.pressed ? '#f1efff' : MIAMI_COLORS.lavender;
+    ctx.lineWidth = 8;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 4;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = MIAMI_COLORS.structure;
     ctx.beginPath();
-    ctx.arc(flipper.pivotX, flipper.pivotY, 6, 0, Math.PI * 2);
+    ctx.arc(flipper.pivotX, flipper.pivotY, 4, 0, Math.PI * 2);
     ctx.fill();
+
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
   }
 }
 
 function drawBall() {
-  ctx.fillStyle = '#ddd';
+  ctx.fillStyle = '#eef4ff';
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
   ctx.fill();
@@ -482,8 +640,11 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawTable();
   drawShooterLane();
+  drawPassivePlayfieldGeometry();
   drawPlunger();
   drawSideBumpers();
+  drawLowerGuides();
+  drawLowerApron();
   drawFlippers();
   drawBall();
 }
@@ -579,5 +740,6 @@ canvas.addEventListener('pointerleave', (event) => {
     releasePointer();
   }
 });
+window.addEventListener('blur', releasePointer);
 
 requestAnimationFrame(frame);
