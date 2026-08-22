@@ -1,7 +1,7 @@
 html {
   color-scheme: dark;
   font-family: system-ui, sans-serif;
-  background: #111;
+  background: #040711;
 }
 
 body {
@@ -21,8 +21,18 @@ body {
 
 h1 {
   margin: 0 0 0.75rem;
-  letter-spacing: 0.18em;
+  color: #22dff3;
+  letter-spacing: 0.24em;
   font-size: 1.5rem;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(34, 223, 243, 0.58);
+}
+
+h1 span {
+  color: #ff3cac;
+  font-style: italic;
+  font-weight: 500;
+  text-shadow: 0 0 8px rgba(255, 60, 172, 0.58);
 }
 
 canvas {
@@ -33,15 +43,18 @@ canvas {
   max-height: calc(100vh - 120px);
   max-height: calc(100svh - 120px);
   margin: 0 auto;
-  background: #181818;
-  border: 2px solid #777;
+  background: #070b18;
+  border: 1px solid #20283a;
+  box-shadow:
+    0 0 0 1px rgba(34, 223, 243, 0.3),
+    0 12px 30px rgba(0, 0, 0, 0.55);
   box-sizing: border-box;
   touch-action: manipulation;
 }
 
 p {
   margin: 0.75rem 0 0;
-  color: #bbb;
+  color: #a8b4d4;
   font-size: 0.9rem;
 }
 
