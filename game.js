@@ -83,7 +83,7 @@ const upperArchGuides = [
   { x1: 68, y1: 62, x2: 126, y2: 38, radius: 4 },
   { x1: 294, y1: 38, x2: 352, y2: 62, radius: 4 },
   { x1: 352, y1: 62, x2: 370, y2: 82, radius: 4 },
-  { x1: 378, y1: 150, x2: 378, y2: 174, radius: 4 }
+  { x1: 370, y1: 82, x2: 374, y2: 92, radius: 4 }
 ];
 
 const upperPosts = [
