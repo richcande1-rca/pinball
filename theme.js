@@ -1,45 +1,21 @@
 // Miami Nights visual layer only. No gameplay or collision logic lives here.
 
+const miamiArtwork = new Image();
+miamiArtwork.src = 'assets/miami-sunset.jpg?v=20260823-1401';
+miamiArtwork.onload = () => draw();
+
 function drawMiamiArtwork() {
-  ctx.save();
-  ctx.globalAlpha = 0.32;
-
-  const sunset = ctx.createLinearGradient(0, 300, 0, 402);
-  sunset.addColorStop(0, MIAMI_COLORS.magenta);
-  sunset.addColorStop(0.58, '#ff6f91');
-  sunset.addColorStop(1, MIAMI_COLORS.lavender);
-  ctx.fillStyle = sunset;
-  ctx.beginPath();
-  ctx.arc(PLAYFIELD_CENTER, 350, 52, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.globalCompositeOperation = 'destination-out';
-  for (let y = 354; y <= 394; y += 8) {
-    ctx.fillRect(PLAYFIELD_CENTER - 54, y, 108, 3);
+  if (miamiArtwork.complete && miamiArtwork.naturalWidth) {
+    const artworkWidth = 220;
+    const artworkHeight = artworkWidth * miamiArtwork.naturalHeight / miamiArtwork.naturalWidth;
+    ctx.drawImage(
+      miamiArtwork,
+      PLAYFIELD_CENTER - artworkWidth / 2,
+      350 - artworkHeight / 2,
+      artworkWidth,
+      artworkHeight
+    );
   }
-  ctx.globalCompositeOperation = 'source-over';
-
-  ctx.fillStyle = '#050916';
-  ctx.strokeStyle = '#050916';
-  ctx.lineCap = 'round';
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(PLAYFIELD_CENTER - 4, 392);
-  ctx.quadraticCurveTo(PLAYFIELD_CENTER - 15, 350, PLAYFIELD_CENTER - 8, 320);
-  ctx.stroke();
-
-  const crownX = PLAYFIELD_CENTER - 8;
-  const crownY = 320;
-  for (const [dx, dy, bend] of [
-    [-34, -8, -18], [-29, 9, -17], [-17, -22, -10],
-    [18, -25, 10], [34, -10, 18], [29, 10, 18]
-  ]) {
-    ctx.beginPath();
-    ctx.moveTo(crownX, crownY);
-    ctx.quadraticCurveTo(crownX + bend, crownY - 12, crownX + dx, crownY + dy);
-    ctx.stroke();
-  }
-  ctx.restore();
 
   ctx.save();
   ctx.textAlign = 'center';
