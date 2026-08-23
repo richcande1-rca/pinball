@@ -11,9 +11,72 @@ const miamiEffects = {
   flipperFlashStartedAt: flippers.map(() => -Infinity),
   previousPlungerCharge: plunger.charge,
   plungerLaunchFlashStartedAt: -Infinity,
+  previousBallVelocity: { x: ball.vx, y: ball.vy },
+  passiveImpactTimes: new Map(),
   ballTrail: [],
   lastTrailSampleAt: -Infinity
 };
+
+const passiveImpactSurfaces = [
+  ...upperArchGuides.map((surface, index) => ({ surface, type: 'upper-arch-guide', index })),
+  ...upperPosts.map((surface, index) => ({ surface, type: 'post', index })),
+  ...midPlayfieldGuides.map((surface, index) => ({ surface, type: 'mid-guide', index })),
+  ...lowerGuides.map((surface, index) => ({ surface, type: 'lower-guide', index })),
+  { surface: shooterDivider, type: 'shooter-divider', index: 0 },
+  { surface: shooterGuide, type: 'shooter-guide', index: 0 }
+];
+
+function notifyPassiveImpact(type, strength, x, y, index, now) {
+  const key = `${type}-${index}`;
+  if (now - (miamiEffects.passiveImpactTimes.get(key) || -Infinity) < 85) return;
+
+  miamiEffects.passiveImpactTimes.set(key, now);
+  window.dispatchEvent(new CustomEvent('miami-impact', {
+    detail: { type, strength, x, y, index }
+  }));
+}
+
+function detectPassiveImpact(now) {
+  const previous = miamiEffects.previousBallVelocity;
+  const velocityChange = Math.hypot(ball.vx - previous.x, ball.vy - previous.y);
+  miamiEffects.previousBallVelocity = { x: ball.vx, y: ball.vy };
+
+  if (ball.ready || velocityChange < 35) return;
+
+  let nearest = null;
+  for (const candidate of passiveImpactSurfaces) {
+    const point = closestPointOnSegment(
+      ball.x, ball.y,
+      candidate.surface.x1, candidate.surface.y1,
+      candidate.surface.x2, candidate.surface.y2
+    );
+    const distance = Math.hypot(ball.x - point.x, ball.y - point.y);
+    const contactDistance = ball.radius + candidate.surface.radius + 3;
+    if (distance <= contactDistance && (!nearest || distance < nearest.distance)) {
+      nearest = { ...candidate, point, distance };
+    }
+  }
+
+  if (nearest) {
+    notifyPassiveImpact(
+      nearest.type,
+      clamp(velocityChange / 650, 0.08, 1),
+      nearest.point.x,
+      nearest.point.y,
+      nearest.index,
+      now
+    );
+    return;
+  }
+
+  const wallContact =
+    ball.x - ball.radius <= TABLE.left + 2 ||
+    ball.x + ball.radius >= TABLE.right - 2 ||
+    ball.y - ball.radius <= TABLE.top + 2;
+  if (wallContact) {
+    notifyPassiveImpact('outer-wall', clamp(velocityChange / 650, 0.08, 1), ball.x, ball.y, 0, now);
+  }
+}
 
 function getArtworkBounds() {
   const width = 220;
@@ -84,6 +147,7 @@ function drawMiamiArtwork() {
 }
 
 function updateEffectTriggers(now) {
+  detectPassiveImpact(now);
   sideBumpers.forEach((bumper, index) => {
     if (miamiEffects.previousSlingArmed[index] && !bumper.armed) {
       miamiEffects.slingFlashStartedAt[index] = now;
