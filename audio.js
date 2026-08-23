@@ -7,7 +7,6 @@
   let chargeVoice = null;
 
   const audioState = {
-    flippers: flippers.map(flipper => flipper.pressed),
     slings: sideBumpers.map(bumper => bumper.armed),
     charge: plunger.charge,
     ready: ball.ready,
@@ -144,11 +143,6 @@
   }
 
   function observeAudioEvents() {
-    flippers.forEach((flipper, index) => {
-      if (flipper.pressed && !audioState.flippers[index]) playFlipper(index);
-      audioState.flippers[index] = flipper.pressed;
-    });
-
     sideBumpers.forEach((bumper, index) => {
       if (audioState.slings[index] && !bumper.armed) playSling(index);
       audioState.slings[index] = bumper.armed;
@@ -189,6 +183,7 @@
     if (event.code === 'KeyR') audioState.manualResetPending = true;
   }, { passive: true });
   window.addEventListener('pointerdown', activateAudio, { passive: true });
+  window.addEventListener('miami-flipper', event => playFlipper(event.detail.index));
   window.addEventListener('miami-impact', event => playImpact(event.detail));
   requestAnimationFrame(observeAudioEvents);
 })();

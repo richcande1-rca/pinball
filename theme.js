@@ -158,6 +158,9 @@ function updateEffectTriggers(now) {
   flippers.forEach((flipper, index) => {
     if (flipper.pressed && !miamiEffects.previousFlipperPressed[index]) {
       miamiEffects.flipperFlashStartedAt[index] = now;
+      window.dispatchEvent(new CustomEvent('miami-flipper', {
+        detail: { index, side: flipper.side }
+      }));
     }
     miamiEffects.previousFlipperPressed[index] = flipper.pressed;
   });
