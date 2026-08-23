@@ -1,7 +1,8 @@
 // Miami Nights visual layer only. No gameplay or collision logic lives here.
 
 const miamiArtwork = new Image();
-miamiArtwork.src = 'assets/miami-sunset.jpg';
+miamiArtwork.src = 'assets/miami-sunset.jpg?v=20260823-1401';
+miamiArtwork.onload = () => draw();
 
 function drawMiamiArtwork() {
   if (miamiArtwork.complete && miamiArtwork.naturalWidth) {
