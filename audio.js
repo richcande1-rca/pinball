@@ -76,8 +76,8 @@
   }
 
   function playFlipper(index) {
-    tone(index ? 155 : 140, 0.32, 0.055, { type: 'triangle', endFrequency: 85 });
-    noise(0.16, 0.035, index ? 1450 : 1250);
+    tone(index ? 125 : 115, 0.36, 0.05, { type: 'triangle', endFrequency: 72 });
+    noise(0.4, 0.04, index ? 1900 : 1750);
   }
 
   function playSling(index) {
