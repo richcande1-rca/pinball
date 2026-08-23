@@ -355,7 +355,6 @@ drawLowerApron = function drawMiamiLowerApron() {
 
 draw = function drawMiamiNightsFrame() {
   const now = performance.now();
-  const neonBrightness = 0.97 + 0.06 * (0.5 + 0.5 * Math.sin(now / 800));
 
   updateEffectTriggers(now);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -364,8 +363,6 @@ draw = function drawMiamiNightsFrame() {
   drawSunsetGlow(now);
   drawMiamiArtwork();
 
-  ctx.save();
-  ctx.filter = `brightness(${neonBrightness})`;
   drawDecorativeDisplays();
   drawShooterLane();
   drawPassivePlayfieldGeometry();
@@ -374,7 +371,6 @@ draw = function drawMiamiNightsFrame() {
   drawLowerGuides();
   drawLowerApron();
   drawFlippers();
-  ctx.restore();
 
   drawSlingFlashes(now);
   drawFlipperFlashes(now);
