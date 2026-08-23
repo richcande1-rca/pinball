@@ -9,6 +9,8 @@ const miamiEffects = {
   slingFlashStartedAt: sideBumpers.map(() => -Infinity),
   previousFlipperPressed: flippers.map(flipper => flipper.pressed),
   flipperFlashStartedAt: flippers.map(() => -Infinity),
+  previousPlungerCharge: plunger.charge,
+  plungerLaunchFlashStartedAt: -Infinity,
   ballTrail: [],
   lastTrailSampleAt: -Infinity
 };
@@ -36,35 +38,15 @@ function drawSunsetGlow(now) {
   const pulse = 0.5 + 0.5 * Math.sin(now / 2700);
   const centerX = bounds.x + bounds.width / 2;
   const centerY = bounds.y + bounds.height / 2;
-  const radius = Math.max(bounds.width, bounds.height) * 0.64;
+  const radius = Math.max(bounds.width, bounds.height) * 0.76;
   const glow = ctx.createRadialGradient(centerX, centerY, 12, centerX, centerY, radius);
-  glow.addColorStop(0, `rgba(255, 60, 172, ${0.07 + pulse * 0.025})`);
-  glow.addColorStop(0.55, `rgba(151, 66, 255, ${0.045 + pulse * 0.02})`);
+  glow.addColorStop(0, `rgba(255, 60, 172, ${0.14 + pulse * 0.05})`);
+  glow.addColorStop(0.55, `rgba(151, 66, 255, ${0.09 + pulse * 0.04})`);
   glow.addColorStop(1, 'rgba(151, 66, 255, 0)');
 
   ctx.save();
   ctx.fillStyle = glow;
-  ctx.fillRect(bounds.x - 22, bounds.y - 22, bounds.width + 44, bounds.height + 44);
-  ctx.restore();
-}
-
-function drawPlayfieldSweep(now) {
-  const cycle = 9000;
-  const progress = (now % cycle) / cycle;
-  const sweepX = TABLE.left - 70 + progress * (TABLE.right - TABLE.left + 140);
-  const opacity = Math.sin(progress * Math.PI) * 0.045;
-  const gradient = ctx.createLinearGradient(sweepX - 38, 0, sweepX + 38, 0);
-  gradient.addColorStop(0, 'rgba(126, 231, 255, 0)');
-  gradient.addColorStop(0.5, `rgba(126, 231, 255, ${opacity})`);
-  gradient.addColorStop(1, 'rgba(126, 231, 255, 0)');
-
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
-  ctx.clip();
-  ctx.transform(1, 0, -0.12, 1, 44, 0);
-  ctx.fillStyle = gradient;
-  ctx.fillRect(sweepX - 38, TABLE.top, 76, TABLE.bottom - TABLE.top);
+  ctx.fillRect(bounds.x - 34, bounds.y - 34, bounds.width + 68, bounds.height + 68);
   ctx.restore();
 }
 
@@ -115,6 +97,11 @@ function updateEffectTriggers(now) {
     }
     miamiEffects.previousFlipperPressed[index] = flipper.pressed;
   });
+
+  if (miamiEffects.previousPlungerCharge > 0 && plunger.charge === 0 && !ball.ready) {
+    miamiEffects.plungerLaunchFlashStartedAt = now;
+  }
+  miamiEffects.previousPlungerCharge = plunger.charge;
 }
 
 function drawSlingFlashes(now) {
@@ -123,16 +110,37 @@ function drawSlingFlashes(now) {
     if (strength <= 0 || strength > 1) return;
 
     ctx.save();
-    ctx.globalAlpha = strength * 0.65;
-    ctx.strokeStyle = '#ff5bc4';
+    ctx.globalAlpha = strength * 0.48;
+    ctx.strokeStyle = '#ff20a8';
     ctx.shadowColor = '#ff3cac';
-    ctx.shadowBlur = 16;
-    ctx.lineWidth = 6;
+    ctx.shadowBlur = 28;
+    ctx.lineWidth = 18;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(bumper.x1, bumper.y1);
     ctx.lineTo(bumper.x2, bumper.y2);
     ctx.stroke();
+
+    ctx.globalAlpha = strength * 0.9;
+    ctx.strokeStyle = '#ff4fbd';
+    ctx.shadowBlur = 18;
+    ctx.lineWidth = 9;
+    ctx.stroke();
+
+    ctx.globalAlpha = strength;
+    ctx.strokeStyle = '#fff2fc';
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 10;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.globalAlpha = strength * 0.75;
+    ctx.fillStyle = '#fff2fc';
+    for (const endpoint of [{ x: bumper.x1, y: bumper.y1 }, { x: bumper.x2, y: bumper.y2 }]) {
+      ctx.beginPath();
+      ctx.arc(endpoint.x, endpoint.y, 5 + strength * 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   });
 }
@@ -145,15 +153,28 @@ function drawFlipperFlashes(now) {
     const segment = getFlipperSegment(flipper);
     const accent = flipper.side === 'left' ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
     ctx.save();
-    ctx.globalAlpha = strength * 0.55;
+    ctx.globalAlpha = strength * 0.65;
     ctx.strokeStyle = accent;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = 18;
-    ctx.lineWidth = 10;
+    ctx.shadowBlur = 26;
+    ctx.lineWidth = 18;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(segment.x1, segment.y1);
     ctx.lineTo(segment.x2, segment.y2);
+    ctx.stroke();
+
+    ctx.globalAlpha = strength;
+    ctx.strokeStyle = '#f4ffff';
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.globalAlpha = strength * 0.85;
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(flipper.pivotX, flipper.pivotY, 12 + (1 - strength) * 10, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   });
@@ -162,13 +183,40 @@ function drawFlipperFlashes(now) {
 function drawPlungerChargeGlow() {
   if (plunger.charge <= 0) return;
 
+  const stripHeight = 24 + plunger.charge * 130;
   ctx.save();
-  ctx.globalAlpha = 0.12 + plunger.charge * 0.22;
+  ctx.globalAlpha = 0.32 + plunger.charge * 0.55;
   ctx.strokeStyle = MIAMI_COLORS.cyan;
   ctx.shadowColor = MIAMI_COLORS.cyan;
-  ctx.shadowBlur = 8 + plunger.charge * 14;
-  ctx.lineWidth = 2 + plunger.charge * 2;
+  ctx.shadowBlur = 16 + plunger.charge * 24;
+  ctx.lineWidth = 3 + plunger.charge * 4;
   ctx.strokeRect(shooterDivider.x1 + 9, plunger.topY - 16, TABLE.right - shooterDivider.x1 - 18, 42);
+
+  ctx.globalAlpha = 0.28 + plunger.charge * 0.62;
+  ctx.fillStyle = MIAMI_COLORS.cyan;
+  ctx.shadowBlur = 12 + plunger.charge * 20;
+  ctx.fillRect(plunger.x - 4, plunger.topY - stripHeight, 8, stripHeight - 12);
+  ctx.fillStyle = '#efffff';
+  ctx.fillRect(plunger.x - 1.5, plunger.topY - stripHeight, 3, stripHeight - 12);
+  ctx.restore();
+}
+
+function drawPlungerLaunchFlash(now) {
+  const strength = 1 - (now - miamiEffects.plungerLaunchFlashStartedAt) / 130;
+  if (strength <= 0 || strength > 1) return;
+
+  ctx.save();
+  ctx.globalAlpha = strength * 0.8;
+  ctx.fillStyle = MIAMI_COLORS.cyan;
+  ctx.shadowColor = MIAMI_COLORS.cyan;
+  ctx.shadowBlur = 30;
+  ctx.fillRect(plunger.x - 10, plunger.topY - 155, 20, 145);
+  ctx.globalAlpha = strength;
+  ctx.fillStyle = '#f2ffff';
+  ctx.fillRect(plunger.x - 2, plunger.topY - 155, 4, 145);
+  ctx.beginPath();
+  ctx.arc(plunger.x, plunger.topY - 4, 10 + (1 - strength) * 12, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -181,22 +229,23 @@ function drawBallTrail(now) {
     trail.length = 0;
   }
 
-  if (speed > 300 && now - miamiEffects.lastTrailSampleAt >= 28) {
+  if (speed > 320 && now - miamiEffects.lastTrailSampleAt >= 24) {
     trail.push({ x: ball.x, y: ball.y, time: now });
     miamiEffects.lastTrailSampleAt = now;
-    if (trail.length > 6) trail.shift();
+    if (trail.length > 8) trail.shift();
   }
 
-  while (trail.length && (now - trail[0].time > 160 || speed <= 300)) {
+  while (trail.length && (now - trail[0].time > 210 || speed <= 320)) {
     trail.shift();
   }
 
   ctx.save();
   for (let index = 0; index < trail.length; index += 1) {
     const sample = trail[index];
-    const age = (now - sample.time) / 160;
-    const opacity = Math.max(0, 1 - age) * (index + 1) / trail.length * 0.22;
-    ctx.fillStyle = `rgba(190, 244, 255, ${opacity})`;
+    const age = (now - sample.time) / 210;
+    const speedStrength = Math.min(1, (speed - 320) / 500);
+    const opacity = Math.max(0, 1 - age) * (index + 1) / trail.length * (0.28 + speedStrength * 0.32);
+    ctx.fillStyle = `rgba(220, 252, 255, ${opacity})`;
     ctx.beginPath();
     ctx.arc(sample.x, sample.y, ball.radius * (0.3 + index * 0.06), 0, Math.PI * 2);
     ctx.fill();
@@ -204,7 +253,7 @@ function drawBallTrail(now) {
   ctx.restore();
 }
 
-function drawDecorativeDisplays() {
+function drawDecorativeDisplays(now) {
   ctx.save();
   ctx.fillStyle = 'rgba(5, 10, 25, 0.84)';
   ctx.strokeStyle = 'rgba(34, 223, 243, 0.58)';
@@ -231,19 +280,26 @@ function drawDecorativeDisplays() {
     { x: 210, y: 520, color: MIAMI_COLORS.lavender }
   ];
 
-  for (const insert of inserts) {
+  inserts.forEach((insert, index) => {
+    const pulse = 0.5 + 0.5 * Math.sin(now / 900 + index * 2.1);
     ctx.save();
+    ctx.globalAlpha = 0.45 + pulse * 0.5;
     ctx.strokeStyle = insert.color;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.5 + pulse * 1.5;
     ctx.shadowColor = insert.color;
-    ctx.shadowBlur = 4;
+    ctx.shadowBlur = 7 + pulse * 9;
     ctx.beginPath();
     ctx.arc(insert.x, insert.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = insert.color;
+    ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = 'rgba(7, 11, 24, 0.8)';
+    ctx.globalAlpha = 0.5 + pulse * 0.5;
+    ctx.fillStyle = '#f4ffff';
+    ctx.beginPath();
+    ctx.arc(insert.x, insert.y, 1.5 + pulse, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
-  }
+  });
 }
 
 drawTable = function drawMiamiTable() {
@@ -359,11 +415,10 @@ draw = function drawMiamiNightsFrame() {
   updateEffectTriggers(now);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawTable();
-  drawPlayfieldSweep(now);
   drawSunsetGlow(now);
   drawMiamiArtwork();
 
-  drawDecorativeDisplays();
+  drawDecorativeDisplays(now);
   drawShooterLane();
   drawPassivePlayfieldGeometry();
   drawPlunger();
@@ -375,6 +430,7 @@ draw = function drawMiamiNightsFrame() {
   drawSlingFlashes(now);
   drawFlipperFlashes(now);
   drawPlungerChargeGlow();
+  drawPlungerLaunchFlash(now);
   drawBallTrail(now);
   drawBall();
 };
