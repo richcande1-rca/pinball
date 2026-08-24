@@ -5,6 +5,14 @@
   let masterGain = null;
   let noiseBuffer = null;
   let chargeVoice = null;
+  let introMusicGain = null;
+  let gameplayMusicGain = null;
+  let gameplayMusicTimer = null;
+  let themeStarted = false;
+
+  const THEME_TEMPO = 112;
+  const THEME_BEAT = 60 / THEME_TEMPO;
+  const THEME_BAR = THEME_BEAT * 4;
 
   const audioState = {
     slings: sideBumpers.map(bumper => bumper.armed),
@@ -25,6 +33,14 @@
       masterGain = audioContext.createGain();
       masterGain.gain.value = 0.3;
       masterGain.connect(audioContext.destination);
+
+      introMusicGain = audioContext.createGain();
+      introMusicGain.gain.value = 0.0001;
+      introMusicGain.connect(masterGain);
+
+      gameplayMusicGain = audioContext.createGain();
+      gameplayMusicGain.gain.value = 0.18;
+      gameplayMusicGain.connect(masterGain);
 
       noiseBuffer = audioContext.createBuffer(1, Math.round(audioContext.sampleRate * 0.12), audioContext.sampleRate);
       const samples = noiseBuffer.getChannelData(0);
@@ -72,6 +88,225 @@
     source.connect(filter).connect(gain).connect(masterGain);
     source.start(now);
     source.stop(now + duration + 0.01);
+  }
+
+  function midiToFrequency(note) {
+    return 440 * 2 ** ((note - 69) / 12);
+  }
+
+  function scheduleMusicTone(note, when, duration, peak, destination, options = {}) {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const attack = Math.min(options.attack || 0.012, duration * 0.25);
+    const release = Math.min(options.release || 0.08, duration * 0.45);
+    const frequency = midiToFrequency(note);
+
+    oscillator.type = options.type || 'triangle';
+    oscillator.frequency.setValueAtTime(frequency, when);
+    if (options.endNote !== undefined) {
+      oscillator.frequency.exponentialRampToValueAtTime(
+        midiToFrequency(options.endNote),
+        when + duration
+      );
+    }
+
+    gain.gain.setValueAtTime(0.0001, when);
+    gain.gain.exponentialRampToValueAtTime(peak, when + attack);
+    gain.gain.setValueAtTime(peak * 0.78, Math.max(when + attack, when + duration - release));
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+
+    if (options.filterFrequency) {
+      const filter = audioContext.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = options.filterFrequency;
+      filter.Q.value = options.filterQ || 0.7;
+      oscillator.connect(filter).connect(gain);
+    } else {
+      oscillator.connect(gain);
+    }
+
+    gain.connect(destination);
+    oscillator.start(when);
+    oscillator.stop(when + duration + 0.02);
+  }
+
+  function scheduleMusicNoise(when, duration, peak, frequency, destination, type = 'bandpass') {
+    const source = audioContext.createBufferSource();
+    const filter = audioContext.createBiquadFilter();
+    const gain = audioContext.createGain();
+    source.buffer = noiseBuffer;
+    filter.type = type;
+    filter.frequency.value = frequency;
+    filter.Q.value = type === 'bandpass' ? 0.9 : 0.5;
+    gain.gain.setValueAtTime(0.0001, when);
+    gain.gain.exponentialRampToValueAtTime(peak, when + 0.002);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+    source.connect(filter).connect(gain).connect(destination);
+    source.start(when);
+    source.stop(when + duration + 0.01);
+  }
+
+  function scheduleDrums(start, bars, destination, level = 1) {
+    for (let step = 0; step < bars * 8; step += 1) {
+      const when = start + step * THEME_BEAT / 2;
+      scheduleMusicNoise(when, 0.025, 0.035 * level, 6900, destination, 'highpass');
+
+      if (step % 2 === 0) {
+        scheduleMusicTone(40, when, 0.13, 0.15 * level, destination, {
+          type: 'sine',
+          endNote: 28,
+          attack: 0.003,
+          release: 0.09
+        });
+      }
+
+      if (step % 8 === 2 || step % 8 === 6) {
+        scheduleMusicNoise(when, 0.09, 0.105 * level, 1850, destination);
+        scheduleMusicTone(43, when, 0.07, 0.035 * level, destination, {
+          type: 'triangle',
+          endNote: 38,
+          attack: 0.002,
+          release: 0.05
+        });
+      }
+    }
+  }
+
+  function scheduleBass(start, roots, destination, level = 1) {
+    const pattern = [0, 0, 12, 0, 7, 0, 12, 7];
+    roots.forEach((root, barIndex) => {
+      pattern.forEach((offset, step) => {
+        scheduleMusicTone(
+          root + offset,
+          start + barIndex * THEME_BAR + step * THEME_BEAT / 2,
+          THEME_BEAT * 0.38,
+          0.115 * level,
+          destination,
+          { type: 'sawtooth', filterFrequency: 390, filterQ: 1.3, release: 0.07 }
+        );
+      });
+    });
+  }
+
+  function schedulePads(start, chords, destination, level = 1) {
+    chords.forEach((chord, barIndex) => {
+      chord.forEach(note => {
+        scheduleMusicTone(
+          note,
+          start + barIndex * THEME_BAR,
+          THEME_BAR * 0.94,
+          0.028 * level,
+          destination,
+          { type: 'sawtooth', filterFrequency: 1050, attack: 0.16, release: 0.35 }
+        );
+      });
+    });
+  }
+
+  function scheduleLead(start, destination) {
+    const melody = [
+      [64, null, 67, 71, 74, 71, 67, null],
+      [64, 67, 72, 71, 67, 64, null, 67],
+      [69, null, 72, 76, 74, 72, 69, null],
+      [71, 74, 78, 76, 74, 71, null, 66],
+      [76, null, 74, 71, 67, 71, 74, null],
+      [74, 71, 69, 66, 69, 71, 74, null],
+      [72, null, 71, 67, 64, 67, 71, 72],
+      [71, 78, 76, 74, 71, 66, 71, null]
+    ];
+
+    melody.forEach((bar, barIndex) => {
+      bar.forEach((note, step) => {
+        if (note === null) return;
+        const when = start + barIndex * THEME_BAR + step * THEME_BEAT / 2;
+        scheduleMusicTone(note, when, THEME_BEAT * 0.42, 0.072, destination, {
+          type: 'square',
+          filterFrequency: 2150,
+          filterQ: 1.1,
+          release: 0.1
+        });
+        scheduleMusicTone(note - 12, when + 0.12, THEME_BEAT * 0.3, 0.018, destination, {
+          type: 'triangle',
+          filterFrequency: 1600,
+          release: 0.08
+        });
+      });
+    });
+  }
+
+  function scheduleThemeIntro(start) {
+    const roots = [40, 36, 33, 35, 40, 38, 36, 35];
+    const chords = [
+      [52, 55, 59],
+      [48, 52, 55],
+      [45, 48, 52],
+      [47, 50, 54],
+      [52, 55, 59],
+      [50, 54, 57],
+      [48, 52, 55],
+      [47, 51, 54]
+    ];
+
+    scheduleDrums(start, 8, introMusicGain);
+    scheduleBass(start, roots, introMusicGain);
+    schedulePads(start, chords, introMusicGain);
+    scheduleLead(start, introMusicGain);
+
+    [47, 50, 54, 59].forEach((note, index) => {
+      scheduleMusicTone(
+        note,
+        start + THEME_BAR * 7 + THEME_BEAT * (2.75 + index * 0.25),
+        THEME_BEAT * 0.48,
+        0.08,
+        introMusicGain,
+        { type: 'sawtooth', filterFrequency: 1400, release: 0.12 }
+      );
+    });
+  }
+
+  function scheduleGameplayPattern(start) {
+    scheduleDrums(start, 4, gameplayMusicGain, 0.55);
+    scheduleBass(start, [40, 36, 38, 35], gameplayMusicGain, 0.55);
+    schedulePads(start, [
+      [52, 55, 59],
+      [48, 52, 55],
+      [50, 54, 57],
+      [47, 51, 54]
+    ], gameplayMusicGain, 0.5);
+  }
+
+  function startThemeIntro() {
+    activateAudio();
+    if (!audioContext || themeStarted) return;
+    themeStarted = true;
+    const start = audioContext.currentTime + 0.06;
+    introMusicGain.gain.cancelScheduledValues(start);
+    introMusicGain.gain.setValueAtTime(0.0001, start);
+    introMusicGain.gain.exponentialRampToValueAtTime(0.62, start + 0.12);
+    scheduleThemeIntro(start);
+  }
+
+  function startGameplayMusic() {
+    if (!audioContext || gameplayMusicTimer !== null) return;
+
+    function scheduleNextLoop() {
+      scheduleGameplayPattern(audioContext.currentTime + 0.05);
+      gameplayMusicTimer = window.setTimeout(
+        scheduleNextLoop,
+        (THEME_BAR * 4 - 0.1) * 1000
+      );
+    }
+
+    scheduleNextLoop();
+  }
+
+  function endThemeIntro() {
+    if (!audioContext) return;
+    const now = audioContext.currentTime;
+    introMusicGain.gain.cancelScheduledValues(now);
+    introMusicGain.gain.setValueAtTime(Math.max(0.0001, introMusicGain.gain.value), now);
+    introMusicGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+    startGameplayMusic();
   }
 
   function playFlipper(index) {
@@ -183,6 +418,8 @@
     if (event.code === 'KeyR') audioState.manualResetPending = true;
   }, { passive: true });
   window.addEventListener('pointerdown', activateAudio, { passive: true });
+  window.addEventListener('miami-intro-start', startThemeIntro);
+  window.addEventListener('miami-intro-end', endThemeIntro);
   window.addEventListener('miami-flipper', event => playFlipper(event.detail.index));
   window.addEventListener('miami-impact', event => playImpact(event.detail));
   requestAnimationFrame(observeAudioEvents);

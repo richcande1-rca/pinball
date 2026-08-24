@@ -4,9 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Miami Nights Pinball</title>
-  <link rel="stylesheet" href="style.css?v=20260822-0852">
+  <link rel="stylesheet" href="style.css?v=20260823-1910">
 </head>
 <body>
+  <section id="intro-screen" class="intro-screen" aria-label="Miami Nights title screen">
+    <div class="intro-scanlines" aria-hidden="true"></div>
+    <div class="intro-panel">
+      <p class="intro-kicker">A NEON PINBALL STORY</p>
+      <h2><span>MIAMI</span> NIGHTS</h2>
+      <p id="intro-status" class="intro-status">Turn up the sound</p>
+      <button id="intro-start" class="intro-button" type="button">START</button>
+      <button id="intro-skip" class="intro-skip" type="button" hidden>SKIP INTRO</button>
+    </div>
+  </section>
+
   <main class="game-shell">
     <h1><span>MIAMI</span> NIGHTS</h1>
     <canvas id="game" width="480" height="720" aria-label="Playable Miami Nights pinball table"></canvas>
@@ -14,12 +25,13 @@
       Flippers: <kbd>←</kbd>/<kbd>Z</kbd> and <kbd>→</kbd>/<kbd>X</kbd>.
       Plunger: hold <kbd>Space</kbd>, release to launch. Reset: <kbd>R</kbd>.
       On touch, press the left or right half of the table for the flippers.
-      Build 20260823-1845.
+      Build 20260823-1910.
     </p>
   </main>
 
-  <script src="game.js?v=20260822-0730"></script>
+  <script src="intro.js?v=20260823-1910"></script>
+  <script src="game.js?v=20260823-1910"></script>
   <script src="theme.js?v=20260823-1845"></script>
-  <script src="audio.js?v=20260823-1845"></script>
+  <script src="audio.js?v=20260823-1910"></script>
 </body>
 </html>

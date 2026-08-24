@@ -657,6 +657,13 @@ function frame(now) {
   let frameTime = (now - previousTime) / 1000;
   previousTime = now;
 
+  if (window.miamiGameStarted === false) {
+    accumulator = 0;
+    draw();
+    requestAnimationFrame(frame);
+    return;
+  }
+
   // Avoid giant physics jumps after the tab has been inactive.
   frameTime = Math.min(frameTime, 0.05);
   accumulator += frameTime;

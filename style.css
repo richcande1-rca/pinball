@@ -14,6 +14,146 @@ body {
   box-sizing: border-box;
 }
 
+.intro-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 68%, rgba(255, 60, 172, 0.2), transparent 28%),
+    linear-gradient(180deg, rgba(4, 7, 17, 0.76), rgba(4, 7, 17, 0.97)),
+    url('assets/miami-sunset-clean.png?v=20260823-1530') center 58% / min(76vw, 560px) auto no-repeat,
+    #040711;
+  box-sizing: border-box;
+  opacity: 1;
+  transition: opacity 420ms ease, visibility 420ms ease;
+  touch-action: manipulation;
+}
+
+.intro-screen.is-playing {
+  cursor: pointer;
+}
+
+.intro-screen.is-leaving {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.intro-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.018) 0,
+    rgba(255, 255, 255, 0.018) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+.intro-panel {
+  position: relative;
+  width: min(88vw, 520px);
+  text-align: center;
+  transform: translateY(-7vh);
+}
+
+.intro-kicker {
+  margin: 0 0 0.45rem;
+  color: #8ef7ff;
+  font-size: clamp(0.64rem, 2.4vw, 0.78rem);
+  font-weight: 700;
+  letter-spacing: 0.38em;
+  text-shadow: 0 0 9px rgba(34, 223, 243, 0.72);
+}
+
+.intro-panel h2 {
+  margin: 0;
+  color: #22dff3;
+  font-size: clamp(2.65rem, 13vw, 5rem);
+  font-style: italic;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  line-height: 0.9;
+  text-shadow:
+    0 0 6px #22dff3,
+    0 0 22px rgba(34, 223, 243, 0.65);
+}
+
+.intro-panel h2 span {
+  display: block;
+  color: #ff3cac;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow:
+    0 0 7px #ff3cac,
+    0 0 26px rgba(255, 60, 172, 0.68);
+}
+
+.intro-status {
+  min-height: 1.25em;
+  margin: 1.1rem 0 1rem;
+  color: #c9b8ff;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.intro-button,
+.intro-skip {
+  min-width: 150px;
+  border: 1px solid #22dff3;
+  border-radius: 3px;
+  color: #f7fbff;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-indent: 0.22em;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.intro-button {
+  padding: 0.8rem 1.35rem;
+  background: rgba(5, 16, 34, 0.88);
+  box-shadow:
+    inset 0 0 18px rgba(34, 223, 243, 0.14),
+    0 0 18px rgba(34, 223, 243, 0.3);
+}
+
+.intro-button:hover,
+.intro-button:focus-visible {
+  border-color: #ff3cac;
+  outline: none;
+  box-shadow:
+    inset 0 0 20px rgba(255, 60, 172, 0.18),
+    0 0 22px rgba(255, 60, 172, 0.38);
+}
+
+.intro-skip {
+  padding: 0.62rem 1rem;
+  border-color: rgba(201, 184, 255, 0.56);
+  background: rgba(4, 7, 17, 0.72);
+}
+
+.intro-screen.is-playing .intro-panel h2 {
+  animation: intro-neon-pulse 2.1s ease-in-out infinite;
+}
+
+@keyframes intro-neon-pulse {
+  50% { filter: brightness(1.18); }
+}
+
+[hidden] {
+  display: none !important;
+}
+
 .game-shell {
   width: min(92vw, 520px);
   text-align: center;
@@ -63,4 +203,12 @@ kbd {
   border: 1px solid #777;
   border-radius: 0.25em;
   background: #222;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-screen,
+  .intro-screen.is-playing .intro-panel h2 {
+    animation: none;
+    transition-duration: 0.01ms;
+  }
 }
