@@ -9,6 +9,11 @@
   let gameplayMusicGain = null;
   let gameplayMusicTimer = null;
   let themeStarted = false;
+  let fileThemeStarted = false;
+
+  const themeMusic = document.getElementById('theme-music');
+  const musicVolume = document.getElementById('music-volume');
+  const musicMute = document.getElementById('music-mute');
 
   const THEME_TEMPO = 112;
   const THEME_BEAT = 60 / THEME_TEMPO;
@@ -309,6 +314,38 @@
     startGameplayMusic();
   }
 
+  function tryFileThemePlayback() {
+    if (!themeMusic || !fileThemeStarted || !themeMusic.paused) return;
+    const playback = themeMusic.play();
+    if (playback) playback.catch(() => {});
+  }
+
+  function startFileTheme() {
+    activateAudio();
+    if (!themeMusic || fileThemeStarted) return;
+    fileThemeStarted = true;
+    themeMusic.currentTime = 0;
+    tryFileThemePlayback();
+  }
+
+  function updateMusicVolume() {
+    if (!themeMusic || !musicVolume) return;
+    const value = Math.max(0, Math.min(100, Number(musicVolume.value)));
+    themeMusic.volume = value / 100;
+    musicVolume.setAttribute('aria-valuetext', `${value} percent`);
+  }
+
+  function setMusicMuted(muted) {
+    if (!themeMusic || !musicMute) return;
+    themeMusic.muted = muted;
+    musicMute.setAttribute('aria-pressed', String(muted));
+    musicMute.textContent = muted ? 'MUSIC OFF' : 'MUSIC ON';
+  }
+
+  function containMusicControlKeys(event) {
+    event.stopPropagation();
+  }
+
   function playFlipper(index) {
     tone(index ? 125 : 115, 0.36, 0.05, { type: 'triangle', endFrequency: 72 });
     noise(0.4, 0.04, index ? 1900 : 1750);
@@ -413,14 +450,31 @@
     requestAnimationFrame(observeAudioEvents);
   }
 
-  window.addEventListener('keydown', activateAudio, { passive: true });
+  window.addEventListener('keydown', () => {
+    activateAudio();
+    tryFileThemePlayback();
+  }, { passive: true });
   window.addEventListener('keydown', event => {
     if (event.code === 'KeyR') audioState.manualResetPending = true;
   }, { passive: true });
-  window.addEventListener('pointerdown', activateAudio, { passive: true });
-  window.addEventListener('miami-intro-start', startThemeIntro);
-  window.addEventListener('miami-intro-end', endThemeIntro);
+  window.addEventListener('pointerdown', () => {
+    activateAudio();
+    tryFileThemePlayback();
+  }, { passive: true });
+  window.addEventListener('miami-intro-start', startFileTheme);
   window.addEventListener('miami-flipper', event => playFlipper(event.detail.index));
   window.addEventListener('miami-impact', event => playImpact(event.detail));
+
+  if (musicVolume && musicMute) {
+    updateMusicVolume();
+    setMusicMuted(false);
+    musicVolume.addEventListener('input', updateMusicVolume);
+    musicMute.addEventListener('click', () => setMusicMuted(!themeMusic.muted));
+    musicVolume.addEventListener('keydown', containMusicControlKeys);
+    musicVolume.addEventListener('keyup', containMusicControlKeys);
+    musicMute.addEventListener('keydown', containMusicControlKeys);
+    musicMute.addEventListener('keyup', containMusicControlKeys);
+  }
+
   requestAnimationFrame(observeAudioEvents);
 })();

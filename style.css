@@ -175,6 +175,50 @@ h1 span {
   text-shadow: 0 0 8px rgba(255, 60, 172, 0.58);
 }
 
+.music-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin: 0 0 0.65rem;
+  color: #8ef7ff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.music-controls input {
+  width: min(34vw, 150px);
+  accent-color: #ff3cac;
+  cursor: pointer;
+}
+
+.music-controls button {
+  min-width: 92px;
+  padding: 0.38rem 0.55rem;
+  border: 1px solid rgba(34, 223, 243, 0.68);
+  border-radius: 3px;
+  background: rgba(5, 16, 34, 0.88);
+  color: #f7fbff;
+  font: inherit;
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(34, 223, 243, 0.2);
+}
+
+.music-controls button[aria-pressed="true"] {
+  border-color: rgba(255, 60, 172, 0.72);
+  color: #ff9bd2;
+  box-shadow: 0 0 12px rgba(255, 60, 172, 0.24);
+}
+
+.music-controls input:focus-visible,
+.music-controls button:focus-visible {
+  outline: 2px solid #c9b8ff;
+  outline-offset: 2px;
+}
+
 canvas {
   display: block;
   width: auto;
