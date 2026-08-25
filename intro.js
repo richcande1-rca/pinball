@@ -1,7 +1,7 @@
 // Title-screen gate. Gameplay remains paused until the intro completes or is skipped.
 
 (() => {
-  const INTRO_DURATION_MS = 17150;
+  const INTRO_DURATION_MS = 3000;
   const screen = document.getElementById('intro-screen');
   const startButton = document.getElementById('intro-start');
   const skipButton = document.getElementById('intro-skip');
