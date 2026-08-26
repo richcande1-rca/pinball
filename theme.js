@@ -18,12 +18,11 @@ const miamiEffects = {
 };
 
 const passiveImpactSurfaces = [
-  ...upperArchGuides.map((surface, index) => ({ surface, type: 'upper-arch-guide', index })),
+  ...coastalOrbitRails.map((surface, index) => ({ surface, type: 'coastal-orbit', index })),
   ...upperPosts.map((surface, index) => ({ surface, type: 'post', index })),
   ...midPlayfieldGuides.map((surface, index) => ({ surface, type: 'mid-guide', index })),
   ...lowerGuides.map((surface, index) => ({ surface, type: 'lower-guide', index })),
-  { surface: shooterDivider, type: 'shooter-divider', index: 0 },
-  { surface: shooterGuide, type: 'shooter-guide', index: 0 }
+  { surface: shooterDivider, type: 'shooter-divider', index: 0 }
 ];
 
 function notifyPassiveImpact(type, strength, x, y, index, now) {
