@@ -155,7 +155,7 @@ body {
 }
 
 .game-shell {
-  width: min(92vw, 520px);
+  width: min(96vw, 540px);
   text-align: center;
 }
 
@@ -219,27 +219,121 @@ h1 span {
   outline-offset: 2px;
 }
 
+.table-cabinet {
+  position: relative;
+  width: clamp(
+    260px,
+    min(calc(100vw - 64px), calc(66.667svh - 126.667px)),
+    480px
+  );
+  margin: 0 auto 1.7rem;
+}
+
 canvas {
   display: block;
-  width: auto;
+  width: 100%;
   height: auto;
-  max-width: 100%;
-  max-height: calc(100vh - 120px);
-  max-height: calc(100svh - 120px);
-  margin: 0 auto;
+  margin: 0;
   background: #070b18;
   border: 1px solid #20283a;
   box-shadow:
     0 0 0 1px rgba(34, 223, 243, 0.3),
     0 12px 30px rgba(0, 0, 0, 0.55);
   box-sizing: border-box;
-  touch-action: manipulation;
+  touch-action: none;
+}
+
+.cabinet-button {
+  --button-accent: #c9b8ff;
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 2px solid var(--button-accent);
+  border-radius: 50%;
+  background: #080d1b;
+  color: var(--button-accent);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition:
+    transform 70ms ease,
+    filter 120ms ease,
+    box-shadow 120ms ease;
+  box-shadow:
+    inset 0 0 0 3px #030610,
+    inset 0 0 14px var(--button-accent),
+    0 0 14px var(--button-accent);
+  text-shadow: 0 0 6px var(--button-accent);
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cabinet-button span {
+  pointer-events: none;
+}
+
+.cabinet-button-left {
+  --button-accent: #22dff3;
+  left: 0;
+  top: 86%;
+}
+
+.cabinet-button-right {
+  --button-accent: #ff3cac;
+  left: 100%;
+  top: 86%;
+}
+
+.cabinet-button-launch {
+  --button-accent: #8ef7ff;
+  left: 89.58%;
+  top: 100%;
+  width: 62px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 0.48rem;
+  letter-spacing: 0.11em;
+  text-indent: 0.11em;
+}
+
+.cabinet-button:hover {
+  filter: brightness(1.22);
+  transform: translate(-50%, -50%) scale(1.04);
+}
+
+.cabinet-button:focus-visible {
+  outline: 2px solid #f1efff;
+  outline-offset: 3px;
+}
+
+.cabinet-button[aria-pressed="true"] {
+  filter: brightness(1.35);
+  transform: translate(-50%, calc(-50% + 3px)) scale(0.94);
+  box-shadow:
+    inset 0 0 0 3px #030610,
+    inset 0 0 24px var(--button-accent),
+    0 0 22px var(--button-accent);
+}
+
+.cabinet-button:disabled {
+  opacity: 0.48;
+  cursor: default;
+  filter: saturate(0.65);
 }
 
 p {
-  margin: 0.75rem 0 0;
+  margin: 0.45rem 0 0;
   color: #a8b4d4;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
 
 kbd {
