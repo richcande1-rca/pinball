@@ -80,13 +80,62 @@ const lowerGuides = [
   { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 }
 ];
 
-const upperArchGuides = [
-  { x1: 42, y1: 174, x2: 42, y2: 104, radius: 4 },
-  { x1: 42, y1: 104, x2: 68, y2: 62, radius: 4 },
-  { x1: 68, y1: 62, x2: 126, y2: 38, radius: 4 },
-  { x1: 294, y1: 38, x2: 352, y2: 62, radius: 4 },
-  { x1: 352, y1: 62, x2: 370, y2: 82, radius: 4 },
-  { x1: 370, y1: 82, x2: 407, y2: 72, radius: 4 }
+function makeRailSegments(points, radius = 4) {
+  return points.slice(0, -1).map((point, index) => ({
+    x1: point.x,
+    y1: point.y,
+    x2: points[index + 1].x,
+    y2: points[index + 1].y,
+    radius
+  }));
+}
+
+// The shooter lane now feeds a full coastal horseshoe. The two collision
+// rails remain short segments for stable physics, while the renderer joins
+// the same points into continuous curves.
+const coastalOrbitOuterPoints = [
+  { x: 30, y: 210 },
+  { x: 30, y: 176 },
+  { x: 32, y: 150 },
+  { x: 40, y: 122 },
+  { x: 56, y: 98 },
+  { x: 78, y: 82 },
+  { x: 106, y: 72 },
+  { x: 142, y: 66 },
+  { x: 190, y: 62 },
+  { x: 240, y: 61 },
+  { x: 290, y: 63 },
+  { x: 336, y: 68 },
+  { x: 374, y: 80 },
+  { x: 406, y: 98 },
+  { x: 430, y: 122 },
+  { x: 446, y: 148 },
+  { x: 452, y: 168 }
+];
+
+const coastalOrbitInnerPoints = [
+  { x: 68, y: 210 },
+  { x: 68, y: 180 },
+  { x: 70, y: 158 },
+  { x: 76, y: 142 },
+  { x: 88, y: 128 },
+  { x: 106, y: 118 },
+  { x: 132, y: 110 },
+  { x: 166, y: 104 },
+  { x: 206, y: 101 },
+  { x: 240, y: 100 },
+  { x: 278, y: 102 },
+  { x: 314, y: 106 },
+  { x: 344, y: 114 },
+  { x: 370, y: 126 },
+  { x: 388, y: 140 },
+  { x: 400, y: 154 },
+  { x: 396, y: 158 }
+];
+
+const coastalOrbitRails = [
+  ...makeRailSegments(coastalOrbitOuterPoints),
+  ...makeRailSegments(coastalOrbitInnerPoints)
 ];
 
 const upperPosts = [
@@ -108,15 +157,6 @@ const shooterDivider = {
   radius: 4
 };
 
-// A shallow guide near the top of the shooter lane turns some of the ball's
-// upward speed into leftward speed without teleporting or directly steering it.
-const shooterGuide = {
-  x1: 446,
-  y1: 146,
-  x2: 407,
-  y2: 72,
-  radius: 4
-};
 
 function resetBall() {
   ball.x = SHOOTER.ballX;
@@ -392,10 +432,11 @@ function update(dt) {
   }
 
   resolveSegmentCollision(shooterDivider, { x: 0, y: 0 }, 0.86);
-  resolveSegmentCollision(shooterGuide, { x: 0, y: 0 }, 0.92);
 
-  for (const guide of upperArchGuides) {
-    resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
+  for (const rail of coastalOrbitRails) {
+    // The polished orbit loses very little energy, allowing a properly charged
+    // launch to sweep through both corners instead of stalling across the top.
+    resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.98);
   }
 
   for (const post of upperPosts) {
@@ -455,6 +496,68 @@ function drawNeonSegment(segment, accent = MIAMI_COLORS.cyan, bodyWidth = 6, acc
   ctx.restore();
 }
 
+function traceSmoothRail(points) {
+  ctx.moveTo(points[0].x, points[0].y);
+
+  for (let index = 1; index < points.length - 1; index += 1) {
+    const point = points[index];
+    const next = points[index + 1];
+    const midpoint = {
+      x: (point.x + next.x) / 2,
+      y: (point.y + next.y) / 2
+    };
+    ctx.quadraticCurveTo(point.x, point.y, midpoint.x, midpoint.y);
+  }
+
+  const last = points[points.length - 1];
+  ctx.lineTo(last.x, last.y);
+}
+
+function drawSmoothNeonRail(points, accent) {
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.strokeStyle = MIAMI_COLORS.structure;
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  traceSmoothRail(points);
+  ctx.stroke();
+
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2.25;
+  ctx.shadowColor = accent;
+  ctx.shadowBlur = 7;
+  ctx.beginPath();
+  traceSmoothRail(points);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawCoastalOrbit() {
+  const laneGlow = ctx.createLinearGradient(TABLE.left, 0, TABLE.right, 0);
+  laneGlow.addColorStop(0, 'rgba(255, 60, 172, 0.12)');
+  laneGlow.addColorStop(0.5, 'rgba(201, 184, 255, 0.07)');
+  laneGlow.addColorStop(1, 'rgba(34, 223, 243, 0.12)');
+
+  ctx.save();
+  ctx.fillStyle = laneGlow;
+  ctx.beginPath();
+  ctx.moveTo(coastalOrbitOuterPoints[0].x, coastalOrbitOuterPoints[0].y);
+  for (const point of coastalOrbitOuterPoints.slice(1)) {
+    ctx.lineTo(point.x, point.y);
+  }
+  for (const point of [...coastalOrbitInnerPoints].reverse()) {
+    ctx.lineTo(point.x, point.y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  drawSmoothNeonRail(coastalOrbitOuterPoints, MIAMI_COLORS.cyan);
+  drawSmoothNeonRail(coastalOrbitInnerPoints, MIAMI_COLORS.magenta);
+}
+
 function drawTable() {
   ctx.fillStyle = MIAMI_COLORS.playfield;
   ctx.fillRect(TABLE.left, TABLE.top, TABLE.right - TABLE.left, TABLE.bottom - TABLE.top);
@@ -487,7 +590,7 @@ function drawTable() {
 
 function drawShooterLane() {
   drawNeonSegment(shooterDivider, MIAMI_COLORS.cyan);
-  drawNeonSegment(shooterGuide, MIAMI_COLORS.cyan);
+  drawCoastalOrbit();
 }
 
 function drawPlunger() {
@@ -527,10 +630,6 @@ function drawLowerGuides() {
 }
 
 function drawPassivePlayfieldGeometry() {
-  for (const guide of upperArchGuides) {
-    drawNeonSegment(guide);
-  }
-
   for (const guide of midPlayfieldGuides) {
     drawNeonSegment(guide, MIAMI_COLORS.magenta);
   }
