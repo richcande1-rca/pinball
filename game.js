@@ -16,7 +16,10 @@ const SHOOTER = {
   dividerTop: 158,
   dividerBottom: TABLE.bottom,
   ballX: 430,
-  ballY: 650
+  ballY: 650,
+  recoveryGateTop: 500,
+  recoveryGateBottom: 560,
+  recoveryFeedY: 526
 };
 
 const PLAYFIELD_CENTER = (TABLE.left + SHOOTER.dividerX) / 2;
@@ -90,46 +93,54 @@ function makeRailSegments(points, radius = 4) {
   }));
 }
 
-// The shooter lane now feeds a full coastal horseshoe. The two collision
-// rails remain short segments for stable physics, while the renderer joins
-// the same points into continuous curves.
+// The strong launch now rides the cabinet perimeter instead of floating
+// inside two empty upper corners. After rounding the roof, the lane continues
+// down the left side to a controlled flipper return.
 const coastalOrbitOuterPoints = [
-  { x: 30, y: 210 },
-  { x: 30, y: 176 },
-  { x: 32, y: 150 },
-  { x: 40, y: 122 },
-  { x: 56, y: 98 },
-  { x: 78, y: 82 },
-  { x: 106, y: 72 },
-  { x: 142, y: 66 },
-  { x: 190, y: 62 },
-  { x: 240, y: 61 },
-  { x: 290, y: 63 },
-  { x: 336, y: 68 },
-  { x: 374, y: 80 },
-  { x: 406, y: 98 },
-  { x: 430, y: 122 },
-  { x: 446, y: 148 },
+  { x: 42, y: 505 },
+  { x: 31, y: 470 },
+  { x: 29, y: 410 },
+  { x: 29, y: 340 },
+  { x: 29, y: 270 },
+  { x: 29, y: 218 },
+  { x: 29, y: 166 },
+  { x: 30, y: 116 },
+  { x: 38, y: 80 },
+  { x: 54, y: 54 },
+  { x: 82, y: 38 },
+  { x: 122, y: 31 },
+  { x: 180, y: 28 },
+  { x: 240, y: 28 },
+  { x: 300, y: 30 },
+  { x: 350, y: 35 },
+  { x: 390, y: 46 },
+  { x: 420, y: 64 },
+  { x: 440, y: 90 },
+  { x: 451, y: 122 },
   { x: 452, y: 168 }
 ];
 
 const coastalOrbitInnerPoints = [
-  { x: 68, y: 210 },
-  { x: 68, y: 180 },
-  { x: 70, y: 158 },
-  { x: 76, y: 142 },
-  { x: 88, y: 128 },
-  { x: 106, y: 118 },
-  { x: 132, y: 110 },
-  { x: 166, y: 104 },
-  { x: 206, y: 101 },
-  { x: 240, y: 100 },
-  { x: 278, y: 102 },
-  { x: 314, y: 106 },
-  { x: 344, y: 114 },
-  { x: 370, y: 126 },
-  { x: 388, y: 140 },
-  { x: 400, y: 154 },
+  { x: 112, y: 492 },
+  { x: 88, y: 460 },
+  { x: 80, y: 410 },
+  { x: 78, y: 340 },
+  { x: 78, y: 280 },
+  { x: 78, y: 230 },
+  { x: 78, y: 190 },
+  { x: 80, y: 155 },
+  { x: 88, y: 126 },
+  { x: 104, y: 105 },
+  { x: 128, y: 91 },
+  { x: 164, y: 83 },
+  { x: 205, y: 79 },
+  { x: 240, y: 78 },
+  { x: 282, y: 80 },
+  { x: 322, y: 86 },
+  { x: 354, y: 97 },
+  { x: 378, y: 114 },
+  { x: 394, y: 134 },
+  { x: 402, y: 151 },
   { x: 396, y: 158 }
 ];
 
@@ -171,6 +182,13 @@ const shooterDividerRails = [
     x1: SHOOTER.dividerX,
     y1: 262,
     x2: SHOOTER.dividerX,
+    y2: SHOOTER.recoveryGateTop,
+    radius: 4
+  },
+  {
+    x1: SHOOTER.dividerX,
+    y1: SHOOTER.recoveryGateBottom,
+    x2: SHOOTER.dividerX,
     y2: SHOOTER.dividerBottom,
     radius: 4
   }
@@ -192,12 +210,20 @@ const shooterDiverterOpen = {
   radius: 5
 };
 
+const shooterRecoveryGuidePoints = [
+  { x: 447, y: 510 },
+  { x: 434, y: 522 },
+  { x: 414, y: 534 },
+  { x: 386, y: 538 }
+];
+
 const LAUNCH_ROUTE_THRESHOLDS = {
   playfield: 0.28,
   orbit: 0.72
 };
 
 let shooterRoute = 'return';
+let ballHasEnteredPlayfield = false;
 
 function routeForPlungerCharge(charge) {
   if (charge >= LAUNCH_ROUTE_THRESHOLDS.orbit) {
@@ -216,7 +242,11 @@ function visibleShooterRoute() {
 }
 
 
-function resetBall() {
+function ballIsInShooterLane() {
+  return ball.x - ball.radius > SHOOTER.dividerX;
+}
+
+function parkBallAtPlunger() {
   ball.x = SHOOTER.ballX;
   ball.y = SHOOTER.ballY;
   ball.vx = 0;
@@ -226,12 +256,16 @@ function resetBall() {
   plunger.charge = 0;
   plunger.charging = false;
   shooterRoute = 'return';
+  ballHasEnteredPlayfield = false;
+  syncLaunchButton();
+}
+
+function resetBall() {
+  parkBallAtPlunger();
 
   for (const bumper of sideBumpers) {
     bumper.armed = true;
   }
-
-  syncLaunchButton();
 }
 
 function clamp(value, min, max) {
@@ -444,6 +478,7 @@ function launchBall() {
     (plunger.maxSpeed - plunger.minSpeed) * launchCharge;
 
   shooterRoute = routeForPlungerCharge(launchCharge);
+  ballHasEnteredPlayfield = false;
   ball.ready = false;
   ball.vx = 0;
   ball.vy = -launchSpeed;
@@ -496,6 +531,20 @@ function update(dt) {
     resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.86);
   }
 
+  // Once a live ball crosses into the shooter lane, the lower return gate
+  // takes responsibility for it. A failed launch has not earned this state
+  // yet, so it remains eligible to settle back onto the plunger.
+  if (
+    ballHasEnteredPlayfield &&
+    shooterRoute !== 'recovery' &&
+    ball.vy > 0 &&
+    ballIsInShooterLane() &&
+    ball.y > SHOOTER.dividerTop &&
+    ball.y < SHOOTER.recoveryGateBottom
+  ) {
+    shooterRoute = 'recovery';
+  }
+
   if (
     shooterRoute === 'playfield' &&
     ball.vy < 0 &&
@@ -509,12 +558,43 @@ function update(dt) {
     ball.x + ball.radius < SHOOTER.dividerX
   ) {
     shooterRoute = 'released';
+    ballHasEnteredPlayfield = true;
   }
 
   for (const rail of coastalOrbitRails) {
     // The polished orbit loses very little energy, allowing a properly charged
     // launch to sweep through both corners instead of stalling across the top.
     resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.98);
+  }
+
+  // The perimeter lane deliberately scrubs off the launch speed at its lower
+  // left exit, then gives the ball a gentle diagonal feed toward the left
+  // flipper instead of dropping it beside the outlane.
+  if (
+    shooterRoute === 'orbit' &&
+    ball.vy > 0 &&
+    ball.x < 125 &&
+    ball.y > 462
+  ) {
+    shooterRoute = 'released';
+    ballHasEnteredPlayfield = true;
+    ball.vx = 145;
+    ball.vy = 80;
+  }
+
+  // A live ball returning down the shooter lane uses the lower cabinet gate.
+  // It emerges just above the right flipper with a controlled, playable feed.
+  if (
+    shooterRoute === 'recovery' &&
+    ball.vy > 0 &&
+    ballIsInShooterLane() &&
+    ball.y >= SHOOTER.recoveryFeedY
+  ) {
+    ball.x = SHOOTER.dividerX - ball.radius - 4;
+    ball.y = SHOOTER.recoveryFeedY;
+    ball.vx = -155;
+    ball.vy = 80;
+    shooterRoute = 'released';
   }
 
   for (const post of upperPosts) {
@@ -535,6 +615,18 @@ function update(dt) {
 
   for (const flipper of flippers) {
     collideWithFlipper(flipper);
+  }
+
+  // A launch that never reached the playfield is not a drain. The plunger
+  // catches it and immediately becomes available for another attempt.
+  if (
+    !ballHasEnteredPlayfield &&
+    ball.vy > 0 &&
+    ballIsInShooterLane() &&
+    ball.y >= SHOOTER.ballY - 4
+  ) {
+    parkBallAtPlunger();
+    return;
   }
 
   // Open drain below the flippers.
@@ -682,6 +774,13 @@ function drawShooterDiverter() {
   ctx.restore();
 }
 
+function drawShooterRecoveryGate() {
+  ctx.save();
+  ctx.globalAlpha = shooterRoute === 'recovery' ? 1 : 0.38;
+  drawSmoothNeonRail(shooterRecoveryGuidePoints, MIAMI_COLORS.magenta);
+  ctx.restore();
+}
+
 function drawShooterLane() {
   drawCoastalOrbit();
 
@@ -690,6 +789,7 @@ function drawShooterLane() {
   }
 
   drawShooterDiverter();
+  drawShooterRecoveryGate();
 }
 
 function drawPlunger() {
