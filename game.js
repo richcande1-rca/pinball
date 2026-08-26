@@ -63,6 +63,17 @@ const keys = {
   right: false
 };
 
+const FLIPPER_CHARGE = {
+  duration: 1,
+  contactSpeed: 55,
+  heldDecayRate: 2.4,
+  latchDuration: 0.75,
+  minimum: 0.08,
+  punchWindow: 0.16,
+  basePunch: 90,
+  fullPunch: 390
+};
+
 function makeFlipper(side) {
   const isLeft = side === 'left';
   return {
@@ -77,7 +88,16 @@ function makeFlipper(side) {
     activeAngle: isLeft ? -0.48 : Math.PI + 0.48,
     angle: isLeft ? 0.34 : Math.PI - 0.34,
     angularVelocity: 0,
-    pressed: false
+    pressed: false,
+    justPressed: false,
+    justReleased: false,
+    cradleContact: false,
+    cradleCharge: 0,
+    storedCharge: 0,
+    storedDecayRate: 0,
+    pendingPunch: 0,
+    punchRemaining: 0,
+    coilFlashStartedAt: -Infinity
   };
 }
 
@@ -216,13 +236,13 @@ const loopRamp = {
   flashStartedAt: -Infinity
 };
 
-// Three active pop bumpers fill the open center of the upper-left loop. Their
-// spacing leaves playable exits between the caps while still encouraging
-// sustained, deliberately unruly volleys.
+// The inverted triangle leaves a deliberate center entrance between the two
+// lower posts. A clean shot reaches the violet cap first and is kicked back
+// into the cyan/magenta pair for sustained, deliberately unruly volleys.
 const popBumpers = [
-  { x: 105, y: 100, radius: 7, kick: 225, accent: 'cyan', armed: true, flashStartedAt: -Infinity, lastPoints: 100 },
-  { x: 159, y: 100, radius: 7, kick: 225, accent: 'magenta', armed: true, flashStartedAt: -Infinity, lastPoints: 100 },
-  { x: 132, y: 149, radius: 7, kick: 235, accent: 'lavender', armed: true, flashStartedAt: -Infinity, lastPoints: 100 }
+  { x: 105, y: 149, radius: 7, kick: 225, accent: 'cyan', armed: true, flashStartedAt: -Infinity, lastPoints: 100 },
+  { x: 159, y: 149, radius: 7, kick: 225, accent: 'magenta', armed: true, flashStartedAt: -Infinity, lastPoints: 100 },
+  { x: 132, y: 100, radius: 7, kick: 235, accent: 'lavender', armed: true, flashStartedAt: -Infinity, lastPoints: 100 }
 ];
 
 const bumperCombo = {
@@ -353,6 +373,18 @@ function resetPlayfieldForBall() {
   }
   bumperCombo.count = 0;
   bumperCombo.remaining = 0;
+
+  for (const flipper of flippers) {
+    flipper.justPressed = false;
+    flipper.justReleased = false;
+    flipper.cradleContact = false;
+    flipper.cradleCharge = 0;
+    flipper.storedCharge = 0;
+    flipper.storedDecayRate = 0;
+    flipper.pendingPunch = 0;
+    flipper.punchRemaining = 0;
+    flipper.coilFlashStartedAt = -Infinity;
+  }
 
   magneticTarget.state = 'ready';
   magneticTarget.holdRemaining = 0;
@@ -487,10 +519,72 @@ function resolveSegmentCollision(segment, surfaceVelocity = { x: 0, y: 0 }, rest
 }
 
 function updateFlipper(flipper, dt) {
-  flipper.pressed = flipper.side === 'left' ? keys.left : keys.right;
+  const wasPressed = flipper.pressed;
+  const nextPressed = flipper.side === 'left' ? keys.left : keys.right;
+  const hadCradleContact = flipper.cradleContact;
+
+  flipper.justPressed = nextPressed && !wasPressed;
+  flipper.justReleased = !nextPressed && wasPressed;
+  flipper.cradleContact = false;
+
+  if (flipper.justReleased) {
+    if (flipper.cradleCharge >= FLIPPER_CHARGE.minimum) {
+      flipper.storedCharge = flipper.cradleCharge;
+      flipper.storedDecayRate =
+        flipper.cradleCharge / FLIPPER_CHARGE.latchDuration;
+    } else {
+      flipper.storedCharge = 0;
+      flipper.storedDecayRate = 0;
+    }
+    flipper.cradleCharge = 0;
+  }
+
+  if (flipper.justPressed) {
+    if (flipper.storedCharge >= FLIPPER_CHARGE.minimum) {
+      flipper.pendingPunch = flipper.storedCharge;
+      flipper.punchRemaining = FLIPPER_CHARGE.punchWindow;
+    } else {
+      flipper.pendingPunch = 0;
+      flipper.punchRemaining = 0;
+    }
+    flipper.storedCharge = 0;
+    flipper.storedDecayRate = 0;
+  }
+
+  if (nextPressed && !flipper.justPressed) {
+    if (hadCradleContact) {
+      flipper.cradleCharge = clamp(
+        flipper.cradleCharge + dt / FLIPPER_CHARGE.duration,
+        0,
+        1
+      );
+    } else {
+      flipper.cradleCharge = Math.max(
+        0,
+        flipper.cradleCharge - FLIPPER_CHARGE.heldDecayRate * dt
+      );
+    }
+  }
+
+  if (!nextPressed && !flipper.justReleased && flipper.storedCharge > 0) {
+    flipper.storedCharge = Math.max(
+      0,
+      flipper.storedCharge - flipper.storedDecayRate * dt
+    );
+  }
+
+  if (flipper.pendingPunch > 0 && !flipper.justPressed) {
+    flipper.punchRemaining = Math.max(0, flipper.punchRemaining - dt);
+    if (flipper.punchRemaining === 0) {
+      flipper.pendingPunch = 0;
+    }
+  }
+
+  flipper.pressed = nextPressed;
   const target = flipper.pressed ? flipper.activeAngle : flipper.restAngle;
 
-  // Still brisk, but less explosive than the first test pass.
+  // Ordinary motion remains unchanged; stored energy is applied separately
+  // and only once when a charged cradle shot actually touches the rising bat.
   const maxSpeed = flipper.pressed ? 14 : 10; // rad/s
   const delta = target - flipper.angle;
   const step = clamp(delta, -maxSpeed * dt, maxSpeed * dt);
@@ -556,6 +650,49 @@ function collideWithFlipper(flipper) {
 
   const restitution = restingImpact ? 0 : 0.38 + 0.42 * motion;
   const touching = resolveSegmentCollision(segment, surfaceVelocity, restitution);
+
+  flipper.cradleContact =
+    touching &&
+    heldStill &&
+    Math.hypot(ball.vx, ball.vy) < FLIPPER_CHARGE.contactSpeed;
+
+  const chargedStrike =
+    touching &&
+    !heldStill &&
+    ball.y <= closest.y + 3 &&
+    flipper.pendingPunch >= FLIPPER_CHARGE.minimum &&
+    flipper.punchRemaining > 0;
+
+  if (chargedStrike) {
+    const sx = segment.x2 - segment.x1;
+    const sy = segment.y2 - segment.y1;
+    const segmentLength = Math.hypot(sx, sy) || 1;
+    let punchX = -sy / segmentLength;
+    let punchY = sx / segmentLength;
+
+    if (punchY > 0) {
+      punchX *= -1;
+      punchY *= -1;
+    }
+
+    const storedEnergy = flipper.pendingPunch;
+    const punchSpeed = FLIPPER_CHARGE.basePunch +
+      (FLIPPER_CHARGE.fullPunch - FLIPPER_CHARGE.basePunch) * storedEnergy;
+    ball.vx += punchX * punchSpeed;
+    ball.vy += punchY * punchSpeed;
+
+    flipper.pendingPunch = 0;
+    flipper.punchRemaining = 0;
+    flipper.coilFlashStartedAt = performance.now();
+
+    window.dispatchEvent(new CustomEvent('miami-coil-punch', {
+      detail: {
+        side: flipper.side,
+        charge: storedEnergy,
+        speed: punchSpeed
+      }
+    }));
+  }
 
   // Let gravity move the ball freely along a held flipper.
   return touching && heldStill;
@@ -1466,10 +1603,28 @@ function drawLowerApron() {
 
 function drawFlippers() {
   ctx.lineCap = 'round';
+  const now = performance.now();
 
   for (const flipper of flippers) {
     const segment = getFlipperSegment(flipper);
     const accent = flipper.side === 'left' ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
+    const firedAge = now - flipper.coilFlashStartedAt;
+    const firedFlash = firedAge >= 0 && firedAge < 180
+      ? 1 - firedAge / 180
+      : 0;
+    const storedEnergy = clamp(
+      Math.max(
+        flipper.cradleCharge,
+        flipper.storedCharge,
+        flipper.pendingPunch
+      ),
+      0,
+      1
+    );
+    const fullPulse = storedEnergy > 0.96
+      ? 0.78 + 0.22 * Math.sin(now / 55)
+      : 1;
+    const glowEnergy = Math.max(storedEnergy * fullPulse, firedFlash);
 
     ctx.strokeStyle = MIAMI_COLORS.structure;
     ctx.lineWidth = 14;
@@ -1482,21 +1637,41 @@ function drawFlippers() {
     ctx.lineWidth = 8;
     ctx.stroke();
 
+    if (glowEnergy > 0.005) {
+      ctx.save();
+      ctx.globalAlpha = 0.14 + glowEnergy * 0.5;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 10 + glowEnergy * 5;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 7 + glowEnergy * 28;
+      ctx.stroke();
+
+      ctx.globalAlpha = 0.12 + glowEnergy * 0.82;
+      ctx.strokeStyle = '#f8ffff';
+      ctx.lineWidth = 3 + glowEnergy * 5;
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 4 + glowEnergy * 18;
+      ctx.stroke();
+      ctx.restore();
+    }
+
     ctx.save();
-    ctx.strokeStyle = accent;
+    ctx.strokeStyle = glowEnergy > 0.9 ? '#f8ffff' : accent;
     ctx.lineWidth = 2;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = 4;
+    ctx.shadowBlur = 4 + glowEnergy * 15;
     ctx.stroke();
     ctx.restore();
 
     ctx.fillStyle = MIAMI_COLORS.structure;
     ctx.beginPath();
-    ctx.arc(flipper.pivotX, flipper.pivotY, 4, 0, Math.PI * 2);
+    ctx.arc(flipper.pivotX, flipper.pivotY, 4 + glowEnergy * 1.5, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = glowEnergy > 0.9 ? '#f8ffff' : accent;
+    ctx.lineWidth = 1.5 + glowEnergy;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 3 + glowEnergy * 10;
     ctx.stroke();
   }
 }
