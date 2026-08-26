@@ -220,9 +220,9 @@ const loopRamp = {
 // spacing leaves playable exits between the caps while still encouraging
 // sustained, deliberately unruly volleys.
 const popBumpers = [
-  { x: 105, y: 100, radius: 14, kick: 225, accent: 'cyan', armed: true, flashStartedAt: -Infinity, lastPoints: 100 },
-  { x: 159, y: 100, radius: 14, kick: 225, accent: 'magenta', armed: true, flashStartedAt: -Infinity, lastPoints: 100 },
-  { x: 132, y: 149, radius: 14, kick: 235, accent: 'lavender', armed: true, flashStartedAt: -Infinity, lastPoints: 100 }
+  { x: 105, y: 100, radius: 7, kick: 225, accent: 'cyan', armed: true, flashStartedAt: -Infinity, lastPoints: 100 },
+  { x: 159, y: 100, radius: 7, kick: 225, accent: 'magenta', armed: true, flashStartedAt: -Infinity, lastPoints: 100 },
+  { x: 132, y: 149, radius: 7, kick: 235, accent: 'lavender', armed: true, flashStartedAt: -Infinity, lastPoints: 100 }
 ];
 
 const bumperCombo = {
@@ -1358,33 +1358,33 @@ function drawPopBumpers() {
     ctx.shadowColor = accent;
     ctx.shadowBlur = 18 + flashStrength * 20;
     ctx.beginPath();
-    ctx.arc(0, 0, 23 + flashStrength * 3, 0, Math.PI * 2);
+    ctx.arc(0, 0, 12 + flashStrength * 1.5, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#050815';
     ctx.strokeStyle = MIAMI_COLORS.structure;
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.arc(0, 0, 18, 0, Math.PI * 2);
+    ctx.arc(0, 0, 9, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
     ctx.strokeStyle = flashing ? '#f4ffff' : accent;
-    ctx.lineWidth = flashing ? 4 : 2.5;
+    ctx.lineWidth = flashing ? 2 : 1.25;
     ctx.shadowColor = accent;
     ctx.shadowBlur = 8 + idlePulse * 5 + flashStrength * 22;
     ctx.beginPath();
-    ctx.arc(0, 0, 16, 0, Math.PI * 2);
+    ctx.arc(0, 0, 8, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.globalAlpha = 0.65 + flashStrength * 0.35;
     ctx.strokeStyle = bumper.accent === 'lavender'
       ? MIAMI_COLORS.magenta
       : MIAMI_COLORS.lavender;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.arc(0, 0, 5, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.globalAlpha = 1;
@@ -1392,15 +1392,8 @@ function drawPopBumpers() {
     ctx.shadowColor = accent;
     ctx.shadowBlur = flashing ? 18 : 7;
     ctx.beginPath();
-    ctx.arc(0, 0, 4.5 + flashStrength * 2, 0, Math.PI * 2);
+    ctx.arc(0, 0, 2.25 + flashStrength, 0, Math.PI * 2);
     ctx.fill();
-
-    ctx.font = '700 6px ui-monospace, monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#07101c';
-    ctx.shadowBlur = 0;
-    ctx.fillText('100', 0, 0.5);
 
     if (flashing) {
       ctx.globalAlpha = flashStrength;
@@ -1409,7 +1402,7 @@ function drawPopBumpers() {
       ctx.shadowColor = accent;
       ctx.shadowBlur = 16;
       ctx.beginPath();
-      ctx.arc(0, 0, 20 + (1 - flashStrength) * 12, 0, Math.PI * 2);
+      ctx.arc(0, 0, 10 + (1 - flashStrength) * 6, 0, Math.PI * 2);
       ctx.stroke();
 
       ctx.globalAlpha = Math.min(1, flashStrength * 1.8);
