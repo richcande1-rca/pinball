@@ -1,5 +1,8 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+const leftFlipperButton = document.getElementById('left-flipper-button');
+const rightFlipperButton = document.getElementById('right-flipper-button');
+const launchButton = document.getElementById('launch-button');
 
 const TABLE = {
   left: 24,
@@ -128,6 +131,8 @@ function resetBall() {
   for (const bumper of sideBumpers) {
     bumper.armed = true;
   }
+
+  syncLaunchButton();
 }
 
 function clamp(value, min, max) {
@@ -343,6 +348,7 @@ function launchBall() {
   ball.vy = -launchSpeed;
   plunger.charge = 0;
   plunger.charging = false;
+  syncLaunchButton();
 }
 
 function update(dt) {
@@ -677,19 +683,208 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-function setKeyState(code, pressed) {
-  if (code === 'ArrowLeft' || code === 'KeyZ') {
-    keys.left = pressed;
-    return true;
-  }
+const keyboardFlipperCodes = {
+  left: new Set(),
+  right: new Set()
+};
 
-  if (code === 'ArrowRight' || code === 'KeyX') {
-    keys.right = pressed;
-    return true;
-  }
+const buttonFlipperPointers = {
+  left: new Set(),
+  right: new Set()
+};
 
-  return false;
+function flipperButtonFor(side) {
+  return side === 'left' ? leftFlipperButton : rightFlipperButton;
 }
+
+function syncFlipperInput(side) {
+  const wasPressed = keys[side];
+  const isPressed =
+    keyboardFlipperCodes[side].size > 0 ||
+    buttonFlipperPointers[side].size > 0;
+
+  keys[side] = isPressed;
+  flipperButtonFor(side).setAttribute('aria-pressed', String(isPressed));
+
+  if (isPressed && !wasPressed) {
+    window.dispatchEvent(new CustomEvent('miami-flipper', {
+      detail: { index: side === 'left' ? 0 : 1 }
+    }));
+  }
+}
+
+function sideForKey(code) {
+  if (code === 'ArrowLeft' || code === 'KeyZ') {
+    return 'left';
+  }
+
+  if (
+    code === 'ArrowRight' ||
+    code === 'Slash' ||
+    code === 'NumpadDivide' ||
+    code === 'KeyX'
+  ) {
+    return 'right';
+  }
+
+  return null;
+}
+
+function setKeyState(code, pressed) {
+  const side = sideForKey(code);
+  if (!side) {
+    return false;
+  }
+
+  if (pressed) {
+    keyboardFlipperCodes[side].add(code);
+  } else {
+    keyboardFlipperCodes[side].delete(code);
+  }
+
+  syncFlipperInput(side);
+  return true;
+}
+
+function syncLaunchButton() {
+  launchButton.disabled = !ball.ready;
+  launchButton.setAttribute('aria-pressed', String(plunger.charging));
+}
+
+function beginPlungerCharge() {
+  if (!ball.ready || plunger.charging) {
+    return;
+  }
+
+  plunger.charging = true;
+  syncLaunchButton();
+}
+
+function finishPlungerCharge(shouldLaunch) {
+  if (!plunger.charging) {
+    return;
+  }
+
+  if (shouldLaunch && ball.ready) {
+    launchBall();
+    return;
+  }
+
+  plunger.charge = 0;
+  plunger.charging = false;
+  syncLaunchButton();
+}
+
+function bindFlipperButton(button, side) {
+  button.addEventListener('pointerdown', (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    buttonFlipperPointers[side].add(event.pointerId);
+    syncFlipperInput(side);
+    button.setPointerCapture(event.pointerId);
+  });
+
+  const releasePointer = (event) => {
+    buttonFlipperPointers[side].delete(event.pointerId);
+    syncFlipperInput(side);
+  };
+
+  button.addEventListener('pointerup', releasePointer);
+  button.addEventListener('pointercancel', releasePointer);
+  button.addEventListener('lostpointercapture', releasePointer);
+  button.addEventListener('contextmenu', event => event.preventDefault());
+
+  button.addEventListener('keydown', (event) => {
+    if (event.code !== 'Space' && event.code !== 'Enter') {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (!event.repeat) {
+      buttonFlipperPointers[side].add('keyboard');
+      syncFlipperInput(side);
+    }
+  });
+
+  button.addEventListener('keyup', (event) => {
+    if (event.code !== 'Space' && event.code !== 'Enter') {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    buttonFlipperPointers[side].delete('keyboard');
+    syncFlipperInput(side);
+  });
+}
+
+let activeLaunchPointer = null;
+let launchKeyHeld = false;
+
+launchButton.addEventListener('pointerdown', (event) => {
+  if (event.pointerType === 'mouse' && event.button !== 0) {
+    return;
+  }
+
+  event.preventDefault();
+  activeLaunchPointer = event.pointerId;
+  beginPlungerCharge();
+  launchButton.setPointerCapture(event.pointerId);
+});
+
+launchButton.addEventListener('pointerup', (event) => {
+  if (event.pointerId !== activeLaunchPointer) {
+    return;
+  }
+
+  activeLaunchPointer = null;
+  finishPlungerCharge(true);
+});
+
+function cancelLaunchPointer(event) {
+  if (event.pointerId !== activeLaunchPointer) {
+    return;
+  }
+
+  activeLaunchPointer = null;
+  finishPlungerCharge(false);
+}
+
+launchButton.addEventListener('pointercancel', cancelLaunchPointer);
+launchButton.addEventListener('lostpointercapture', cancelLaunchPointer);
+launchButton.addEventListener('contextmenu', event => event.preventDefault());
+
+launchButton.addEventListener('keydown', (event) => {
+  if (event.code !== 'Space' && event.code !== 'Enter') {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (!event.repeat) {
+    launchKeyHeld = true;
+    beginPlungerCharge();
+  }
+});
+
+launchButton.addEventListener('keyup', (event) => {
+  if (event.code !== 'Space' && event.code !== 'Enter') {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (launchKeyHeld) {
+    launchKeyHeld = false;
+    finishPlungerCharge(true);
+  }
+});
 
 window.addEventListener('keydown', (event) => {
   if (setKeyState(event.code, true)) {
@@ -698,8 +893,8 @@ window.addEventListener('keydown', (event) => {
 
   if (event.code === 'Space') {
     event.preventDefault();
-    if (ball.ready && !event.repeat) {
-      plunger.charging = true;
+    if (!event.repeat) {
+      beginPlungerCharge();
     }
   }
 
@@ -716,37 +911,29 @@ window.addEventListener('keyup', (event) => {
 
   if (event.code === 'Space') {
     event.preventDefault();
-    if (ball.ready && plunger.charging) {
-      launchBall();
-    }
+    finishPlungerCharge(true);
   }
 });
 
-canvas.addEventListener('pointerdown', (event) => {
-  const rect = canvas.getBoundingClientRect();
-  const x = (event.clientX - rect.left) * (canvas.width / rect.width);
+function releaseAllControls() {
+  keyboardFlipperCodes.left.clear();
+  keyboardFlipperCodes.right.clear();
+  buttonFlipperPointers.left.clear();
+  buttonFlipperPointers.right.clear();
+  syncFlipperInput('left');
+  syncFlipperInput('right');
 
-  if (x < canvas.width / 2) {
-    keys.left = true;
-  } else {
-    keys.right = true;
-  }
-
-  canvas.setPointerCapture(event.pointerId);
-});
-
-function releasePointer() {
-  keys.left = false;
-  keys.right = false;
+  activeLaunchPointer = null;
+  launchKeyHeld = false;
+  finishPlungerCharge(false);
 }
 
-canvas.addEventListener('pointerup', releasePointer);
-canvas.addEventListener('pointercancel', releasePointer);
-canvas.addEventListener('pointerleave', (event) => {
-  if (event.buttons === 0) {
-    releasePointer();
-  }
-});
-window.addEventListener('blur', releasePointer);
+bindFlipperButton(leftFlipperButton, 'left');
+bindFlipperButton(rightFlipperButton, 'right');
+syncFlipperInput('left');
+syncFlipperInput('right');
+syncLaunchButton();
+
+window.addEventListener('blur', releaseAllControls);
 
 requestAnimationFrame(frame);
