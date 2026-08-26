@@ -321,26 +321,6 @@ function drawBallTrail(now) {
 }
 
 function drawDecorativeDisplays(now) {
-  ctx.save();
-  ctx.fillStyle = 'rgba(5, 10, 25, 0.84)';
-  ctx.strokeStyle = 'rgba(34, 223, 243, 0.58)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.roundRect(166, 154, 88, 38, 6);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.textAlign = 'center';
-  ctx.font = '9px ui-monospace, monospace';
-  ctx.fillStyle = 'rgba(201, 184, 255, 0.72)';
-  ctx.fillText('SCORE', PLAYFIELD_CENTER, 167);
-  ctx.font = '16px ui-monospace, monospace';
-  ctx.fillStyle = MIAMI_COLORS.magenta;
-  ctx.shadowColor = MIAMI_COLORS.magenta;
-  ctx.shadowBlur = 4;
-  ctx.fillText('000000', PLAYFIELD_CENTER, 185);
-  ctx.restore();
-
   const inserts = [
     { x: 104, y: 468, color: MIAMI_COLORS.cyan },
     { x: 316, y: 468, color: MIAMI_COLORS.magenta },
