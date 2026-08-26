@@ -93,54 +93,28 @@ function makeRailSegments(points, radius = 4) {
   }));
 }
 
-// The strong launch now rides the cabinet perimeter instead of floating
-// inside two empty upper corners. After rounding the roof, the lane continues
-// down the left side to a controlled flipper return.
+// The strong launch uses a compact hook in the upper-right corner. Its open
+// mouth points into the upper playfield, leaving the roof and entire left side
+// available for bumpers, targets, lanes, and other future trouble.
 const coastalOrbitOuterPoints = [
-  { x: 42, y: 505 },
-  { x: 31, y: 470 },
-  { x: 29, y: 410 },
-  { x: 29, y: 340 },
-  { x: 29, y: 270 },
-  { x: 29, y: 218 },
-  { x: 29, y: 166 },
-  { x: 30, y: 116 },
-  { x: 38, y: 80 },
-  { x: 54, y: 54 },
-  { x: 82, y: 38 },
-  { x: 122, y: 31 },
-  { x: 180, y: 28 },
-  { x: 240, y: 28 },
-  { x: 300, y: 30 },
-  { x: 350, y: 35 },
-  { x: 390, y: 46 },
-  { x: 420, y: 64 },
-  { x: 440, y: 90 },
-  { x: 451, y: 122 },
+  { x: 314, y: 77 },
+  { x: 340, y: 58 },
+  { x: 365, y: 39 },
+  { x: 395, y: 32 },
+  { x: 424, y: 47 },
+  { x: 445, y: 82 },
+  { x: 452, y: 122 },
   { x: 452, y: 168 }
 ];
 
 const coastalOrbitInnerPoints = [
-  { x: 112, y: 492 },
-  { x: 88, y: 460 },
-  { x: 80, y: 410 },
-  { x: 78, y: 340 },
-  { x: 78, y: 280 },
-  { x: 78, y: 230 },
-  { x: 78, y: 190 },
-  { x: 80, y: 155 },
-  { x: 88, y: 126 },
-  { x: 104, y: 105 },
-  { x: 128, y: 91 },
-  { x: 164, y: 83 },
-  { x: 205, y: 79 },
-  { x: 240, y: 78 },
-  { x: 282, y: 80 },
-  { x: 322, y: 86 },
-  { x: 354, y: 97 },
-  { x: 378, y: 114 },
-  { x: 394, y: 134 },
-  { x: 402, y: 151 },
+  { x: 336, y: 113 },
+  { x: 360, y: 100 },
+  { x: 379, y: 86 },
+  { x: 396, y: 86 },
+  { x: 410, y: 101 },
+  { x: 416, y: 126 },
+  { x: 410, y: 148 },
   { x: 396, y: 158 }
 ];
 
@@ -220,6 +194,13 @@ const shooterRecoveryGuidePoints = [
 const LAUNCH_ROUTE_THRESHOLDS = {
   playfield: 0.28,
   orbit: 0.72
+};
+
+const RAMP_EXIT = {
+  x: 313,
+  y: 103,
+  angle: 33 * Math.PI / 180,
+  speed: 340
 };
 
 let shooterRoute = 'return';
@@ -567,19 +548,21 @@ function update(dt) {
     resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.98);
   }
 
-  // The perimeter lane deliberately scrubs off the launch speed at its lower
-  // left exit, then gives the ball a gentle diagonal feed toward the left
-  // flipper instead of dropping it beside the outlane.
+  // The short ramp ejects into open play at an exact 33-degree down-left
+  // angle. This sends a strong launch toward the upper target area without
+  // consuming the rest of the table.
   if (
     shooterRoute === 'orbit' &&
-    ball.vy > 0 &&
-    ball.x < 125 &&
-    ball.y > 462
+    ball.vx < 0 &&
+    ball.x < 345 &&
+    ball.y < 135
   ) {
+    ball.x = RAMP_EXIT.x;
+    ball.y = RAMP_EXIT.y;
+    ball.vx = -Math.cos(RAMP_EXIT.angle) * RAMP_EXIT.speed;
+    ball.vy = Math.sin(RAMP_EXIT.angle) * RAMP_EXIT.speed;
     shooterRoute = 'released';
     ballHasEnteredPlayfield = true;
-    ball.vx = 145;
-    ball.vy = 80;
   }
 
   // A live ball returning down the shooter lane uses the lower cabinet gate.
