@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Miami Nights Pinball</title>
-  <link rel="stylesheet" href="style.css?v=20260825-0545">
+  <link rel="stylesheet" href="style.css?v=20260825-2257">
 </head>
 <body>
   <section id="intro-screen" class="intro-screen" aria-label="Miami Nights title screen">
@@ -41,17 +41,40 @@
       >
       <button id="music-mute" type="button" aria-pressed="false">MUSIC ON</button>
     </div>
-    <canvas id="game" width="480" height="720" aria-label="Playable Miami Nights pinball table"></canvas>
+    <div class="table-cabinet" role="group" aria-label="Pinball cabinet controls">
+      <canvas id="game" width="480" height="720" aria-label="Playable Miami Nights pinball table"></canvas>
+      <button
+        id="left-flipper-button"
+        class="cabinet-button cabinet-button-left"
+        type="button"
+        aria-label="Left flipper"
+        aria-pressed="false"
+      ><span aria-hidden="true">◀</span></button>
+      <button
+        id="right-flipper-button"
+        class="cabinet-button cabinet-button-right"
+        type="button"
+        aria-label="Right flipper"
+        aria-pressed="false"
+      ><span aria-hidden="true">▶</span></button>
+      <button
+        id="launch-button"
+        class="cabinet-button cabinet-button-launch"
+        type="button"
+        aria-label="Hold to charge plunger; release to launch"
+        aria-pressed="false"
+      ><span aria-hidden="true">LAUNCH</span></button>
+    </div>
     <p>
-      Flippers: <kbd>←</kbd>/<kbd>Z</kbd> and <kbd>→</kbd>/<kbd>X</kbd>.
-      Plunger: hold <kbd>Space</kbd>, release to launch. Reset: <kbd>R</kbd>.
-      On touch, press the left or right half of the table for the flippers.
-      Build 20260825-0545.
+      Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
+      Plunger: hold <kbd>Space</kbd> or <strong>LAUNCH</strong>, then release. Reset: <kbd>R</kbd>.
+      Cabinet buttons work with touch, mouse, or pen.
+      Build 20260825-2257.
     </p>
   </main>
 
   <script src="intro.js?v=20260825-0545"></script>
-  <script src="game.js?v=20260823-1910"></script>
+  <script src="game.js?v=20260825-2257"></script>
   <script src="theme.js?v=20260823-1845"></script>
   <script src="audio.js?v=20260825-0545"></script>
 </body>
