@@ -216,11 +216,20 @@ const loopRamp = {
   flashStartedAt: -Infinity
 };
 
-const upperPosts = [
-  { x1: 146, y1: 236, x2: 146, y2: 238, radius: 7 },
-  { x1: 274, y1: 236, x2: 274, y2: 238, radius: 7 },
-  { x1: 210, y1: 302, x2: 210, y2: 304, radius: 7 }
+// Three active pop bumpers fill the open center of the upper-left loop. Their
+// spacing leaves playable exits between the caps while still encouraging
+// sustained, deliberately unruly volleys.
+const popBumpers = [
+  { x: 105, y: 100, radius: 14, kick: 225, accent: 'cyan', armed: true, flashStartedAt: -Infinity, lastPoints: 100 },
+  { x: 159, y: 100, radius: 14, kick: 225, accent: 'magenta', armed: true, flashStartedAt: -Infinity, lastPoints: 100 },
+  { x: 132, y: 149, radius: 14, kick: 235, accent: 'lavender', armed: true, flashStartedAt: -Infinity, lastPoints: 100 }
 ];
+
+const bumperCombo = {
+  count: 0,
+  remaining: 0,
+  window: 1.1
+};
 
 const midPlayfieldGuides = [
   { x1: 86, y1: 402, x2: 122, y2: 430, radius: 4 },
@@ -336,6 +345,14 @@ function resetPlayfieldForBall() {
   for (const bumper of sideBumpers) {
     bumper.armed = true;
   }
+
+  for (const bumper of popBumpers) {
+    bumper.armed = true;
+    bumper.flashStartedAt = -Infinity;
+    bumper.lastPoints = 100;
+  }
+  bumperCombo.count = 0;
+  bumperCombo.remaining = 0;
 
   magneticTarget.state = 'ready';
   magneticTarget.holdRemaining = 0;
@@ -595,6 +612,76 @@ function collideWithSideBumper(bumper) {
   return touching;
 }
 
+function collideWithPopBumper(bumper, index) {
+  let dx = ball.x - bumper.x;
+  let dy = ball.y - bumper.y;
+  let distance = Math.hypot(dx, dy);
+  const contactDistance = ball.radius + bumper.radius;
+
+  if (!bumper.armed && distance > contactDistance + 8) {
+    bumper.armed = true;
+  }
+
+  if (distance >= contactDistance) return false;
+
+  if (distance < 0.0001) {
+    const escapeAngle = -Math.PI / 2 + index * Math.PI * 2 / 3;
+    dx = Math.cos(escapeAngle);
+    dy = Math.sin(escapeAngle);
+    distance = 1;
+  }
+
+  const nx = dx / distance;
+  const ny = dy / distance;
+  const incomingNormalSpeed = -(ball.vx * nx + ball.vy * ny);
+  const overlap = contactDistance - distance;
+  ball.x += nx * overlap;
+  ball.y += ny * overlap;
+
+  if (incomingNormalSpeed > 0) {
+    const impulse = (1 + 0.92) * incomingNormalSpeed;
+    ball.vx += impulse * nx;
+    ball.vy += impulse * ny;
+  }
+
+  if (bumper.armed && incomingNormalSpeed >= 35) {
+    // A small tangent variation keeps repeated volleys lively without turning
+    // the result into an uncontrollable cannon shot.
+    const jitter = (Math.random() - 0.5) * 0.28;
+    const cos = Math.cos(jitter);
+    const sin = Math.sin(jitter);
+    const kickX = nx * cos - ny * sin;
+    const kickY = nx * sin + ny * cos;
+
+    ball.vx += kickX * bumper.kick;
+    ball.vy += kickY * bumper.kick;
+    bumper.armed = false;
+    bumper.flashStartedAt = performance.now();
+
+    const continuingVolley = bumperCombo.remaining > 0;
+    bumperCombo.count = continuingVolley
+      ? Math.min(3, bumperCombo.count + 1)
+      : 1;
+    bumperCombo.remaining = bumperCombo.window;
+    const points = bumperCombo.count * 100;
+    bumper.lastPoints = points;
+    score += points;
+    syncStatusDisplay();
+
+    window.dispatchEvent(new CustomEvent('miami-pop-bumper', {
+      detail: {
+        index,
+        accent: bumper.accent,
+        combo: bumperCombo.count,
+        points,
+        score
+      }
+    }));
+  }
+
+  return true;
+}
+
 function collideWithMagneticTarget(target, dt) {
   if (target.state === 'holding') return true;
 
@@ -791,6 +878,11 @@ function update(dt) {
     return;
   }
 
+  bumperCombo.remaining = Math.max(0, bumperCombo.remaining - dt);
+  if (bumperCombo.remaining === 0) {
+    bumperCombo.count = 0;
+  }
+
   if (updateMagneticTarget(dt) || updateUpperLeftLoop(dt)) {
     return;
   }
@@ -910,8 +1002,8 @@ function update(dt) {
     resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.94);
   }
 
-  for (const post of upperPosts) {
-    resolveSegmentCollision(post, { x: 0, y: 0 }, wallRestitution);
+  for (const [index, bumper] of popBumpers.entries()) {
+    collideWithPopBumper(bumper, index);
   }
 
   collideWithMagneticTarget(magneticTarget, dt);
@@ -1248,38 +1340,98 @@ function drawMagneticTarget() {
   ctx.restore();
 }
 
+function drawPopBumpers() {
+  const now = performance.now();
+
+  for (const bumper of popBumpers) {
+    const accent = MIAMI_COLORS[bumper.accent];
+    const hitAge = now - bumper.flashStartedAt;
+    const flashing = hitAge >= 0 && hitAge < 260;
+    const flashStrength = flashing ? 1 - hitAge / 260 : 0;
+    const idlePulse = 0.5 + 0.5 * Math.sin(now / 240 + bumper.x);
+
+    ctx.save();
+    ctx.translate(bumper.x, bumper.y);
+
+    ctx.globalAlpha = 0.12 + idlePulse * 0.08 + flashStrength * 0.3;
+    ctx.fillStyle = accent;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 18 + flashStrength * 20;
+    ctx.beginPath();
+    ctx.arc(0, 0, 23 + flashStrength * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#050815';
+    ctx.strokeStyle = MIAMI_COLORS.structure;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(0, 0, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = flashing ? '#f4ffff' : accent;
+    ctx.lineWidth = flashing ? 4 : 2.5;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 8 + idlePulse * 5 + flashStrength * 22;
+    ctx.beginPath();
+    ctx.arc(0, 0, 16, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.globalAlpha = 0.65 + flashStrength * 0.35;
+    ctx.strokeStyle = bumper.accent === 'lavender'
+      ? MIAMI_COLORS.magenta
+      : MIAMI_COLORS.lavender;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = flashing ? '#ffffff' : accent;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = flashing ? 18 : 7;
+    ctx.beginPath();
+    ctx.arc(0, 0, 4.5 + flashStrength * 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.font = '700 6px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#07101c';
+    ctx.shadowBlur = 0;
+    ctx.fillText('100', 0, 0.5);
+
+    if (flashing) {
+      ctx.globalAlpha = flashStrength;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(0, 0, 20 + (1 - flashStrength) * 12, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.globalAlpha = Math.min(1, flashStrength * 1.8);
+      ctx.fillStyle = '#f4ffff';
+      ctx.font = '700 8px ui-monospace, monospace';
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 10;
+      ctx.fillText(`+${bumper.lastPoints}`, 0, -27 - (1 - flashStrength) * 7);
+    }
+
+    ctx.restore();
+  }
+}
+
 function drawPassivePlayfieldGeometry() {
   for (const guide of midPlayfieldGuides) {
     drawNeonSegment(guide, MIAMI_COLORS.magenta);
   }
 
   drawUpperLeftLoopRamp();
+  drawPopBumpers();
   drawMagneticTarget();
-
-  for (const [index, post] of upperPosts.entries()) {
-    const accent = index === 0
-      ? MIAMI_COLORS.cyan
-      : index === 1
-        ? MIAMI_COLORS.magenta
-        : MIAMI_COLORS.lavender;
-
-    ctx.fillStyle = MIAMI_COLORS.structure;
-    ctx.beginPath();
-    ctx.arc(post.x1, (post.y1 + post.y2) / 2, 5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.save();
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = 1.5;
-    ctx.shadowColor = accent;
-    ctx.shadowBlur = 3;
-    ctx.stroke();
-    ctx.fillStyle = accent;
-    ctx.beginPath();
-    ctx.arc(post.x1, (post.y1 + post.y2) / 2, 1.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
 }
 
 function drawLowerApron() {

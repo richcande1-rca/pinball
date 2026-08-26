@@ -356,6 +356,21 @@
     tone(index ? 720 : 670, 0.25, 0.085, { type: 'square', endFrequency: 430 });
   }
 
+  function playPopBumper({ index = 0, combo = 1 } = {}) {
+    const baseNotes = [540, 620, 700];
+    const rise = Math.max(0, Math.min(2, combo - 1)) * 150;
+    const frequency = baseNotes[index % baseNotes.length] + rise;
+    tone(frequency, 0.34, 0.095, {
+      type: 'square',
+      endFrequency: frequency * 1.42
+    });
+    tone(frequency * 1.95, 0.18, 0.075, {
+      type: 'triangle',
+      endFrequency: frequency * 1.55
+    });
+    noise(0.28, 0.045, 2400 + index * 450 + rise);
+  }
+
   function playImpact({ type, strength = 0.2, index = 0 }) {
     const force = Math.max(0.05, Math.min(1, strength));
     if (type === 'post') {
@@ -482,6 +497,7 @@
   }, { passive: true });
   window.addEventListener('miami-intro-start', startFileTheme);
   window.addEventListener('miami-flipper', event => playFlipper(event.detail.index));
+  window.addEventListener('miami-pop-bumper', event => playPopBumper(event.detail));
   window.addEventListener('miami-impact', event => playImpact(event.detail));
   window.addEventListener('miami-magnet-capture', playMagnetCapture);
   window.addEventListener('miami-magnet-eject', playMagnetEject);
