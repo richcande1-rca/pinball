@@ -157,6 +157,64 @@ const shooterDivider = {
   radius: 4
 };
 
+// The visible divider keeps its full layout envelope, while these two physical
+// rails leave a generous fork into the upper playfield.
+const shooterDividerRails = [
+  {
+    x1: SHOOTER.dividerX,
+    y1: SHOOTER.dividerTop,
+    x2: SHOOTER.dividerX,
+    y2: 178,
+    radius: 4
+  },
+  {
+    x1: SHOOTER.dividerX,
+    y1: 262,
+    x2: SHOOTER.dividerX,
+    y2: SHOOTER.dividerBottom,
+    radius: 4
+  }
+];
+
+const shooterDiverter = {
+  x1: 400,
+  y1: 190,
+  x2: 447,
+  y2: 232,
+  radius: 5
+};
+
+const shooterDiverterOpen = {
+  x1: 400,
+  y1: 190,
+  x2: 414,
+  y2: 174,
+  radius: 5
+};
+
+const LAUNCH_ROUTE_THRESHOLDS = {
+  playfield: 0.28,
+  orbit: 0.72
+};
+
+let shooterRoute = 'return';
+
+function routeForPlungerCharge(charge) {
+  if (charge >= LAUNCH_ROUTE_THRESHOLDS.orbit) {
+    return 'orbit';
+  }
+
+  if (charge >= LAUNCH_ROUTE_THRESHOLDS.playfield) {
+    return 'playfield';
+  }
+
+  return 'return';
+}
+
+function visibleShooterRoute() {
+  return ball.ready ? routeForPlungerCharge(plunger.charge) : shooterRoute;
+}
+
 
 function resetBall() {
   ball.x = SHOOTER.ballX;
@@ -167,6 +225,7 @@ function resetBall() {
 
   plunger.charge = 0;
   plunger.charging = false;
+  shooterRoute = 'return';
 
   for (const bumper of sideBumpers) {
     bumper.armed = true;
@@ -380,9 +439,11 @@ function launchBall() {
     return;
   }
 
+  const launchCharge = plunger.charge;
   const launchSpeed = plunger.minSpeed +
-    (plunger.maxSpeed - plunger.minSpeed) * plunger.charge;
+    (plunger.maxSpeed - plunger.minSpeed) * launchCharge;
 
+  shooterRoute = routeForPlungerCharge(launchCharge);
   ball.ready = false;
   ball.vx = 0;
   ball.vy = -launchSpeed;
@@ -431,7 +492,24 @@ function update(dt) {
     ball.vy = Math.abs(ball.vy) * wallRestitution;
   }
 
-  resolveSegmentCollision(shooterDivider, { x: 0, y: 0 }, 0.86);
+  for (const rail of shooterDividerRails) {
+    resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.86);
+  }
+
+  if (
+    shooterRoute === 'playfield' &&
+    ball.vy < 0 &&
+    ball.x > SHOOTER.dividerX
+  ) {
+    resolveSegmentCollision(shooterDiverter, { x: 0, y: 0 }, 0.88);
+  }
+
+  if (
+    shooterRoute === 'playfield' &&
+    ball.x + ball.radius < SHOOTER.dividerX
+  ) {
+    shooterRoute = 'released';
+  }
 
   for (const rail of coastalOrbitRails) {
     // The polished orbit loses very little energy, allowing a properly charged
@@ -588,9 +666,30 @@ function drawTable() {
   ctx.restore();
 }
 
+function drawShooterDiverter() {
+  const route = visibleShooterRoute();
+
+  ctx.save();
+  if (route === 'playfield') {
+    drawNeonSegment(shooterDiverter, MIAMI_COLORS.magenta, 9, 2.5);
+  } else {
+    ctx.globalAlpha = route === 'orbit' ? 1 : 0.38;
+    const accent = route === 'orbit'
+      ? MIAMI_COLORS.cyan
+      : MIAMI_COLORS.lavender;
+    drawNeonSegment(shooterDiverterOpen, accent, 9, 2.5);
+  }
+  ctx.restore();
+}
+
 function drawShooterLane() {
-  drawNeonSegment(shooterDivider, MIAMI_COLORS.cyan);
   drawCoastalOrbit();
+
+  for (const rail of shooterDividerRails) {
+    drawNeonSegment(rail, MIAMI_COLORS.cyan);
+  }
+
+  drawShooterDiverter();
 }
 
 function drawPlunger() {
