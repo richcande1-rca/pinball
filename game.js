@@ -67,7 +67,8 @@ const FLIPPER_CHARGE = {
   duration: 1,
   contactSpeed: 55,
   heldDecayRate: 2.4,
-  latchDuration: 0.75,
+  latchHoldDuration: 1.5,
+  latchFadeDuration: 2,
   minimum: 0.08,
   punchWindow: 0.16,
   basePunch: 90,
@@ -94,6 +95,7 @@ function makeFlipper(side) {
     cradleContact: false,
     cradleCharge: 0,
     storedCharge: 0,
+    storedHoldRemaining: 0,
     storedDecayRate: 0,
     pendingPunch: 0,
     punchRemaining: 0,
@@ -380,6 +382,7 @@ function resetPlayfieldForBall() {
     flipper.cradleContact = false;
     flipper.cradleCharge = 0;
     flipper.storedCharge = 0;
+    flipper.storedHoldRemaining = 0;
     flipper.storedDecayRate = 0;
     flipper.pendingPunch = 0;
     flipper.punchRemaining = 0;
@@ -530,10 +533,12 @@ function updateFlipper(flipper, dt) {
   if (flipper.justReleased) {
     if (flipper.cradleCharge >= FLIPPER_CHARGE.minimum) {
       flipper.storedCharge = flipper.cradleCharge;
+      flipper.storedHoldRemaining = FLIPPER_CHARGE.latchHoldDuration;
       flipper.storedDecayRate =
-        flipper.cradleCharge / FLIPPER_CHARGE.latchDuration;
+        flipper.cradleCharge / FLIPPER_CHARGE.latchFadeDuration;
     } else {
       flipper.storedCharge = 0;
+      flipper.storedHoldRemaining = 0;
       flipper.storedDecayRate = 0;
     }
     flipper.cradleCharge = 0;
@@ -548,6 +553,7 @@ function updateFlipper(flipper, dt) {
       flipper.punchRemaining = 0;
     }
     flipper.storedCharge = 0;
+    flipper.storedHoldRemaining = 0;
     flipper.storedDecayRate = 0;
   }
 
@@ -567,10 +573,17 @@ function updateFlipper(flipper, dt) {
   }
 
   if (!nextPressed && !flipper.justReleased && flipper.storedCharge > 0) {
-    flipper.storedCharge = Math.max(
-      0,
-      flipper.storedCharge - flipper.storedDecayRate * dt
-    );
+    if (flipper.storedHoldRemaining > 0) {
+      flipper.storedHoldRemaining = Math.max(
+        0,
+        flipper.storedHoldRemaining - dt
+      );
+    } else {
+      flipper.storedCharge = Math.max(
+        0,
+        flipper.storedCharge - flipper.storedDecayRate * dt
+      );
+    }
   }
 
   if (flipper.pendingPunch > 0 && !flipper.justPressed) {
