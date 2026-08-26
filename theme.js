@@ -22,7 +22,8 @@ const passiveImpactSurfaces = [
   ...upperPosts.map((surface, index) => ({ surface, type: 'post', index })),
   ...midPlayfieldGuides.map((surface, index) => ({ surface, type: 'mid-guide', index })),
   ...lowerGuides.map((surface, index) => ({ surface, type: 'lower-guide', index })),
-  { surface: shooterDivider, type: 'shooter-divider', index: 0 }
+  ...shooterDividerRails.map((surface, index) => ({ surface, type: 'shooter-divider', index })),
+  { surface: shooterDiverter, type: 'launch-diverter', index: 0 }
 ];
 
 function notifyPassiveImpact(type, strength, x, y, index, now) {
