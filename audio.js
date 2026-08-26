@@ -367,6 +367,12 @@
     tone(260 + force * 220, 0.012 + force * 0.07, 0.045, { type: 'triangle', endFrequency: 190 });
   }
 
+  function playTarget() {
+    noise(0.3, 0.045, 2600);
+    tone(920, 0.28, 0.1, { type: 'square', endFrequency: 640 });
+    tone(1380, 0.12, 0.075, { type: 'triangle', endFrequency: 980 });
+  }
+
   function startCharge() {
     if (!audioContext || audioContext.state !== 'running' || chargeVoice) return;
     const now = audioContext.currentTime;
@@ -437,10 +443,6 @@
       audioState.zipArmed = false;
     }
 
-    const genuinelyDrained =
-      !audioState.ready && ball.ready &&
-      audioState.ballY > canvas.height - 28 && audioState.ballVy > 0;
-    if (genuinelyDrained && !audioState.manualResetPending) playDrain();
 
     audioState.charge = plunger.charge;
     audioState.ready = ball.ready;
@@ -464,6 +466,8 @@
   window.addEventListener('miami-intro-start', startFileTheme);
   window.addEventListener('miami-flipper', event => playFlipper(event.detail.index));
   window.addEventListener('miami-impact', event => playImpact(event.detail));
+  window.addEventListener('miami-target', playTarget);
+  window.addEventListener('miami-drain', playDrain);
 
   if (musicVolume && musicMute) {
     updateMusicVolume();

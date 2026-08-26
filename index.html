@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Miami Nights Pinball</title>
-  <link rel="stylesheet" href="style.css?v=20260825-2257">
+  <link rel="stylesheet" href="style.css?v=20260826-0127">
 </head>
 <body>
   <section id="intro-screen" class="intro-screen" aria-label="Miami Nights title screen">
@@ -27,19 +27,28 @@
   ></audio>
 
   <main class="game-shell">
-    <h1><span>MIAMI</span> NIGHTS</h1>
-    <div class="music-controls" role="group" aria-label="Music controls">
-      <label for="music-volume">MUSIC</label>
-      <input
-        id="music-volume"
-        type="range"
-        min="0"
-        max="100"
-        step="1"
-        value="45"
-        aria-label="Music volume"
-      >
-      <button id="music-mute" type="button" aria-pressed="false">MUSIC ON</button>
+    <div class="control-strip" role="group" aria-label="Score, ball count, and music controls">
+      <div class="status-cell score-status" aria-live="polite">
+        <span class="status-label">SCORE</span>
+        <strong id="score-value" class="score-value">000000</strong>
+      </div>
+      <div class="status-cell ball-status" aria-live="polite">
+        <strong id="ball-number" class="ball-number">BALL 1</strong>
+        <span id="ball-pips" class="ball-pips" aria-label="3 balls remaining">●●●</span>
+      </div>
+      <div class="music-controls" role="group" aria-label="Music controls">
+        <label for="music-volume">MUSIC</label>
+        <input
+          id="music-volume"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          value="45"
+          aria-label="Music volume"
+        >
+        <button id="music-mute" type="button" aria-pressed="false">MUSIC ON</button>
+      </div>
     </div>
     <div class="table-cabinet" role="group" aria-label="Pinball cabinet controls">
       <canvas id="game" width="480" height="720" aria-label="Playable Miami Nights pinball table"></canvas>
@@ -63,20 +72,21 @@
         type="button"
         aria-label="Hold to charge plunger; release to launch"
         aria-pressed="false"
-      ><span aria-hidden="true">LAUNCH</span></button>
+      ><span id="launch-button-label" aria-hidden="true">LAUNCH</span></button>
     </div>
     <p>
       Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
       Plunger: hold <kbd>Space</kbd> or <strong>LAUNCH</strong>; medium enters playfield, strong takes the upper-right ramp.
       Returned launches are replayable; live balls entering the shooter lane feed the right flipper. Reset: <kbd>R</kbd>.
+      Ramp target: 500 points. Three balls per game; <strong>NEW GAME</strong> or <kbd>R</kbd> restarts.
       Cabinet buttons work with touch, mouse, or pen.
-      Build 20260826-0109.
+      Build 20260826-0127.
     </p>
   </main>
 
   <script src="intro.js?v=20260825-0545"></script>
-  <script src="game.js?v=20260826-0109"></script>
-  <script src="theme.js?v=20260826-0109"></script>
-  <script src="audio.js?v=20260825-0545"></script>
+  <script src="game.js?v=20260826-0127"></script>
+  <script src="theme.js?v=20260826-0127"></script>
+  <script src="audio.js?v=20260826-0127"></script>
 </body>
 </html>
