@@ -367,10 +367,27 @@
     tone(260 + force * 220, 0.012 + force * 0.07, 0.045, { type: 'triangle', endFrequency: 190 });
   }
 
-  function playTarget() {
-    noise(0.3, 0.045, 2600);
-    tone(920, 0.28, 0.1, { type: 'square', endFrequency: 640 });
-    tone(1380, 0.12, 0.075, { type: 'triangle', endFrequency: 980 });
+  function playMagnetCapture() {
+    tone(185, 0.3, 0.2, { type: 'sawtooth', endFrequency: 72 });
+    tone(740, 0.16, 0.16, { type: 'triangle', endFrequency: 310 });
+    noise(0.16, 0.055, 2100);
+  }
+
+  function playMagnetEject() {
+    tone(145, 0.42, 0.12, { type: 'square', endFrequency: 58 });
+    tone(420, 0.24, 0.16, { type: 'triangle', endFrequency: 980 });
+    noise(0.32, 0.07, 2900);
+  }
+
+  function playLoopEnter() {
+    tone(420, 0.16, 0.16, { type: 'triangle', endFrequency: 960 });
+    noise(0.07, 0.08, 3400);
+  }
+
+  function playLoopComplete() {
+    tone(760, 0.22, 0.12, { type: 'square', endFrequency: 1120 });
+    tone(1140, 0.18, 0.16, { type: 'triangle', endFrequency: 1680 });
+    noise(0.12, 0.055, 4200);
   }
 
   function startCharge() {
@@ -466,7 +483,10 @@
   window.addEventListener('miami-intro-start', startFileTheme);
   window.addEventListener('miami-flipper', event => playFlipper(event.detail.index));
   window.addEventListener('miami-impact', event => playImpact(event.detail));
-  window.addEventListener('miami-target', playTarget);
+  window.addEventListener('miami-magnet-capture', playMagnetCapture);
+  window.addEventListener('miami-magnet-eject', playMagnetEject);
+  window.addEventListener('miami-loop-enter', playLoopEnter);
+  window.addEventListener('miami-loop-complete', playLoopComplete);
   window.addEventListener('miami-drain', playDrain);
 
   if (musicVolume && musicMute) {

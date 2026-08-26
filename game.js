@@ -133,17 +133,86 @@ const coastalOrbitRails = [
   ...makeRailSegments(coastalOrbitInnerPoints)
 ];
 
-// A repeatable stand-up target nested in the ramp curl. Its face is angled
-// toward a left-flipper cradle shot, so a clean hit rebounds down-left into
-// open play instead of toward the shooter lane.
-const scoringTarget = {
-  x1: 364,
-  y1: 123,
-  x2: 388,
-  y2: 136,
-  radius: 6,
+// The upper-right target is now a recessed magnetic lock. A clean hit
+// captures the ball, holds it for a dramatic beat, then ejects down-left.
+const magneticTarget = {
+  x: 390,
+  y: 126,
+  radius: 12,
   value: 500,
-  armed: true,
+  state: 'ready',
+  holdRemaining: 0,
+  captureDuration: 0.7,
+  cooldownRemaining: 0,
+  ejectAngle: 145 * Math.PI / 180,
+  ejectSpeed: 650,
+  flashStartedAt: -Infinity
+};
+
+// A compact upper-left loop gives the right flipper its deliberate skill shot.
+// The rails stay in the corner and form a short horseshoe with separate entry
+// and exit mouths rather than sprawling across the playfield.
+const upperLeftLoopOuterPoints = [
+  { x: 84, y: 200 },
+  { x: 62, y: 180 },
+  { x: 44, y: 150 },
+  { x: 40, y: 115 },
+  { x: 48, y: 75 },
+  { x: 76, y: 43 },
+  { x: 116, y: 28 },
+  { x: 156, y: 34 },
+  { x: 190, y: 55 },
+  { x: 212, y: 88 },
+  { x: 218, y: 123 },
+  { x: 210, y: 157 },
+  { x: 190, y: 184 },
+  { x: 198, y: 207 }
+];
+
+const upperLeftLoopInnerPoints = [
+  { x: 112, y: 184 },
+  { x: 92, y: 165 },
+  { x: 78, y: 142 },
+  { x: 76, y: 116 },
+  { x: 84, y: 90 },
+  { x: 103, y: 69 },
+  { x: 128, y: 60 },
+  { x: 151, y: 64 },
+  { x: 171, y: 78 },
+  { x: 184, y: 98 },
+  { x: 187, y: 122 },
+  { x: 180, y: 144 },
+  { x: 164, y: 164 },
+  { x: 174, y: 185 }
+];
+
+const upperLeftLoopRails = [
+  ...makeRailSegments(upperLeftLoopOuterPoints),
+  ...makeRailSegments(upperLeftLoopInnerPoints)
+];
+
+const upperLeftLoopPath = [
+  { x: 100, y: 192 },
+  { x: 77, y: 173 },
+  { x: 60, y: 146 },
+  { x: 58, y: 116 },
+  { x: 66, y: 82 },
+  { x: 90, y: 56 },
+  { x: 122, y: 44 },
+  { x: 154, y: 49 },
+  { x: 181, y: 66 },
+  { x: 198, y: 93 },
+  { x: 202, y: 122 },
+  { x: 195, y: 151 },
+  { x: 177, y: 174 },
+  { x: 186, y: 196 }
+];
+
+const loopRamp = {
+  active: false,
+  progress: 0,
+  duration: 0.9,
+  value: 2500,
   flashStartedAt: -Infinity
 };
 
@@ -268,7 +337,11 @@ function resetPlayfieldForBall() {
     bumper.armed = true;
   }
 
-  scoringTarget.armed = true;
+  magneticTarget.state = 'ready';
+  magneticTarget.holdRemaining = 0;
+  magneticTarget.cooldownRemaining = 0;
+  loopRamp.active = false;
+  loopRamp.progress = 0;
 }
 
 function parkBallAtPlunger() {
@@ -290,7 +363,8 @@ function resetGame() {
   ballNumber = 1;
   ballsRemaining = TOTAL_BALLS;
   gameOver = false;
-  scoringTarget.flashStartedAt = -Infinity;
+  magneticTarget.flashStartedAt = -Infinity;
+  loopRamp.flashStartedAt = -Infinity;
   resetPlayfieldForBall();
   parkBallAtPlunger();
   syncStatusDisplay();
@@ -521,55 +595,172 @@ function collideWithSideBumper(bumper) {
   return touching;
 }
 
-function collideWithScoringTarget(target) {
-  const closest = closestPointOnSegment(
-    ball.x,
-    ball.y,
-    target.x1,
-    target.y1,
-    target.x2,
-    target.y2
-  );
+function collideWithMagneticTarget(target, dt) {
+  if (target.state === 'holding') return true;
 
-  const dx = ball.x - closest.x;
-  const dy = ball.y - closest.y;
-  const distance = Math.hypot(dx, dy);
+  target.cooldownRemaining = Math.max(0, target.cooldownRemaining - dt);
+
+  let dx = ball.x - target.x;
+  let dy = ball.y - target.y;
+  let distance = Math.hypot(dx, dy);
   const contactDistance = ball.radius + target.radius;
 
-  if (!target.armed && distance > contactDistance + 24) {
-    target.armed = true;
+  if (
+    target.state === 'cooldown' &&
+    target.cooldownRemaining === 0 &&
+    distance > contactDistance + 22
+  ) {
+    target.state = 'ready';
   }
 
-  let incomingNormalSpeed = 0;
-  if (distance > 0.0001) {
-    const nx = dx / distance;
-    const ny = dy / distance;
-    incomingNormalSpeed = -(ball.vx * nx + ball.vy * ny);
+  if (distance >= contactDistance) return false;
+
+  if (distance < 0.0001) {
+    dx = -1;
+    dy = 0.7;
+    distance = Math.hypot(dx, dy);
   }
 
-  const scoringHit =
-    target.armed &&
-    distance < contactDistance &&
-    incomingNormalSpeed >= 50;
+  const nx = dx / distance;
+  const ny = dy / distance;
+  const incomingNormalSpeed = -(ball.vx * nx + ball.vy * ny);
 
-  const touching = resolveSegmentCollision(
-    target,
-    { x: 0, y: 0 },
-    0.74,
-    scoringHit ? 36 : 0
-  );
-
-  if (scoringHit) {
-    target.armed = false;
+  if (target.state === 'ready' && incomingNormalSpeed >= 55) {
+    target.state = 'holding';
+    target.holdRemaining = target.captureDuration;
     target.flashStartedAt = performance.now();
+    ball.x = target.x;
+    ball.y = target.y;
+    ball.vx = 0;
+    ball.vy = 0;
     score += target.value;
     syncStatusDisplay();
-    window.dispatchEvent(new CustomEvent('miami-target', {
+    window.dispatchEvent(new CustomEvent('miami-magnet-capture', {
       detail: { points: target.value, score }
+    }));
+    return true;
+  }
+
+  const overlap = contactDistance - distance;
+  ball.x += nx * overlap;
+  ball.y += ny * overlap;
+
+  const normalSpeed = ball.vx * nx + ball.vy * ny;
+  if (normalSpeed < 0) {
+    const impulse = -(1 + 0.72) * normalSpeed;
+    ball.vx += impulse * nx;
+    ball.vy += impulse * ny;
+  }
+
+  return true;
+}
+
+function updateMagneticTarget(dt) {
+  if (magneticTarget.state !== 'holding') return false;
+
+  ball.x = magneticTarget.x;
+  ball.y = magneticTarget.y;
+  ball.vx = 0;
+  ball.vy = 0;
+  magneticTarget.holdRemaining -= dt;
+
+  if (magneticTarget.holdRemaining <= 0) {
+    const ux = Math.cos(magneticTarget.ejectAngle);
+    const uy = Math.sin(magneticTarget.ejectAngle);
+    const clearance = magneticTarget.radius + ball.radius + 2;
+
+    magneticTarget.state = 'cooldown';
+    magneticTarget.cooldownRemaining = 0.45;
+    magneticTarget.flashStartedAt = performance.now();
+    ball.x = magneticTarget.x + ux * clearance;
+    ball.y = magneticTarget.y + uy * clearance;
+    ball.vx = ux * magneticTarget.ejectSpeed;
+    ball.vy = uy * magneticTarget.ejectSpeed;
+    window.dispatchEvent(new CustomEvent('miami-magnet-eject', {
+      detail: { speed: magneticTarget.ejectSpeed }
     }));
   }
 
-  return touching;
+  return true;
+}
+
+function sampleSmoothPath(points, progress) {
+  const scaled = clamp(progress, 0, 1) * (points.length - 1);
+  const index = Math.min(points.length - 2, Math.floor(scaled));
+  const t = scaled - index;
+  const p0 = points[Math.max(0, index - 1)];
+  const p1 = points[index];
+  const p2 = points[index + 1];
+  const p3 = points[Math.min(points.length - 1, index + 2)];
+  const t2 = t * t;
+  const t3 = t2 * t;
+
+  return {
+    x: 0.5 * (
+      2 * p1.x + (-p0.x + p2.x) * t +
+      (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+      (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+    ),
+    y: 0.5 * (
+      2 * p1.y + (-p0.y + p2.y) * t +
+      (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+      (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+    )
+  };
+}
+
+function tryEnterUpperLeftLoop() {
+  const entrance = upperLeftLoopPath[0];
+  const distance = Math.hypot(ball.x - entrance.x, ball.y - entrance.y);
+  const fastEnough = Math.hypot(ball.vx, ball.vy) >= 260;
+
+  if (
+    !loopRamp.active &&
+    distance < 25 &&
+    ball.vx < -40 &&
+    ball.vy < -120 &&
+    fastEnough
+  ) {
+    loopRamp.active = true;
+    loopRamp.progress = 0;
+    ball.x = entrance.x;
+    ball.y = entrance.y;
+    ball.vx = 0;
+    ball.vy = 0;
+    ballHasEnteredPlayfield = true;
+    shooterRoute = 'released';
+    window.dispatchEvent(new CustomEvent('miami-loop-enter'));
+    return true;
+  }
+
+  return false;
+}
+
+function updateUpperLeftLoop(dt) {
+  if (!loopRamp.active) return false;
+
+  const previousX = ball.x;
+  const previousY = ball.y;
+  loopRamp.progress = clamp(loopRamp.progress + dt / loopRamp.duration, 0, 1);
+  const point = sampleSmoothPath(upperLeftLoopPath, loopRamp.progress);
+  ball.x = point.x;
+  ball.y = point.y;
+  ball.vx = (point.x - previousX) / dt;
+  ball.vy = (point.y - previousY) / dt;
+
+  if (loopRamp.progress >= 1) {
+    loopRamp.active = false;
+    loopRamp.flashStartedAt = performance.now();
+    ball.vx = 285;
+    ball.vy = 175;
+    score += loopRamp.value;
+    syncStatusDisplay();
+    window.dispatchEvent(new CustomEvent('miami-loop-complete', {
+      detail: { points: loopRamp.value, score }
+    }));
+  }
+
+  return true;
 }
 
 function launchBall() {
@@ -600,6 +791,10 @@ function update(dt) {
     return;
   }
 
+  if (updateMagneticTarget(dt) || updateUpperLeftLoop(dt)) {
+    return;
+  }
+
   if (ball.ready) {
     ball.x = SHOOTER.ballX;
     ball.y = SHOOTER.ballY;
@@ -619,6 +814,10 @@ function update(dt) {
   // Light rolling resistance. Spin / English is still deliberately deferred.
   ball.vx *= rollingDrag;
   ball.vy *= rollingDrag;
+
+  if (tryEnterUpperLeftLoop()) {
+    return;
+  }
 
   if (ball.x - ball.radius < TABLE.left) {
     ball.x = TABLE.left + ball.radius;
@@ -707,11 +906,15 @@ function update(dt) {
     shooterRoute = 'released';
   }
 
+  for (const rail of upperLeftLoopRails) {
+    resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.94);
+  }
+
   for (const post of upperPosts) {
     resolveSegmentCollision(post, { x: 0, y: 0 }, wallRestitution);
   }
 
-  collideWithScoringTarget(scoringTarget);
+  collideWithMagneticTarget(magneticTarget, dt);
 
   for (const guide of midPlayfieldGuides) {
     resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
@@ -940,34 +1143,108 @@ function drawLowerGuides() {
   }
 }
 
-function drawScoringTarget() {
-  const centerX = (scoringTarget.x1 + scoringTarget.x2) / 2;
-  const centerY = (scoringTarget.y1 + scoringTarget.y2) / 2;
-  const angle = Math.atan2(
-    scoringTarget.y2 - scoringTarget.y1,
-    scoringTarget.x2 - scoringTarget.x1
-  );
-  const flashing = performance.now() - scoringTarget.flashStartedAt < 190;
-  const accent = flashing ? '#f6ffff' : MIAMI_COLORS.magenta;
+function drawUpperLeftLoopRamp() {
+  const active = loopRamp.active;
+  const flashing = performance.now() - loopRamp.flashStartedAt < 260;
 
   ctx.save();
-  ctx.translate(centerX, centerY);
-  ctx.rotate(angle);
-  ctx.fillStyle = MIAMI_COLORS.structure;
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = flashing ? 3 : 2;
-  ctx.shadowColor = flashing ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
-  ctx.shadowBlur = flashing ? 18 : 7;
+  const laneGlow = ctx.createLinearGradient(40, 0, 220, 0);
+  laneGlow.addColorStop(0, 'rgba(34, 223, 243, 0.13)');
+  laneGlow.addColorStop(1, 'rgba(255, 60, 172, 0.13)');
+  ctx.fillStyle = laneGlow;
   ctx.beginPath();
-  ctx.roundRect(-16, -9, 32, 18, 5);
+  ctx.moveTo(upperLeftLoopOuterPoints[0].x, upperLeftLoopOuterPoints[0].y);
+  for (const point of upperLeftLoopOuterPoints.slice(1)) ctx.lineTo(point.x, point.y);
+  for (const point of [...upperLeftLoopInnerPoints].reverse()) ctx.lineTo(point.x, point.y);
+  ctx.closePath();
   ctx.fill();
-  ctx.stroke();
+  ctx.restore();
 
+  drawSmoothNeonRail(upperLeftLoopOuterPoints, MIAMI_COLORS.cyan);
+  drawSmoothNeonRail(upperLeftLoopInnerPoints, MIAMI_COLORS.magenta);
+
+  if (active || flashing) {
+    ctx.save();
+    ctx.globalAlpha = active ? 0.72 : 0.9;
+    ctx.strokeStyle = '#f4ffff';
+    ctx.shadowColor = active ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
+    ctx.shadowBlur = active ? 18 : 24;
+    ctx.lineWidth = active ? 4 : 6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    traceSmoothRail(upperLeftLoopPath);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.save();
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = '700 7px ui-monospace, monospace';
-  ctx.fillStyle = flashing ? MIAMI_COLORS.magenta : '#f4ffff';
-  ctx.fillText('500', 0, 0.5);
+  ctx.font = '700 8px ui-monospace, monospace';
+  ctx.fillStyle = flashing ? '#f4ffff' : MIAMI_COLORS.lavender;
+  ctx.shadowColor = flashing ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
+  ctx.shadowBlur = flashing ? 14 : 5;
+  ctx.fillText('LOOP', 130, 112);
+  ctx.fillStyle = flashing ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
+  ctx.fillText('2500', 130, 125);
+  ctx.restore();
+}
+
+function drawMagneticTarget() {
+  const holding = magneticTarget.state === 'holding';
+  const recentFlash = performance.now() - magneticTarget.flashStartedAt < 260;
+  const heldProgress = holding
+    ? 1 - magneticTarget.holdRemaining / magneticTarget.captureDuration
+    : 0;
+  const pulse = holding
+    ? 0.5 + 0.5 * Math.sin(performance.now() / 45)
+    : recentFlash ? 1 : 0.35;
+
+  ctx.save();
+  ctx.translate(magneticTarget.x, magneticTarget.y);
+  ctx.fillStyle = '#02040b';
+  ctx.shadowColor = '#000';
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  ctx.arc(0, 0, 22, 0, Math.PI * 2);
+  ctx.fill();
+
+  const rings = [
+    { radius: 18, color: MIAMI_COLORS.magenta },
+    { radius: 13, color: MIAMI_COLORS.cyan },
+    { radius: 7, color: MIAMI_COLORS.magenta }
+  ];
+
+  for (const [index, ring] of rings.entries()) {
+    ctx.globalAlpha = 0.58 + pulse * 0.42;
+    ctx.strokeStyle = ring.color;
+    ctx.lineWidth = holding ? 2.4 + heldProgress * 1.6 : 2;
+    ctx.shadowColor = ring.color;
+    ctx.shadowBlur = 6 + pulse * 13;
+    ctx.beginPath();
+    ctx.arc(
+      0, 0,
+      ring.radius + (holding ? Math.sin(heldProgress * 8 + index) * 1.5 : 0),
+      0, Math.PI * 2
+    );
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = recentFlash ? '#f4ffff' : MIAMI_COLORS.lavender;
+  ctx.shadowColor = recentFlash ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
+  ctx.shadowBlur = recentFlash ? 18 : 6;
+  ctx.beginPath();
+  ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (!holding) {
+    ctx.font = '700 6px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#f4ffff';
+    ctx.fillText('500', 0, 0.5);
+  }
+
   ctx.restore();
 }
 
@@ -976,7 +1253,8 @@ function drawPassivePlayfieldGeometry() {
     drawNeonSegment(guide, MIAMI_COLORS.magenta);
   }
 
-  drawScoringTarget();
+  drawUpperLeftLoopRamp();
+  drawMagneticTarget();
 
   for (const [index, post] of upperPosts.entries()) {
     const accent = index === 0
