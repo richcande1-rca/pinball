@@ -3,6 +3,10 @@ const ctx = canvas.getContext('2d');
 const leftFlipperButton = document.getElementById('left-flipper-button');
 const rightFlipperButton = document.getElementById('right-flipper-button');
 const launchButton = document.getElementById('launch-button');
+const launchButtonLabel = document.getElementById('launch-button-label');
+const scoreValueDisplay = document.getElementById('score-value');
+const ballNumberDisplay = document.getElementById('ball-number');
+const ballPipsDisplay = document.getElementById('ball-pips');
 
 const TABLE = {
   left: 24,
@@ -36,6 +40,12 @@ const ball = {
 const gravity = 760;      // px/s², straight down the playfield
 const wallRestitution = 0.82;
 const rollingDrag = 0.9992;
+
+const TOTAL_BALLS = 3;
+let score = 0;
+let ballNumber = 1;
+let ballsRemaining = TOTAL_BALLS;
+let gameOver = false;
 
 const plunger = {
   x: SHOOTER.ballX,
@@ -122,6 +132,20 @@ const coastalOrbitRails = [
   ...makeRailSegments(coastalOrbitOuterPoints),
   ...makeRailSegments(coastalOrbitInnerPoints)
 ];
+
+// A repeatable stand-up target nested in the ramp curl. Its face is angled
+// toward a left-flipper cradle shot, so a clean hit rebounds down-left into
+// open play instead of toward the shooter lane.
+const scoringTarget = {
+  x1: 364,
+  y1: 123,
+  x2: 388,
+  y2: 136,
+  radius: 6,
+  value: 500,
+  armed: true,
+  flashStartedAt: -Infinity
+};
 
 const upperPosts = [
   { x1: 146, y1: 236, x2: 146, y2: 238, radius: 7 },
@@ -227,6 +251,26 @@ function ballIsInShooterLane() {
   return ball.x - ball.radius > SHOOTER.dividerX;
 }
 
+function syncStatusDisplay() {
+  scoreValueDisplay.textContent = String(score).padStart(6, '0');
+  ballNumberDisplay.textContent = gameOver ? 'GAME OVER' : `BALL ${ballNumber}`;
+  ballPipsDisplay.textContent =
+    '●'.repeat(ballsRemaining) +
+    '○'.repeat(Math.max(0, TOTAL_BALLS - ballsRemaining));
+  ballPipsDisplay.setAttribute(
+    'aria-label',
+    `${ballsRemaining} ball${ballsRemaining === 1 ? '' : 's'} remaining`
+  );
+}
+
+function resetPlayfieldForBall() {
+  for (const bumper of sideBumpers) {
+    bumper.armed = true;
+  }
+
+  scoringTarget.armed = true;
+}
+
 function parkBallAtPlunger() {
   ball.x = SHOOTER.ballX;
   ball.y = SHOOTER.ballY;
@@ -241,12 +285,40 @@ function parkBallAtPlunger() {
   syncLaunchButton();
 }
 
-function resetBall() {
+function resetGame() {
+  score = 0;
+  ballNumber = 1;
+  ballsRemaining = TOTAL_BALLS;
+  gameOver = false;
+  scoringTarget.flashStartedAt = -Infinity;
+  resetPlayfieldForBall();
   parkBallAtPlunger();
+  syncStatusDisplay();
+}
 
-  for (const bumper of sideBumpers) {
-    bumper.armed = true;
+function handleDrain() {
+  window.dispatchEvent(new CustomEvent('miami-drain', {
+    detail: { ball: ballNumber, score }
+  }));
+
+  if (ballsRemaining > 1) {
+    ballsRemaining -= 1;
+    ballNumber += 1;
+    resetPlayfieldForBall();
+    parkBallAtPlunger();
+    syncStatusDisplay();
+    return;
   }
+
+  ballsRemaining = 0;
+  gameOver = true;
+  ball.vx = 0;
+  ball.vy = 0;
+  ball.ready = false;
+  plunger.charge = 0;
+  plunger.charging = false;
+  syncStatusDisplay();
+  syncLaunchButton();
 }
 
 function clamp(value, min, max) {
@@ -449,6 +521,57 @@ function collideWithSideBumper(bumper) {
   return touching;
 }
 
+function collideWithScoringTarget(target) {
+  const closest = closestPointOnSegment(
+    ball.x,
+    ball.y,
+    target.x1,
+    target.y1,
+    target.x2,
+    target.y2
+  );
+
+  const dx = ball.x - closest.x;
+  const dy = ball.y - closest.y;
+  const distance = Math.hypot(dx, dy);
+  const contactDistance = ball.radius + target.radius;
+
+  if (!target.armed && distance > contactDistance + 24) {
+    target.armed = true;
+  }
+
+  let incomingNormalSpeed = 0;
+  if (distance > 0.0001) {
+    const nx = dx / distance;
+    const ny = dy / distance;
+    incomingNormalSpeed = -(ball.vx * nx + ball.vy * ny);
+  }
+
+  const scoringHit =
+    target.armed &&
+    distance < contactDistance &&
+    incomingNormalSpeed >= 50;
+
+  const touching = resolveSegmentCollision(
+    target,
+    { x: 0, y: 0 },
+    0.74,
+    scoringHit ? 36 : 0
+  );
+
+  if (scoringHit) {
+    target.armed = false;
+    target.flashStartedAt = performance.now();
+    score += target.value;
+    syncStatusDisplay();
+    window.dispatchEvent(new CustomEvent('miami-target', {
+      detail: { points: target.value, score }
+    }));
+  }
+
+  return touching;
+}
+
 function launchBall() {
   if (!ball.ready) {
     return;
@@ -471,6 +594,10 @@ function launchBall() {
 function update(dt) {
   for (const flipper of flippers) {
     updateFlipper(flipper, dt);
+  }
+
+  if (gameOver) {
+    return;
   }
 
   if (ball.ready) {
@@ -584,6 +711,8 @@ function update(dt) {
     resolveSegmentCollision(post, { x: 0, y: 0 }, wallRestitution);
   }
 
+  collideWithScoringTarget(scoringTarget);
+
   for (const guide of midPlayfieldGuides) {
     resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
   }
@@ -614,7 +743,7 @@ function update(dt) {
 
   // Open drain below the flippers.
   if (ball.y - ball.radius > canvas.height) {
-    resetBall();
+    handleDrain();
   }
 }
 
@@ -811,10 +940,43 @@ function drawLowerGuides() {
   }
 }
 
+function drawScoringTarget() {
+  const centerX = (scoringTarget.x1 + scoringTarget.x2) / 2;
+  const centerY = (scoringTarget.y1 + scoringTarget.y2) / 2;
+  const angle = Math.atan2(
+    scoringTarget.y2 - scoringTarget.y1,
+    scoringTarget.x2 - scoringTarget.x1
+  );
+  const flashing = performance.now() - scoringTarget.flashStartedAt < 190;
+  const accent = flashing ? '#f6ffff' : MIAMI_COLORS.magenta;
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(angle);
+  ctx.fillStyle = MIAMI_COLORS.structure;
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = flashing ? 3 : 2;
+  ctx.shadowColor = flashing ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
+  ctx.shadowBlur = flashing ? 18 : 7;
+  ctx.beginPath();
+  ctx.roundRect(-16, -9, 32, 18, 5);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '700 7px ui-monospace, monospace';
+  ctx.fillStyle = flashing ? MIAMI_COLORS.magenta : '#f4ffff';
+  ctx.fillText('500', 0, 0.5);
+  ctx.restore();
+}
+
 function drawPassivePlayfieldGeometry() {
   for (const guide of midPlayfieldGuides) {
     drawNeonSegment(guide, MIAMI_COLORS.magenta);
   }
+
+  drawScoringTarget();
 
   for (const [index, post] of upperPosts.entries()) {
     const accent = index === 0
@@ -1028,11 +1190,16 @@ function setKeyState(code, pressed) {
 }
 
 function syncLaunchButton() {
-  launchButton.disabled = !ball.ready;
+  launchButton.disabled = !ball.ready && !gameOver;
   launchButton.setAttribute('aria-pressed', String(plunger.charging));
+  launchButtonLabel.textContent = gameOver ? 'NEW GAME' : 'LAUNCH';
 }
 
 function beginPlungerCharge() {
+  if (gameOver) {
+    resetGame();
+  }
+
   if (!ball.ready || plunger.charging) {
     return;
   }
@@ -1181,7 +1348,7 @@ window.addEventListener('keydown', (event) => {
 
   if (event.code === 'KeyR') {
     event.preventDefault();
-    resetBall();
+    resetGame();
   }
 });
 
@@ -1213,6 +1380,7 @@ bindFlipperButton(leftFlipperButton, 'left');
 bindFlipperButton(rightFlipperButton, 'right');
 syncFlipperInput('left');
 syncFlipperInput('right');
+syncStatusDisplay();
 syncLaunchButton();
 
 window.addEventListener('blur', releaseAllControls);
