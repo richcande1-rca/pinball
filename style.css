@@ -369,8 +369,56 @@ canvas {
   filter: saturate(0.65);
 }
 
-p {
-  margin: 0.45rem 0 0;
+.help-bar {
+  margin-top: 0.45rem;
+  color: #a8b4d4;
+  border-top: 1px solid rgba(114, 91, 158, 0.45);
+}
+
+.help-bar summary {
+  min-height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.3rem 0.45rem;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.help-bar summary::-webkit-details-marker {
+  display: none;
+}
+
+.help-label {
+  color: #f1efff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.help-label::before {
+  content: '＋';
+  margin-right: 0.4rem;
+  color: #22dff3;
+}
+
+.help-bar[open] .help-label::before {
+  content: '−';
+}
+
+.build-number {
+  flex: 0 0 auto;
+  font: 700 0.68rem ui-monospace, monospace;
+  color: #a8b4d4;
+}
+
+.instruction-content {
+  margin: 0;
+  padding: 0.35rem 0.45rem 0.55rem;
+  border-top: 1px solid rgba(114, 91, 158, 0.25);
   color: #a8b4d4;
   font-size: 0.82rem;
   line-height: 1.4;
