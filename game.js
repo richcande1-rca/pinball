@@ -298,9 +298,9 @@ const oceanRampPath = [
   { x: 296, y: 54 },
   { x: 248, y: 55 },
   { x: 205, y: 65 },
-  { x: 171, y: 82 },
-  { x: 149, y: 103 },
-  { x: 139, y: 127 }
+  { x: 174, y: 70 },
+  { x: 153, y: 77 },
+  { x: 144, y: 84 }
 ];
 
 const oceanRamp = {
@@ -1106,11 +1106,11 @@ function updateOceanRamp(dt) {
     oceanRamp.active = false;
     oceanRamp.flashStartedAt = performance.now();
 
-    // Release just right of center inside the unchanged three-post circle.
-    // A small lateral drift breaks symmetry; gravity supplies the actual drop.
-    ball.x = 139;
-    ball.y = 127;
-    ball.vx = -35;
+    // Release above and slightly right of the upper post. Gravity drops the
+    // ball onto the post instead of through the open center gap.
+    ball.x = 144;
+    ball.y = 84;
+    ball.vx = -8;
     ball.vy = 0;
     shooterRoute = 'released';
     ballHasEnteredPlayfield = true;
@@ -2111,46 +2111,6 @@ function drawOceanRamp() {
   }
 }
 
-function ballIsUnderOceanRamp() {
-  if (oceanRamp.active) return false;
-
-  // Check continuous short segments along the full raised deck so a ball
-  // cannot slip visually between sparse sample points.
-  let previous = sampleSmoothPath(oceanRampPath, 0.08);
-  for (let step = 9; step <= 100; step += 1) {
-    const point = sampleSmoothPath(oceanRampPath, step / 100);
-    const closest = closestPointOnSegment(
-      ball.x,
-      ball.y,
-      previous.x,
-      previous.y,
-      point.x,
-      point.y
-    );
-
-    if (Math.hypot(ball.x - closest.x, ball.y - closest.y) <= ball.radius + 17) {
-      return true;
-    }
-
-    previous = point;
-  }
-
-  return false;
-}
-
-function drawOceanRampOcclusion() {
-  if (!ballIsUnderOceanRamp()) return;
-
-  // Redraw only the tiny deck area over the ball, preserving the established
-  // ramp artwork while placing an under-ramp ball on the correct visual layer.
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(ball.x, ball.y, ball.radius + 2, 0, Math.PI * 2);
-  ctx.clip();
-  drawOceanRamp();
-  ctx.restore();
-}
-
 function drawPassivePlayfieldGeometry() {
   for (const guide of midPlayfieldGuides) {
     drawNeonSegment(guide, MIAMI_COLORS.magenta);
@@ -2160,7 +2120,6 @@ function drawPassivePlayfieldGeometry() {
   drawPopBumpers();
   drawMagneticTarget();
   drawDropTargets();
-  drawOceanRamp();
 }
 
 function drawLowerApron() {
@@ -2292,8 +2251,16 @@ function draw() {
   drawLowerGuides();
   drawLowerApron();
   drawFlippers();
-  drawBall();
-  drawOceanRampOcclusion();
+
+  // A ramp-riding ball belongs above the deck. Every other live ball is drawn
+  // first, then the raised bridge is painted over it wherever they overlap.
+  if (oceanRamp.active) {
+    drawOceanRamp();
+    drawBall();
+  } else {
+    drawBall();
+    drawOceanRamp();
+  }
 }
 
 const fixedStep = 1 / 240;
