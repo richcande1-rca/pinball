@@ -277,23 +277,25 @@ const dropTargetBank = {
 // enters, the ball rides a separate upper layer, crosses the spinner, and
 // exits safely toward center. Nothing underneath this path blocks the ball.
 const oceanRampPath = [
-  { x: 282, y: 458 },
-  { x: 308, y: 434 },
-  { x: 326, y: 398 },
-  { x: 337, y: 355 },
-  { x: 340, y: 311 },
-  { x: 334, y: 270 },
-  { x: 322, y: 237 },
-  { x: 303, y: 218 },
-  { x: 282, y: 215 },
-  { x: 266, y: 230 }
+  { x: 354, y: 480 },
+  { x: 359, y: 440 },
+  { x: 360, y: 392 },
+  { x: 360, y: 344 },
+  { x: 359, y: 296 },
+  { x: 356, y: 248 },
+  { x: 348, y: 202 },
+  { x: 334, y: 164 },
+  { x: 314, y: 136 },
+  { x: 291, y: 119 },
+  { x: 270, y: 124 },
+  { x: 255, y: 140 }
 ];
 
 const oceanRamp = {
   active: false,
   progress: 0,
-  duration: 1.15,
-  spinnerProgress: 0.5,
+  duration: 1.35,
+  spinnerProgress: 0.48,
   spinnerTriggered: false,
   entrySpeed: 0,
   flashStartedAt: -Infinity
@@ -1967,7 +1969,7 @@ function drawOceanRamp() {
   ctx.restore();
 
   ctx.save();
-  const deckGlow = ctx.createLinearGradient(275, 455, 330, 220);
+  const deckGlow = ctx.createLinearGradient(360, 480, 290, 120);
   deckGlow.addColorStop(0, '#081728');
   deckGlow.addColorStop(0.52, '#14102d');
   deckGlow.addColorStop(1, '#200d2b');
