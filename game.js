@@ -275,7 +275,7 @@ const dropTargetBank = {
 
 // OCEAN DRIVE is an actual elevated ramp. Once a clean left-flipper shot
 // enters, the ball rides a separate upper layer, crosses the spinner, and
-// exits safely toward center. Nothing underneath this path blocks the ball.
+// drops into the existing plunger ramp where its curve begins.
 const oceanRampPath = [
   { x: 354, y: 480 },
   { x: 359, y: 440 },
@@ -284,10 +284,10 @@ const oceanRampPath = [
   { x: 359, y: 296 },
   { x: 356, y: 248 },
   { x: 348, y: 202 },
-  { x: 350, y: 174 },
-  { x: 347, y: 146 },
-  { x: 339, y: 119 },
-  { x: 325, y: 95 }
+  { x: 362, y: 184 },
+  { x: 384, y: 171 },
+  { x: 408, y: 163 },
+  { x: 430, y: 160 }
 ];
 
 const oceanRamp = {
@@ -1090,15 +1090,20 @@ function updateOceanRamp(dt) {
   }
 
   if (oceanRamp.progress >= 1) {
-    const exitSpeed = RAMP_EXIT.speed;
+    const dropSpeed = clamp(oceanRamp.entrySpeed * 0.8, 320, 520);
     oceanRamp.active = false;
     oceanRamp.flashStartedAt = performance.now();
-    ball.x = RAMP_EXIT.x;
-    ball.y = RAMP_EXIT.y;
-    ball.vx = -Math.cos(RAMP_EXIT.angle) * exitSpeed;
-    ball.vy = Math.sin(RAMP_EXIT.angle) * exitSpeed;
+
+    // Hand the ball back to the existing upper-right plunger ramp at the
+    // beginning of its curve. The original orbit rails handle the rest.
+    ball.x = 430;
+    ball.y = 160;
+    ball.vx = -70;
+    ball.vy = -dropSpeed;
+    shooterRoute = 'orbit';
+    ballHasEnteredPlayfield = true;
     window.dispatchEvent(new CustomEvent('miami-spinner-exit', {
-      detail: { speed: exitSpeed }
+      detail: { speed: dropSpeed }
     }));
   }
 
