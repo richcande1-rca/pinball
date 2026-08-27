@@ -274,8 +274,8 @@ const dropTargetBank = {
 };
 
 // OCEAN DRIVE is an actual elevated ramp. Once a clean left-flipper shot
-// enters, the ball rides a separate upper layer, crosses the spinner, and
-// drops into the existing plunger ramp where its curve begins.
+// enters, the ball rides a separate upper layer, crosses the spinner, bridges
+// the upper playfield, and drops into the three-post circle.
 const oceanRampPath = [
   // The same-width mouth reaches slightly toward center, then blends back
   // into the original raised run.
@@ -290,14 +290,24 @@ const oceanRampPath = [
   { x: 362, y: 184 },
   { x: 384, y: 171 },
   { x: 408, y: 163 },
-  { x: 430, y: 160 }
+  { x: 430, y: 160 },
+  { x: 428, y: 130 },
+  { x: 412, y: 101 },
+  { x: 382, y: 78 },
+  { x: 342, y: 62 },
+  { x: 296, y: 54 },
+  { x: 248, y: 55 },
+  { x: 205, y: 65 },
+  { x: 171, y: 82 },
+  { x: 149, y: 103 },
+  { x: 139, y: 127 }
 ];
 
 const oceanRamp = {
   active: false,
   progress: 0,
-  duration: 1.35,
-  spinnerProgress: 0.48,
+  duration: 2.35,
+  spinnerProgress: 0.28,
   spinnerTriggered: false,
   entrySpeed: 0,
   flashStartedAt: -Infinity
@@ -1093,20 +1103,19 @@ function updateOceanRamp(dt) {
   }
 
   if (oceanRamp.progress >= 1) {
-    const dropSpeed = clamp(oceanRamp.entrySpeed * 0.8, 320, 520);
     oceanRamp.active = false;
     oceanRamp.flashStartedAt = performance.now();
 
-    // Hand the ball back to the existing upper-right plunger ramp at the
-    // beginning of its curve. The original orbit rails handle the rest.
-    ball.x = 430;
-    ball.y = 160;
-    ball.vx = -70;
-    ball.vy = -dropSpeed;
-    shooterRoute = 'orbit';
+    // Release just right of center inside the unchanged three-post circle.
+    // A small lateral drift breaks symmetry; gravity supplies the actual drop.
+    ball.x = 139;
+    ball.y = 127;
+    ball.vx = -35;
+    ball.vy = 0;
+    shooterRoute = 'released';
     ballHasEnteredPlayfield = true;
     window.dispatchEvent(new CustomEvent('miami-spinner-exit', {
-      detail: { speed: dropSpeed }
+      detail: { speed: Math.abs(ball.vx) }
     }));
   }
 
@@ -1964,14 +1973,6 @@ function drawOceanRamp() {
     : 0;
   const leftRail = offsetPathPoints(oceanRampPath, 16);
   const rightRail = offsetPathPoints(oceanRampPath, -16);
-  const lastRailIndex = oceanRampPath.length - 1;
-
-  // Match the two Ocean Drive rails directly to the existing coastal-ramp
-  // rails. The color order reverses on the vertical run so neither rail has
-  // to cross the other at the Y-junction.
-  rightRail[lastRailIndex] = { ...coastalOrbitOuterPoints[0] };
-  leftRail[lastRailIndex] = { ...coastalOrbitInnerPoints[0] };
-
   // Begin the underside shadow after the short ground-level entrance so the
   // mouth reads as rising from the playfield rather than already floating.
   const raisedShadowPath = oceanRampPath.slice(2);
@@ -2113,13 +2114,25 @@ function drawOceanRamp() {
 function ballIsUnderOceanRamp() {
   if (oceanRamp.active) return false;
 
-  // The entrance is still at playfield level. Farther up, the deck is raised
-  // and should visually cover a live ball passing beneath it.
-  for (let step = 4; step <= 38; step += 1) {
-    const point = sampleSmoothPath(oceanRampPath, step / 40);
-    if (Math.hypot(ball.x - point.x, ball.y - point.y) <= ball.radius + 17) {
+  // Check continuous short segments along the full raised deck so a ball
+  // cannot slip visually between sparse sample points.
+  let previous = sampleSmoothPath(oceanRampPath, 0.08);
+  for (let step = 9; step <= 100; step += 1) {
+    const point = sampleSmoothPath(oceanRampPath, step / 100);
+    const closest = closestPointOnSegment(
+      ball.x,
+      ball.y,
+      previous.x,
+      previous.y,
+      point.x,
+      point.y
+    );
+
+    if (Math.hypot(ball.x - closest.x, ball.y - closest.y) <= ball.radius + 17) {
       return true;
     }
+
+    previous = point;
   }
 
   return false;
