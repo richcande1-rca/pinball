@@ -277,8 +277,11 @@ const dropTargetBank = {
 // enters, the ball rides a separate upper layer, crosses the spinner, and
 // drops into the existing plunger ramp where its curve begins.
 const oceanRampPath = [
-  { x: 354, y: 480 },
-  { x: 359, y: 440 },
+  // The same-width mouth reaches slightly toward center, then blends back
+  // into the original raised run.
+  { x: 347, y: 482 },
+  { x: 350, y: 466 },
+  { x: 357, y: 443 },
   { x: 360, y: 392 },
   { x: 360, y: 344 },
   { x: 359, y: 296 },
@@ -1969,7 +1972,9 @@ function drawOceanRamp() {
   rightRail[lastRailIndex] = { ...coastalOrbitOuterPoints[0] };
   leftRail[lastRailIndex] = { ...coastalOrbitInnerPoints[0] };
 
-  // The offset shadow makes the deck visibly float above the artwork.
+  // Begin the underside shadow after the short ground-level entrance so the
+  // mouth reads as rising from the playfield rather than already floating.
+  const raisedShadowPath = oceanRampPath.slice(2);
   ctx.save();
   ctx.translate(6, 9);
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.72)';
@@ -1977,7 +1982,7 @@ function drawOceanRamp() {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.beginPath();
-  traceSmoothRail(oceanRampPath);
+  traceSmoothRail(raisedShadowPath);
   ctx.stroke();
   ctx.restore();
 
@@ -2103,6 +2108,34 @@ function drawOceanRamp() {
     );
     ctx.restore();
   }
+}
+
+function ballIsUnderOceanRamp() {
+  if (oceanRamp.active) return false;
+
+  // The entrance is still at playfield level. Farther up, the deck is raised
+  // and should visually cover a live ball passing beneath it.
+  for (let step = 4; step <= 38; step += 1) {
+    const point = sampleSmoothPath(oceanRampPath, step / 40);
+    if (Math.hypot(ball.x - point.x, ball.y - point.y) <= ball.radius + 17) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function drawOceanRampOcclusion() {
+  if (!ballIsUnderOceanRamp()) return;
+
+  // Redraw only the tiny deck area over the ball, preserving the established
+  // ramp artwork while placing an under-ramp ball on the correct visual layer.
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.radius + 2, 0, Math.PI * 2);
+  ctx.clip();
+  drawOceanRamp();
+  ctx.restore();
 }
 
 function drawPassivePlayfieldGeometry() {
@@ -2247,6 +2280,7 @@ function draw() {
   drawLowerApron();
   drawFlippers();
   drawBall();
+  drawOceanRampOcclusion();
 }
 
 const fixedStep = 1 / 240;
