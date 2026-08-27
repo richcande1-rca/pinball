@@ -284,11 +284,10 @@ const oceanRampPath = [
   { x: 359, y: 296 },
   { x: 356, y: 248 },
   { x: 348, y: 202 },
-  { x: 334, y: 164 },
-  { x: 314, y: 136 },
-  { x: 291, y: 119 },
-  { x: 270, y: 124 },
-  { x: 255, y: 140 }
+  { x: 350, y: 174 },
+  { x: 347, y: 146 },
+  { x: 339, y: 119 },
+  { x: 325, y: 95 }
 ];
 
 const oceanRamp = {
@@ -1091,11 +1090,13 @@ function updateOceanRamp(dt) {
   }
 
   if (oceanRamp.progress >= 1) {
-    const exitSpeed = clamp(oceanRamp.entrySpeed * 0.58, 300, 440);
+    const exitSpeed = RAMP_EXIT.speed;
     oceanRamp.active = false;
     oceanRamp.flashStartedAt = performance.now();
-    ball.vx = -exitSpeed * 0.58;
-    ball.vy = exitSpeed * 0.82;
+    ball.x = RAMP_EXIT.x;
+    ball.y = RAMP_EXIT.y;
+    ball.vx = -Math.cos(RAMP_EXIT.angle) * exitSpeed;
+    ball.vy = Math.sin(RAMP_EXIT.angle) * exitSpeed;
     window.dispatchEvent(new CustomEvent('miami-spinner-exit', {
       detail: { speed: exitSpeed }
     }));
@@ -1955,6 +1956,13 @@ function drawOceanRamp() {
     : 0;
   const leftRail = offsetPathPoints(oceanRampPath, 16);
   const rightRail = offsetPathPoints(oceanRampPath, -16);
+  const lastRailIndex = oceanRampPath.length - 1;
+
+  // Match the two Ocean Drive rails directly to the existing coastal-ramp
+  // rails. The color order reverses on the vertical run so neither rail has
+  // to cross the other at the Y-junction.
+  rightRail[lastRailIndex] = { ...coastalOrbitOuterPoints[0] };
+  leftRail[lastRailIndex] = { ...coastalOrbitInnerPoints[0] };
 
   // The offset shadow makes the deck visibly float above the artwork.
   ctx.save();
@@ -1993,8 +2001,8 @@ function drawOceanRamp() {
   ctx.stroke();
   ctx.restore();
 
-  drawSmoothNeonRail(leftRail, MIAMI_COLORS.cyan);
-  drawSmoothNeonRail(rightRail, MIAMI_COLORS.magenta);
+  drawSmoothNeonRail(rightRail, MIAMI_COLORS.cyan);
+  drawSmoothNeonRail(leftRail, MIAMI_COLORS.magenta);
 
   if (oceanRamp.active || completionFlash > 0) {
     ctx.save();
