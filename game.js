@@ -2120,6 +2120,7 @@ function drawPassivePlayfieldGeometry() {
   drawPopBumpers();
   drawMagneticTarget();
   drawDropTargets();
+  drawOceanRamp();
 }
 
 function drawLowerApron() {
@@ -2251,16 +2252,7 @@ function draw() {
   drawLowerGuides();
   drawLowerApron();
   drawFlippers();
-
-  // A ramp-riding ball belongs above the deck. Every other live ball is drawn
-  // first, then the raised bridge is painted over it wherever they overlap.
-  if (oceanRamp.active) {
-    drawOceanRamp();
-    drawBall();
-  } else {
-    drawBall();
-    drawOceanRamp();
-  }
+  drawBall();
 }
 
 const fixedStep = 1 / 240;
