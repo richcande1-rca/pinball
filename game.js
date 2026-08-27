@@ -208,9 +208,10 @@ const upperLeftLoopInnerPoints = [
   { x: 174, y: 185 }
 ];
 
+const upperLeftLoopInnerRails = makeRailSegments(upperLeftLoopInnerPoints);
 const upperLeftLoopRails = [
   ...makeRailSegments(upperLeftLoopOuterPoints),
-  ...makeRailSegments(upperLeftLoopInnerPoints)
+  ...upperLeftLoopInnerRails.filter((rail, index) => index !== 8)
 ];
 
 const upperLeftLoopPath = [
@@ -275,7 +276,7 @@ const dropTargetBank = {
 
 // OCEAN DRIVE is an actual elevated ramp. Once a clean left-flipper shot
 // enters, the ball rides a separate upper layer, crosses the spinner, bridges
-// the upper playfield, and drops into the three-post circle.
+// the upper playfield, and merges through the circle's T-junction opening.
 const oceanRampPath = [
   // The same-width mouth reaches slightly toward center, then blends back
   // into the original raised run.
@@ -298,9 +299,9 @@ const oceanRampPath = [
   { x: 296, y: 54 },
   { x: 248, y: 55 },
   { x: 205, y: 65 },
-  { x: 174, y: 70 },
-  { x: 153, y: 77 },
-  { x: 151, y: 105 }
+  { x: 194, y: 72 },
+  { x: 181, y: 87 },
+  { x: 166, y: 108 }
 ];
 
 const oceanRamp = {
@@ -1106,16 +1107,12 @@ function updateOceanRamp(dt) {
     oceanRamp.active = false;
     oceanRamp.flashStartedAt = performance.now();
 
-    // Release from the short downward hook over the upper-right pocket of
-    // the three-post triangle. Gravity then carries the ball into a post.
-    ball.x = 151;
-    ball.y = 105;
-    ball.vx = -8;
-    ball.vy = 0;
+    // The final path point is already inside the circle. Keep the path's
+    // natural tangent velocity so the ball continues through the T opening.
     shooterRoute = 'released';
     ballHasEnteredPlayfield = true;
     window.dispatchEvent(new CustomEvent('miami-spinner-exit', {
-      detail: { speed: Math.abs(ball.vx) }
+      detail: { speed: Math.hypot(ball.vx, ball.vy) }
     }));
   }
 
@@ -1708,7 +1705,8 @@ function drawUpperLeftLoopRamp() {
   ctx.restore();
 
   drawSmoothNeonRail(upperLeftLoopOuterPoints, MIAMI_COLORS.cyan);
-  drawSmoothNeonRail(upperLeftLoopInnerPoints, MIAMI_COLORS.magenta);
+  drawSmoothNeonRail(upperLeftLoopInnerPoints.slice(0, 9), MIAMI_COLORS.magenta);
+  drawSmoothNeonRail(upperLeftLoopInnerPoints.slice(9), MIAMI_COLORS.magenta);
 
   if (active || flashing) {
     ctx.save();
