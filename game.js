@@ -277,20 +277,23 @@ const dropTargetBank = {
 // enters, the ball rides a separate upper layer, crosses the spinner, and
 // exits safely toward center. Nothing underneath this path blocks the ball.
 const oceanRampPath = [
-  { x: 272, y: 540 },
-  { x: 306, y: 522 },
-  { x: 334, y: 500 },
-  { x: 354, y: 474 },
-  { x: 360, y: 448 },
-  { x: 351, y: 428 },
-  { x: 327, y: 416 }
+  { x: 282, y: 458 },
+  { x: 308, y: 434 },
+  { x: 326, y: 398 },
+  { x: 337, y: 355 },
+  { x: 340, y: 311 },
+  { x: 334, y: 270 },
+  { x: 322, y: 237 },
+  { x: 303, y: 218 },
+  { x: 282, y: 215 },
+  { x: 266, y: 230 }
 ];
 
 const oceanRamp = {
   active: false,
   progress: 0,
-  duration: 0.78,
-  spinnerProgress: 0.48,
+  duration: 1.15,
+  spinnerProgress: 0.5,
   spinnerTriggered: false,
   entrySpeed: 0,
   flashStartedAt: -Infinity
@@ -1086,11 +1089,11 @@ function updateOceanRamp(dt) {
   }
 
   if (oceanRamp.progress >= 1) {
-    const exitSpeed = clamp(oceanRamp.entrySpeed * 0.78, 340, 570);
+    const exitSpeed = clamp(oceanRamp.entrySpeed * 0.58, 300, 440);
     oceanRamp.active = false;
     oceanRamp.flashStartedAt = performance.now();
-    ball.vx = -exitSpeed * 0.9;
-    ball.vy = -exitSpeed * 0.32;
+    ball.vx = -exitSpeed * 0.58;
+    ball.vy = exitSpeed * 0.82;
     window.dispatchEvent(new CustomEvent('miami-spinner-exit', {
       detail: { speed: exitSpeed }
     }));
@@ -1948,14 +1951,14 @@ function drawOceanRamp() {
   const completionFlash = completionAge >= 0 && completionAge < 320
     ? 1 - completionAge / 320
     : 0;
-  const leftRail = offsetPathPoints(oceanRampPath, 20);
-  const rightRail = offsetPathPoints(oceanRampPath, -20);
+  const leftRail = offsetPathPoints(oceanRampPath, 16);
+  const rightRail = offsetPathPoints(oceanRampPath, -16);
 
   // The offset shadow makes the deck visibly float above the artwork.
   ctx.save();
   ctx.translate(6, 9);
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.72)';
-  ctx.lineWidth = 48;
+  ctx.lineWidth = 40;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.beginPath();
@@ -1964,12 +1967,12 @@ function drawOceanRamp() {
   ctx.restore();
 
   ctx.save();
-  const deckGlow = ctx.createLinearGradient(270, 540, 365, 420);
+  const deckGlow = ctx.createLinearGradient(275, 455, 330, 220);
   deckGlow.addColorStop(0, '#081728');
   deckGlow.addColorStop(0.52, '#14102d');
   deckGlow.addColorStop(1, '#200d2b');
   ctx.strokeStyle = deckGlow;
-  ctx.lineWidth = 42;
+  ctx.lineWidth = 34;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.shadowColor = completionFlash > 0
