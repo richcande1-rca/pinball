@@ -20,7 +20,6 @@ const miamiEffects = {
 const passiveImpactSurfaces = [
   ...coastalOrbitRails.map((surface, index) => ({ surface, type: 'coastal-orbit', index })),
   ...upperLeftLoopRails.map((surface, index) => ({ surface, type: 'upper-left-loop', index })),
-  ...oceanSpinnerRails.map((surface, index) => ({ surface, type: 'spinner-lane', index })),
   ...midPlayfieldGuides.map((surface, index) => ({ surface, type: 'mid-guide', index })),
   ...lowerGuides.map((surface, index) => ({ surface, type: 'lower-guide', index })),
   ...shooterDividerRails.map((surface, index) => ({ surface, type: 'shooter-divider', index })),

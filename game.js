@@ -258,13 +258,12 @@ const midPlayfieldGuides = [
   { x1: 334, y1: 402, x2: 298, y2: 430, radius: 4 }
 ];
 
-// Three angled drop targets give the right flipper a deliberate lower-left
-// bank shot. Each face disappears physically when knocked down, then the full
-// 3-0-5 bank rises together after its completion award.
+// Three upright drop targets sit flush against the left wall. Their narrow
+// faces keep them readable as a bank without floating into the playfield.
 const dropTargets = [
-  { label: '3', x1: 68, y1: 483, x2: 86, y2: 465, radius: 3.5, value: 500, accent: 'cyan', dropped: false, flashStartedAt: -Infinity },
-  { label: '0', x1: 81, y1: 512, x2: 99, y2: 494, radius: 3.5, value: 500, accent: 'lavender', dropped: false, flashStartedAt: -Infinity },
-  { label: '5', x1: 94, y1: 541, x2: 112, y2: 523, radius: 3.5, value: 500, accent: 'magenta', dropped: false, flashStartedAt: -Infinity }
+  { label: '3', x1: 44, y1: 452, x2: 44, y2: 474, radius: 3.5, value: 500, accent: 'cyan', dropped: false, flashStartedAt: -Infinity },
+  { label: '0', x1: 44, y1: 480, x2: 44, y2: 502, radius: 3.5, value: 500, accent: 'lavender', dropped: false, flashStartedAt: -Infinity },
+  { label: '5', x1: 44, y1: 508, x2: 44, y2: 530, radius: 3.5, value: 500, accent: 'magenta', dropped: false, flashStartedAt: -Infinity }
 ];
 
 const dropTargetBank = {
@@ -274,40 +273,35 @@ const dropTargetBank = {
   completeFlashStartedAt: -Infinity
 };
 
-// OCEAN DRIVE is a true pass-through spinner shot. The rails form a generous
-// funnel from the left flipper, while a successful upward pass is released
-// safely into the upper-right playfield rather than back toward the drain.
-const oceanSpinnerLeftPoints = [
-  { x: 235, y: 535 },
-  { x: 285, y: 505 },
-  { x: 325, y: 454 }
+// OCEAN DRIVE is an actual elevated ramp. Once a clean left-flipper shot
+// enters, the ball rides a separate upper layer, crosses the spinner, and
+// exits safely toward center. Nothing underneath this path blocks the ball.
+const oceanRampPath = [
+  { x: 272, y: 540 },
+  { x: 306, y: 522 },
+  { x: 334, y: 500 },
+  { x: 354, y: 474 },
+  { x: 360, y: 448 },
+  { x: 351, y: 428 },
+  { x: 327, y: 416 }
 ];
 
-const oceanSpinnerRightPoints = [
-  { x: 380, y: 548 },
-  { x: 375, y: 518 },
-  { x: 372, y: 484 },
-  { x: 369, y: 444 }
-];
-
-const oceanSpinnerRails = [
-  ...makeRailSegments(oceanSpinnerLeftPoints),
-  ...makeRailSegments(oceanSpinnerRightPoints)
-];
+const oceanRamp = {
+  active: false,
+  progress: 0,
+  duration: 0.78,
+  spinnerProgress: 0.48,
+  spinnerTriggered: false,
+  entrySpeed: 0,
+  flashStartedAt: -Infinity
+};
 
 const oceanSpinner = {
-  x1: 300,
-  y1: 500,
-  x2: 370,
-  y2: 500,
-  radius: 2,
   angle: 0,
   angularVelocity: 0,
   rotationAccumulator: 0,
   drag: 1,
   value: 100,
-  armed: true,
-  activePass: false,
   flashStartedAt: -Infinity,
   impactFlashStartedAt: -Infinity,
   lastPoints: 0
@@ -441,11 +435,14 @@ function resetPlayfieldForBall() {
   oceanSpinner.angle = 0;
   oceanSpinner.angularVelocity = 0;
   oceanSpinner.rotationAccumulator = 0;
-  oceanSpinner.armed = true;
-  oceanSpinner.activePass = false;
   oceanSpinner.flashStartedAt = -Infinity;
   oceanSpinner.impactFlashStartedAt = -Infinity;
   oceanSpinner.lastPoints = 0;
+  oceanRamp.active = false;
+  oceanRamp.progress = 0;
+  oceanRamp.spinnerTriggered = false;
+  oceanRamp.entrySpeed = 0;
+  oceanRamp.flashStartedAt = -Infinity;
 
   for (const flipper of flippers) {
     flipper.justPressed = false;
@@ -988,60 +985,35 @@ function updateDropTargetBank(dt) {
   }
 }
 
-function collideWithOceanSpinner() {
-  const closest = closestPointOnSegment(
-    ball.x,
-    ball.y,
-    oceanSpinner.x1,
-    oceanSpinner.y1,
-    oceanSpinner.x2,
-    oceanSpinner.y2
-  );
-  const dx = ball.x - closest.x;
-  const dy = ball.y - closest.y;
-  const distance = Math.hypot(dx, dy);
-  const contactDistance = ball.radius + oceanSpinner.radius + 1;
+function tryEnterOceanRamp() {
+  const entrance = oceanRampPath[0];
+  const distance = Math.hypot(ball.x - entrance.x, ball.y - entrance.y);
+  const entrySpeed = Math.hypot(ball.vx, ball.vy);
 
-  if (!oceanSpinner.armed && distance > contactDistance + 14) {
-    oceanSpinner.armed = true;
+  if (
+    !oceanRamp.active &&
+    distance < 30 &&
+    ball.vx > 80 &&
+    ball.vy < -100 &&
+    entrySpeed >= 260
+  ) {
+    oceanRamp.active = true;
+    oceanRamp.progress = 0;
+    oceanRamp.spinnerTriggered = false;
+    oceanRamp.entrySpeed = entrySpeed;
+    ball.x = entrance.x;
+    ball.y = entrance.y;
+    ball.vx = 0;
+    ball.vy = 0;
+    ballHasEnteredPlayfield = true;
+    shooterRoute = 'released';
+    window.dispatchEvent(new CustomEvent('miami-ramp-enter', {
+      detail: { speed: entrySpeed }
+    }));
+    return true;
   }
 
-  if (!oceanSpinner.armed || distance >= contactDistance) return false;
-
-  const sx = oceanSpinner.x2 - oceanSpinner.x1;
-  const sy = oceanSpinner.y2 - oceanSpinner.y1;
-  const segmentLength = Math.hypot(sx, sy) || 1;
-  const nx = -sy / segmentLength;
-  const ny = sx / segmentLength;
-  const crossSpeed = ball.vx * nx + ball.vy * ny;
-  const impactSpeed = Math.abs(crossSpeed);
-
-  if (impactSpeed < 75) return false;
-
-  const direction = crossSpeed < 0 ? 1 : -1;
-  const addedSpin = clamp(impactSpeed * 0.085, 10, 52);
-  oceanSpinner.angularVelocity += direction * addedSpin;
-  oceanSpinner.angularVelocity = clamp(
-    oceanSpinner.angularVelocity,
-    -62,
-    62
-  );
-  oceanSpinner.armed = false;
-  oceanSpinner.activePass = ball.vy < -80;
-  oceanSpinner.impactFlashStartedAt = performance.now();
-
-  // A spinner absorbs a little speed but never acts like a solid wall.
-  ball.vx *= 0.94;
-  ball.vy *= 0.94;
-
-  window.dispatchEvent(new CustomEvent('miami-spinner-hit', {
-    detail: {
-      impactSpeed,
-      angularVelocity: Math.abs(oceanSpinner.angularVelocity)
-    }
-  }));
-
-  return true;
+  return false;
 }
 
 function updateOceanSpinner(dt) {
@@ -1074,32 +1046,57 @@ function updateOceanSpinner(dt) {
   }
 }
 
-function routeOceanSpinnerExit() {
-  if (!oceanSpinner.activePass) return false;
+function updateOceanRamp(dt) {
+  if (!oceanRamp.active) return false;
 
-  const insideLane = ball.x > 295 && ball.x < 386;
-  // Once the ball has crossed the spinner face, the upper guide takes over.
-  // Releasing here prevents the narrowing rails from stealing a clean shot.
-  if (insideLane && ball.vy < 0 && ball.y <= 503) {
-    const exitSpeed = Math.max(320, Math.hypot(ball.vx, ball.vy) * 0.82);
-    ball.x = 350;
-    ball.y = 438;
-    ball.vx = -exitSpeed * 0.62;
-    ball.vy = -exitSpeed * 0.78;
-    oceanSpinner.activePass = false;
-    ballHasEnteredPlayfield = true;
-    shooterRoute = 'released';
+  const previousProgress = oceanRamp.progress;
+  const previousX = ball.x;
+  const previousY = ball.y;
+  oceanRamp.progress = clamp(
+    oceanRamp.progress + dt / oceanRamp.duration,
+    0,
+    1
+  );
+
+  const point = sampleSmoothPath(oceanRampPath, oceanRamp.progress);
+  ball.x = point.x;
+  ball.y = point.y;
+  ball.vx = (point.x - previousX) / dt;
+  ball.vy = (point.y - previousY) / dt;
+
+  if (
+    !oceanRamp.spinnerTriggered &&
+    previousProgress < oceanRamp.spinnerProgress &&
+    oceanRamp.progress >= oceanRamp.spinnerProgress
+  ) {
+    const addedSpin = clamp(oceanRamp.entrySpeed * 0.065, 14, 56);
+    oceanSpinner.angularVelocity = clamp(
+      oceanSpinner.angularVelocity + addedSpin,
+      -62,
+      62
+    );
+    oceanSpinner.impactFlashStartedAt = performance.now();
+    oceanRamp.spinnerTriggered = true;
+    window.dispatchEvent(new CustomEvent('miami-spinner-hit', {
+      detail: {
+        impactSpeed: oceanRamp.entrySpeed,
+        angularVelocity: Math.abs(oceanSpinner.angularVelocity)
+      }
+    }));
+  }
+
+  if (oceanRamp.progress >= 1) {
+    const exitSpeed = clamp(oceanRamp.entrySpeed * 0.78, 340, 570);
+    oceanRamp.active = false;
+    oceanRamp.flashStartedAt = performance.now();
+    ball.vx = -exitSpeed * 0.9;
+    ball.vy = -exitSpeed * 0.32;
     window.dispatchEvent(new CustomEvent('miami-spinner-exit', {
       detail: { speed: exitSpeed }
     }));
-    return true;
   }
 
-  if (ball.y > 570 || ball.x < 250 || ball.x > 390) {
-    oceanSpinner.activePass = false;
-  }
-
-  return false;
+  return true;
 }
 
 function collideWithMagneticTarget(target, dt) {
@@ -1306,7 +1303,11 @@ function update(dt) {
     bumperCombo.count = 0;
   }
 
-  if (updateMagneticTarget(dt) || updateUpperLeftLoop(dt)) {
+  if (
+    updateMagneticTarget(dt) ||
+    updateUpperLeftLoop(dt) ||
+    updateOceanRamp(dt)
+  ) {
     return;
   }
 
@@ -1331,6 +1332,10 @@ function update(dt) {
   ball.vy *= rollingDrag;
 
   if (tryEnterUpperLeftLoop()) {
+    return;
+  }
+
+  if (tryEnterOceanRamp()) {
     return;
   }
 
@@ -1423,15 +1428,6 @@ function update(dt) {
 
   for (const rail of upperLeftLoopRails) {
     resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.94);
-  }
-
-  for (const rail of oceanSpinnerRails) {
-    resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.88);
-  }
-
-  collideWithOceanSpinner();
-  if (routeOceanSpinnerExit()) {
-    return;
   }
 
   for (const [index, bumper] of popBumpers.entries()) {
@@ -1863,7 +1859,6 @@ function drawDropTargets() {
   for (const target of dropTargets) {
     const centerX = (target.x1 + target.x2) / 2;
     const centerY = (target.y1 + target.y2) / 2;
-    const angle = Math.atan2(target.y2 - target.y1, target.x2 - target.x1);
     const accent = MIAMI_COLORS[target.accent];
     const hitAge = now - target.flashStartedAt;
     const hitFlash = hitAge >= 0 && hitAge < 300
@@ -1871,24 +1866,26 @@ function drawDropTargets() {
       : 0;
 
     ctx.save();
-    ctx.translate(centerX, centerY + (target.dropped ? 4 : 0));
-    ctx.rotate(angle);
+    ctx.translate(centerX, centerY);
 
+    // The housing reaches back to the cabinet wall, making this read as one
+    // flush-mounted vertical target bank instead of three floating diamonds.
     ctx.fillStyle = '#02040b';
     ctx.strokeStyle = MIAMI_COLORS.structure;
-    ctx.lineWidth = 2;
-    ctx.fillRect(-13, -9, 26, 18);
-    ctx.strokeRect(-13, -9, 26, 18);
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(TABLE.left - centerX + 2, -13, centerX - TABLE.left + 5, 26);
+    ctx.strokeRect(TABLE.left - centerX + 2, -13, centerX - TABLE.left + 5, 26);
 
     ctx.globalAlpha = target.dropped ? 0.28 : 1;
-    ctx.scale(1, target.dropped ? 0.18 : 1);
+    ctx.translate(target.dropped ? -5 : 0, 0);
+    ctx.scale(target.dropped ? 0.22 : 1, 1);
     ctx.fillStyle = hitFlash > 0 ? '#f4ffff' : '#07101d';
     ctx.strokeStyle = hitFlash > 0 ? '#ffffff' : accent;
     ctx.shadowColor = accent;
     ctx.shadowBlur = 7 + hitFlash * 22 + completionFlash * 12;
     ctx.lineWidth = 2;
-    ctx.fillRect(-10, -7, 20, 14);
-    ctx.strokeRect(-10, -7, 20, 14);
+    ctx.fillRect(-5, -11, 10, 22);
+    ctx.strokeRect(-5, -11, 10, 22);
 
     ctx.fillStyle = hitFlash > 0 ? accent : '#f4ffff';
     ctx.font = '800 9px ui-monospace, monospace';
@@ -1917,15 +1914,27 @@ function drawDropTargets() {
   ctx.fillStyle = completionFlash > 0 ? '#f4ffff' : MIAMI_COLORS.lavender;
   ctx.shadowColor = completionFlash > 0 ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
   ctx.shadowBlur = 5 + completionFlash * 20;
-  ctx.fillText(
-    completionFlash > 0 ? '305 +3000' : '3  0  5',
-    90,
-    448
-  );
+  if (completionFlash > 0) {
+    ctx.fillText('305 +3000', 77, 491);
+  }
   ctx.restore();
 }
 
-function drawOceanSpinner() {
+function offsetPathPoints(points, distance) {
+  return points.map((point, index) => {
+    const previous = points[Math.max(0, index - 1)];
+    const next = points[Math.min(points.length - 1, index + 1)];
+    const dx = next.x - previous.x;
+    const dy = next.y - previous.y;
+    const length = Math.hypot(dx, dy) || 1;
+    return {
+      x: point.x - dy / length * distance,
+      y: point.y + dx / length * distance
+    };
+  });
+}
+
+function drawOceanRamp() {
   const now = performance.now();
   const impactAge = now - oceanSpinner.impactFlashStartedAt;
   const impactFlash = impactAge >= 0 && impactAge < 260
@@ -1935,33 +1944,89 @@ function drawOceanSpinner() {
   const tickFlash = tickAge >= 0 && tickAge < 190
     ? 1 - tickAge / 190
     : 0;
+  const completionAge = now - oceanRamp.flashStartedAt;
+  const completionFlash = completionAge >= 0 && completionAge < 320
+    ? 1 - completionAge / 320
+    : 0;
+  const leftRail = offsetPathPoints(oceanRampPath, 20);
+  const rightRail = offsetPathPoints(oceanRampPath, -20);
 
+  // The offset shadow makes the deck visibly float above the artwork.
   ctx.save();
-  const laneGlow = ctx.createLinearGradient(240, 0, 380, 0);
-  laneGlow.addColorStop(0, 'rgba(34, 223, 243, 0.10)');
-  laneGlow.addColorStop(1, 'rgba(255, 60, 172, 0.12)');
-  ctx.fillStyle = laneGlow;
+  ctx.translate(6, 9);
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.72)';
+  ctx.lineWidth = 48;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   ctx.beginPath();
-  ctx.moveTo(oceanSpinnerLeftPoints[0].x, oceanSpinnerLeftPoints[0].y);
-  for (const point of oceanSpinnerLeftPoints.slice(1)) ctx.lineTo(point.x, point.y);
-  for (const point of [...oceanSpinnerRightPoints].reverse()) ctx.lineTo(point.x, point.y);
-  ctx.closePath();
-  ctx.fill();
+  traceSmoothRail(oceanRampPath);
+  ctx.stroke();
   ctx.restore();
 
-  drawSmoothNeonRail(oceanSpinnerLeftPoints, MIAMI_COLORS.cyan);
-  drawSmoothNeonRail(oceanSpinnerRightPoints, MIAMI_COLORS.magenta);
+  ctx.save();
+  const deckGlow = ctx.createLinearGradient(270, 540, 365, 420);
+  deckGlow.addColorStop(0, '#081728');
+  deckGlow.addColorStop(0.52, '#14102d');
+  deckGlow.addColorStop(1, '#200d2b');
+  ctx.strokeStyle = deckGlow;
+  ctx.lineWidth = 42;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = completionFlash > 0
+    ? '#ffffff'
+    : 'rgba(34, 223, 243, 0.42)';
+  ctx.shadowBlur = 10 + completionFlash * 20;
+  ctx.beginPath();
+  traceSmoothRail(oceanRampPath);
+  ctx.stroke();
 
-  const centerX = (oceanSpinner.x1 + oceanSpinner.x2) / 2;
-  const centerY = (oceanSpinner.y1 + oceanSpinner.y2) / 2;
+  ctx.globalAlpha = 0.42;
+  ctx.strokeStyle = '#725b9e';
+  ctx.lineWidth = 1.25;
+  ctx.beginPath();
+  traceSmoothRail(oceanRampPath);
+  ctx.stroke();
+  ctx.restore();
+
+  drawSmoothNeonRail(leftRail, MIAMI_COLORS.cyan);
+  drawSmoothNeonRail(rightRail, MIAMI_COLORS.magenta);
+
+  if (oceanRamp.active || completionFlash > 0) {
+    ctx.save();
+    ctx.globalAlpha = oceanRamp.active ? 0.66 : completionFlash;
+    ctx.strokeStyle = '#f4ffff';
+    ctx.shadowColor = oceanRamp.active
+      ? MIAMI_COLORS.cyan
+      : MIAMI_COLORS.magenta;
+    ctx.shadowBlur = 18;
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    traceSmoothRail(oceanRampPath);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  const spinnerPoint = sampleSmoothPath(
+    oceanRampPath,
+    oceanRamp.spinnerProgress
+  );
+  const spinnerBefore = sampleSmoothPath(
+    oceanRampPath,
+    oceanRamp.spinnerProgress - 0.01
+  );
+  const spinnerAfter = sampleSmoothPath(
+    oceanRampPath,
+    oceanRamp.spinnerProgress + 0.01
+  );
   const gateAngle = Math.atan2(
-    oceanSpinner.y2 - oceanSpinner.y1,
-    oceanSpinner.x2 - oceanSpinner.x1
+    spinnerAfter.y - spinnerBefore.y,
+    spinnerAfter.x - spinnerBefore.x
   );
   const faceWidth = Math.max(0.1, Math.abs(Math.cos(oceanSpinner.angle)));
 
   ctx.save();
-  ctx.translate(centerX, centerY);
+  ctx.translate(spinnerPoint.x, spinnerPoint.y);
   ctx.rotate(gateAngle);
   ctx.scale(faceWidth, 1);
   ctx.fillStyle = impactFlash > 0 ? '#f4ffff' : '#09101d';
@@ -1969,8 +2034,8 @@ function drawOceanSpinner() {
   ctx.shadowColor = impactFlash > 0 ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
   ctx.shadowBlur = 8 + impactFlash * 22;
   ctx.lineWidth = 2;
-  ctx.fillRect(-19, -6, 38, 12);
-  ctx.strokeRect(-19, -6, 38, 12);
+  ctx.fillRect(-5, -17, 10, 34);
+  ctx.strokeRect(-5, -17, 10, 34);
   ctx.restore();
 
   ctx.save();
@@ -1978,21 +2043,48 @@ function drawOceanSpinner() {
   ctx.shadowColor = MIAMI_COLORS.magenta;
   ctx.shadowBlur = 6 + tickFlash * 16;
   ctx.beginPath();
-  ctx.arc(centerX, centerY, 3 + tickFlash * 1.5, 0, Math.PI * 2);
+  ctx.arc(
+    spinnerPoint.x,
+    spinnerPoint.y,
+    3 + tickFlash * 1.5,
+    0,
+    Math.PI * 2
+  );
   ctx.fill();
   ctx.restore();
 
   ctx.save();
+  const labelPoint = sampleSmoothPath(oceanRampPath, 0.18);
+  const labelBefore = sampleSmoothPath(oceanRampPath, 0.16);
+  const labelAfter = sampleSmoothPath(oceanRampPath, 0.2);
+  const labelAngle = Math.atan2(
+    labelAfter.y - labelBefore.y,
+    labelAfter.x - labelBefore.x
+  );
+  ctx.translate(labelPoint.x, labelPoint.y);
+  ctx.rotate(labelAngle);
   ctx.textAlign = 'center';
   ctx.font = '700 7px ui-monospace, monospace';
   ctx.fillStyle = tickFlash > 0 ? '#f4ffff' : MIAMI_COLORS.lavender;
   ctx.shadowColor = tickFlash > 0 ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
   ctx.shadowBlur = 5 + tickFlash * 14;
-  ctx.fillText('OCEAN DRIVE', 344, 531);
-  if (tickFlash > 0) {
-    ctx.fillText(`+${oceanSpinner.lastPoints}`, centerX, centerY - 19);
-  }
+  ctx.fillText('OCEAN DRIVE', 0, 2.5);
   ctx.restore();
+
+  if (tickFlash > 0) {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '700 7px ui-monospace, monospace';
+    ctx.fillStyle = '#f4ffff';
+    ctx.shadowColor = MIAMI_COLORS.cyan;
+    ctx.shadowBlur = 14;
+    ctx.fillText(
+      `+${oceanSpinner.lastPoints}`,
+      spinnerPoint.x - 18,
+      spinnerPoint.y - 20
+    );
+    ctx.restore();
+  }
 }
 
 function drawPassivePlayfieldGeometry() {
@@ -2004,7 +2096,7 @@ function drawPassivePlayfieldGeometry() {
   drawPopBumpers();
   drawMagneticTarget();
   drawDropTargets();
-  drawOceanSpinner();
+  drawOceanRamp();
 }
 
 function drawLowerApron() {
