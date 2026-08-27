@@ -405,6 +405,49 @@
     noise(0.12, 0.055, 4200);
   }
 
+  function playDropTarget({ index = 0, bankComplete = false } = {}) {
+    const frequency = 520 + index * 95;
+    noise(0.34, 0.045, 1500 + index * 320);
+    tone(frequency, 0.3, 0.065, {
+      type: 'square',
+      endFrequency: frequency * 0.58
+    });
+
+    if (bankComplete) {
+      tone(660, 0.24, 0.16, { type: 'triangle', endFrequency: 880 });
+      tone(990, 0.18, 0.2, { type: 'triangle', endFrequency: 1320 });
+      tone(1320, 0.14, 0.23, { type: 'triangle', endFrequency: 1760 });
+    }
+  }
+
+  function playDropBankReset() {
+    noise(0.16, 0.055, 1800);
+    tone(240, 0.22, 0.09, { type: 'square', endFrequency: 390 });
+  }
+
+  function playSpinnerHit({ impactSpeed = 100 } = {}) {
+    const force = Math.max(0, Math.min(1, impactSpeed / 700));
+    noise(0.12 + force * 0.16, 0.035, 2600 + force * 1700);
+    tone(420 + force * 280, 0.12, 0.055, {
+      type: 'square',
+      endFrequency: 720 + force * 520
+    });
+  }
+
+  function playSpinnerTick({ speed = 10 } = {}) {
+    const velocity = Math.max(0, Math.min(1, speed / 62));
+    tone(820 + velocity * 720, 0.1, 0.028, {
+      type: 'triangle',
+      endFrequency: 610 + velocity * 530
+    });
+    noise(0.08 + velocity * 0.08, 0.018, 3200 + velocity * 1800);
+  }
+
+  function playSpinnerExit() {
+    tone(520, 0.16, 0.11, { type: 'triangle', endFrequency: 980 });
+    noise(0.07, 0.045, 3600);
+  }
+
   function startCharge() {
     if (!audioContext || audioContext.state !== 'running' || chargeVoice) return;
     const now = audioContext.currentTime;
@@ -503,6 +546,11 @@
   window.addEventListener('miami-magnet-eject', playMagnetEject);
   window.addEventListener('miami-loop-enter', playLoopEnter);
   window.addEventListener('miami-loop-complete', playLoopComplete);
+  window.addEventListener('miami-drop-target', event => playDropTarget(event.detail));
+  window.addEventListener('miami-drop-bank-reset', playDropBankReset);
+  window.addEventListener('miami-spinner-hit', event => playSpinnerHit(event.detail));
+  window.addEventListener('miami-spinner-tick', event => playSpinnerTick(event.detail));
+  window.addEventListener('miami-spinner-exit', playSpinnerExit);
   window.addEventListener('miami-drain', playDrain);
 
   if (musicVolume && musicMute) {
