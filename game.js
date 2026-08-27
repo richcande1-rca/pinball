@@ -300,7 +300,7 @@ const oceanRampPath = [
   { x: 205, y: 65 },
   { x: 174, y: 70 },
   { x: 153, y: 77 },
-  { x: 144, y: 84 }
+  { x: 151, y: 105 }
 ];
 
 const oceanRamp = {
@@ -1106,10 +1106,10 @@ function updateOceanRamp(dt) {
     oceanRamp.active = false;
     oceanRamp.flashStartedAt = performance.now();
 
-    // Release above and slightly right of the upper post. Gravity drops the
-    // ball onto the post instead of through the open center gap.
-    ball.x = 144;
-    ball.y = 84;
+    // Release from the short downward hook over the upper-right pocket of
+    // the three-post triangle. Gravity then carries the ball into a post.
+    ball.x = 151;
+    ball.y = 105;
     ball.vx = -8;
     ball.vy = 0;
     shooterRoute = 'released';
