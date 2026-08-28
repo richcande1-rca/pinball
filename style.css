@@ -431,6 +431,14 @@ kbd {
   background: #222;
 }
 
+@media (pointer: coarse) {
+  .cabinet-button-left,
+  .cabinet-button-right {
+    width: 68px;
+    height: 68px;
+  }
+}
+
 @media (max-width: 430px) {
   .control-strip {
     grid-template-columns:
