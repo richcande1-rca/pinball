@@ -482,8 +482,8 @@ draw = function drawMiamiNightsFrame() {
   drawFlipperFlashes(now);
   if (!mobilePerformanceMode) {
     drawPlungerChargeGlow();
-    drawPlungerLaunchFlash(now);
     drawBallTrail(now);
   }
+  drawPlungerLaunchFlash(now);
   drawBall();
 };
