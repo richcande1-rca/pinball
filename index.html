@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260828-UNDERPASS</span>
+        <span class="build-number">Build 20260828-ENTRYFIX</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -97,6 +97,32 @@
 
   <script src="intro.js?v=20260825-0545"></script>
   <script src="game.js?v=20260828-underpass"></script>
+  <script>
+    // Place the underpass scoop directly beneath Ocean Drive while leaving the
+    // five outlet locations and the existing hidden chamber unchanged.
+    underpass.entry.y = 145;
+    Object.assign(underpassEntryGuides[0], { y1: 160, y2: 139 });
+    Object.assign(underpassEntryGuides[1], { y1: 160, y2: 139 });
+
+    // The raised entry needs a physical throat into the original chamber.
+    // Split the chamber roof beneath the scoop and add a capped hidden shaft:
+    // an incoming upward shot hits the cap naturally and falls through the gap.
+    const underpassRoofIndex = underpassRails.findIndex(rail =>
+      rail.x1 === 196 && rail.y1 === 180 && rail.x2 === 395 && rail.y2 === 180
+    );
+
+    if (underpassRoofIndex !== -1) {
+      underpassRails.splice(
+        underpassRoofIndex,
+        1,
+        { x1: 196, y1: 180, x2: 248, y2: 180, radius: 4 },
+        { x1: 292, y1: 180, x2: 395, y2: 180, radius: 4 },
+        { x1: 248, y1: 105, x2: 248, y2: 180, radius: 4 },
+        { x1: 292, y1: 105, x2: 292, y2: 180, radius: 4 },
+        { x1: 248, y1: 105, x2: 292, y2: 105, radius: 4 }
+      );
+    }
+  </script>
   <script src="theme.js?v=20260828-0225"></script>
   <script src="audio.js?v=20260826-2350"></script>
 </body>
