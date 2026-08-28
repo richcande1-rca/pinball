@@ -115,6 +115,54 @@ const lowerGuides = [
   { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 }
 ];
 
+// A second, hidden physical layer sits beneath the open playfield. The ball
+// keeps its live velocity when it crosses the scoop, then rolls and rebounds
+// through one shared chamber. Five real gaps in the chamber walls are the
+// outlets; there is no selected destination and no scripted ejection.
+const underpass = {
+  active: false,
+  entry: { x: 270, y: 190, radius: 17 },
+  outlets: [
+    { x: 178, y: 180, radius: 18, edge: 'top' },
+    { x: 395, y: 230, radius: 18, edge: 'right' },
+    { x: 92, y: 180, radius: 18, edge: 'top' },
+    { x: 395, y: 526, radius: 18, edge: 'right' },
+    { x: 52, y: 545, radius: 18, edge: 'left' }
+  ],
+  enteredAt: -Infinity
+};
+
+const underpassEntryGuides = [
+  { x1: 248, y1: 205, x2: 255, y2: 184, radius: 4 },
+  { x1: 292, y1: 205, x2: 285, y2: 184, radius: 4 }
+];
+
+// Boundary gaps line up with the five mouths above. The angled rails are
+// passive splitters: small differences in speed and contact angle accumulate
+// into different routes while polished walls prevent dead catches.
+const underpassRails = [
+  { x1: 52, y1: 180, x2: 74, y2: 180, radius: 4 },
+  { x1: 110, y1: 180, x2: 160, y2: 180, radius: 4 },
+  { x1: 196, y1: 180, x2: 395, y2: 180, radius: 4 },
+  { x1: 395, y1: 180, x2: 395, y2: 212, radius: 4 },
+  { x1: 395, y1: 248, x2: 395, y2: 508, radius: 4 },
+  { x1: 395, y1: 544, x2: 395, y2: 565, radius: 4 },
+  // The peaked floor continuously rolls a slowing ball toward one of the two
+  // low side outlets instead of allowing it to settle on a flat rail.
+  { x1: 395, y1: 545, x2: 230, y2: 500, radius: 4 },
+  { x1: 230, y1: 500, x2: 52, y2: 565, radius: 4 },
+  { x1: 52, y1: 565, x2: 52, y2: 563, radius: 4 },
+  { x1: 52, y1: 527, x2: 52, y2: 180, radius: 4 },
+  { x1: 218, y1: 215, x2: 242, y2: 241, radius: 5 },
+  { x1: 318, y1: 214, x2: 296, y2: 240, radius: 5 },
+  { x1: 116, y1: 270, x2: 198, y2: 292, radius: 5 },
+  { x1: 350, y1: 288, x2: 286, y2: 318, radius: 5 },
+  { x1: 178, y1: 350, x2: 254, y2: 384, radius: 5 },
+  { x1: 335, y1: 415, x2: 272, y2: 458, radius: 5 },
+  { x1: 90, y1: 470, x2: 168, y2: 440, radius: 5 },
+  { x1: 194, y1: 520, x2: 254, y2: 486, radius: 5 }
+];
+
 function makeRailSegments(points, radius = 4) {
   return points.slice(0, -1).map((point, index) => ({
     x1: point.x,
@@ -461,6 +509,8 @@ function resetPlayfieldForBall() {
   oceanRamp.spinnerTriggered = false;
   oceanRamp.entrySpeed = 0;
   oceanRamp.flashStartedAt = -Infinity;
+  underpass.active = false;
+  underpass.enteredAt = -Infinity;
 
   for (const flipper of flippers) {
     flipper.justPressed = false;
@@ -1306,6 +1356,60 @@ function launchBall() {
   syncLaunchButton();
 }
 
+function tryEnterUnderpass() {
+  const distance = Math.hypot(
+    ball.x - underpass.entry.x,
+    ball.y - underpass.entry.y
+  );
+
+  if (
+    !underpass.active &&
+    distance <= underpass.entry.radius &&
+    ball.vy < -70 &&
+    Math.hypot(ball.vx, ball.vy) >= 180
+  ) {
+    underpass.active = true;
+    underpass.enteredAt = performance.now();
+    return true;
+  }
+
+  return false;
+}
+
+function underpassOutletReached(outlet) {
+  const close = Math.hypot(ball.x - outlet.x, ball.y - outlet.y) <= outlet.radius;
+  if (!close || performance.now() - underpass.enteredAt < 180) return false;
+
+  if (outlet.edge === 'top') return ball.y <= outlet.y && ball.vy < 0;
+  if (outlet.edge === 'right') return ball.x >= outlet.x && ball.vx > 0;
+  return ball.x <= outlet.x && ball.vx < 0;
+}
+
+function updateUnderpass(dt) {
+  if (!underpass.active) return false;
+
+  ball.vy += gravity * dt;
+  ball.x += ball.vx * dt;
+  ball.y += ball.vy * dt;
+  ball.vx *= rollingDrag;
+  ball.vy *= rollingDrag;
+
+  for (const rail of underpassRails) {
+    resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.97);
+  }
+
+  for (const outlet of underpass.outlets) {
+    if (underpassOutletReached(outlet)) {
+      underpass.active = false;
+      ballHasEnteredPlayfield = true;
+      shooterRoute = 'released';
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function update(dt) {
   for (const flipper of flippers) {
     updateFlipper(flipper, dt);
@@ -1326,7 +1430,8 @@ function update(dt) {
   if (
     updateMagneticTarget(dt) ||
     updateUpperLeftLoop(dt) ||
-    updateOceanRamp(dt)
+    updateOceanRamp(dt) ||
+    updateUnderpass(dt)
   ) {
     return;
   }
@@ -1350,6 +1455,10 @@ function update(dt) {
   // Light rolling resistance. Spin / English is still deliberately deferred.
   ball.vx *= rollingDrag;
   ball.vy *= rollingDrag;
+
+  if (tryEnterUnderpass()) {
+    return;
+  }
 
   if (tryEnterUpperLeftLoop()) {
     return;
@@ -1448,6 +1557,10 @@ function update(dt) {
 
   for (const rail of upperLeftLoopRails) {
     resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.94);
+  }
+
+  for (const guide of underpassEntryGuides) {
+    resolveSegmentCollision(guide, { x: 0, y: 0 }, 0.92);
   }
 
   for (const [index, bumper] of popBumpers.entries()) {
@@ -2121,6 +2234,37 @@ function drawPassivePlayfieldGeometry() {
   drawOceanRamp();
 }
 
+function drawTunnelMouth(mouth, accent, rotation = 0) {
+  ctx.save();
+  ctx.translate(mouth.x, mouth.y);
+  ctx.rotate(rotation);
+  ctx.fillStyle = '#02040b';
+  ctx.strokeStyle = MIAMI_COLORS.structure;
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.arc(0, 0, 17, Math.PI, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillRect(-17, -1, 34, 9);
+
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2;
+  ctx.shadowColor = accent;
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 6;
+  ctx.beginPath();
+  ctx.arc(0, 0, 17, Math.PI, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawUnderpassMouths() {
+  drawTunnelMouth(underpass.entry, MIAMI_COLORS.magenta);
+  drawTunnelMouth(underpass.outlets[0], MIAMI_COLORS.lavender);
+  drawTunnelMouth(underpass.outlets[1], MIAMI_COLORS.cyan, Math.PI / 2);
+  drawTunnelMouth(underpass.outlets[2], MIAMI_COLORS.cyan);
+  drawTunnelMouth(underpass.outlets[3], MIAMI_COLORS.magenta, Math.PI / 2);
+  drawTunnelMouth(underpass.outlets[4], MIAMI_COLORS.cyan, -Math.PI / 2);
+}
+
 function drawLowerApron() {
   ctx.fillStyle = '#0b1020';
   ctx.strokeStyle = '#28314b';
@@ -2234,6 +2378,13 @@ function drawFlippers() {
 }
 
 function drawBall() {
+  if (underpass.active) {
+    const nearTransition = [underpass.entry, ...underpass.outlets].some(
+      mouth => Math.hypot(ball.x - mouth.x, ball.y - mouth.y) < mouth.radius + 4
+    );
+    if (!nearTransition) return;
+  }
+
   ctx.fillStyle = '#eef4ff';
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
@@ -2245,6 +2396,7 @@ function draw() {
   drawTable();
   drawShooterLane();
   drawPassivePlayfieldGeometry();
+  drawUnderpassMouths();
   drawPlunger();
   drawSideBumpers();
   drawLowerGuides();
