@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260828-ENTRYFIX</span>
+        <span class="build-number">Build 20260828-MOUTHS</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -122,6 +122,46 @@
         { x1: 248, y1: 105, x2: 292, y2: 105, radius: 4 }
       );
     }
+
+    // Keep the hidden routes hidden, but make the two user-facing transition
+    // points unmistakable: the main scoop and the side outlet below 3-0-5.
+    const baseDrawUnderpassMouths = drawUnderpassMouths;
+
+    function drawProminentUnderpassMouth(mouth, accent, rotation = 0) {
+      ctx.save();
+      ctx.translate(mouth.x, mouth.y);
+      ctx.rotate(rotation);
+
+      ctx.fillStyle = '#01030a';
+      ctx.strokeStyle = '#4a3b66';
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.arc(0, 0, 21, Math.PI, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillRect(-21, -2, 42, 12);
+
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 4;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 10;
+      ctx.beginPath();
+      ctx.arc(0, 0, 21, Math.PI, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#f4ffff';
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ctx.arc(0, 0, 15, Math.PI, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    drawUnderpassMouths = function () {
+      baseDrawUnderpassMouths();
+      drawProminentUnderpassMouth(underpass.entry, MIAMI_COLORS.magenta);
+      drawProminentUnderpassMouth(underpass.outlets[4], MIAMI_COLORS.cyan, -Math.PI / 2);
+    };
   </script>
   <script src="theme.js?v=20260828-0225"></script>
   <script src="audio.js?v=20260826-2350"></script>
