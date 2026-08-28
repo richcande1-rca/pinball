@@ -134,7 +134,7 @@ function drawMiamiArtwork() {
 
   ctx.save();
   ctx.textAlign = 'center';
-  ctx.shadowBlur = 5;
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (5);
   ctx.font = 'italic 24px system-ui, sans-serif';
   ctx.fillStyle = MIAMI_COLORS.magenta;
   ctx.shadowColor = MIAMI_COLORS.magenta;
@@ -180,7 +180,7 @@ function drawSlingFlashes(now) {
     ctx.globalAlpha = strength * 0.48;
     ctx.strokeStyle = '#ff20a8';
     ctx.shadowColor = '#ff3cac';
-    ctx.shadowBlur = 28;
+    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (28);
     ctx.lineWidth = 18;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -190,14 +190,14 @@ function drawSlingFlashes(now) {
 
     ctx.globalAlpha = strength * 0.9;
     ctx.strokeStyle = '#ff4fbd';
-    ctx.shadowBlur = 18;
+    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (18);
     ctx.lineWidth = 9;
     ctx.stroke();
 
     ctx.globalAlpha = strength;
     ctx.strokeStyle = '#fff2fc';
     ctx.shadowColor = '#ffffff';
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (10);
     ctx.lineWidth = 3;
     ctx.stroke();
 
@@ -223,7 +223,7 @@ function drawFlipperFlashes(now) {
     ctx.globalAlpha = strength * 0.65;
     ctx.strokeStyle = accent;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = 26;
+    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (26);
     ctx.lineWidth = 18;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -233,7 +233,7 @@ function drawFlipperFlashes(now) {
 
     ctx.globalAlpha = strength;
     ctx.strokeStyle = '#f4ffff';
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (12);
     ctx.lineWidth = 4;
     ctx.stroke();
 
@@ -255,13 +255,13 @@ function drawPlungerChargeGlow() {
   ctx.globalAlpha = 0.32 + plunger.charge * 0.55;
   ctx.strokeStyle = MIAMI_COLORS.cyan;
   ctx.shadowColor = MIAMI_COLORS.cyan;
-  ctx.shadowBlur = 16 + plunger.charge * 24;
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (16 + plunger.charge * 24);
   ctx.lineWidth = 3 + plunger.charge * 4;
   ctx.strokeRect(shooterDivider.x1 + 9, plunger.topY - 16, TABLE.right - shooterDivider.x1 - 18, 42);
 
   ctx.globalAlpha = 0.28 + plunger.charge * 0.62;
   ctx.fillStyle = MIAMI_COLORS.cyan;
-  ctx.shadowBlur = 12 + plunger.charge * 20;
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (12 + plunger.charge * 20);
   ctx.fillRect(plunger.x - 4, plunger.topY - stripHeight, 8, stripHeight - 12);
   ctx.fillStyle = '#efffff';
   ctx.fillRect(plunger.x - 1.5, plunger.topY - stripHeight, 3, stripHeight - 12);
@@ -276,7 +276,7 @@ function drawPlungerLaunchFlash(now) {
   ctx.globalAlpha = strength * 0.8;
   ctx.fillStyle = MIAMI_COLORS.cyan;
   ctx.shadowColor = MIAMI_COLORS.cyan;
-  ctx.shadowBlur = 30;
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (30);
   ctx.fillRect(plunger.x - 10, plunger.topY - 155, 20, 145);
   ctx.globalAlpha = strength;
   ctx.fillStyle = '#f2ffff';
@@ -332,7 +332,7 @@ function drawDecorativeDisplays(now) {
     ctx.strokeStyle = insert.color;
     ctx.lineWidth = 1.5 + pulse * 1.5;
     ctx.shadowColor = insert.color;
-    ctx.shadowBlur = 7 + pulse * 9;
+    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (7 + pulse * 9);
     ctx.beginPath();
     ctx.arc(insert.x, insert.y, 5, 0, Math.PI * 2);
     ctx.fillStyle = insert.color;
@@ -376,7 +376,7 @@ drawTable = function drawMiamiTable() {
   ctx.strokeStyle = MIAMI_COLORS.cyan;
   ctx.lineWidth = 1;
   ctx.shadowColor = MIAMI_COLORS.cyan;
-  ctx.shadowBlur = 3;
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (3);
   ctx.stroke();
   ctx.restore();
 
@@ -436,7 +436,7 @@ drawLowerApron = function drawMiamiLowerApron() {
   ctx.strokeStyle = MIAMI_COLORS.magenta;
   ctx.lineWidth = 1;
   ctx.shadowColor = MIAMI_COLORS.magenta;
-  ctx.shadowBlur = 3;
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (3);
   ctx.beginPath();
   ctx.moveTo(32, 666);
   ctx.lineTo(62, 666);
@@ -456,7 +456,7 @@ drawLowerApron = function drawMiamiLowerApron() {
 
 const mobilePerformanceMode = window.matchMedia('(pointer: coarse)').matches
   && window.matchMedia('(max-width: 768px)').matches;
-let mobileFrameNumber = 0;
+window.miamiMobilePerformanceMode = mobilePerformanceMode;
 
 draw = function drawMiamiNightsFrame() {
   const now = performance.now();
@@ -469,9 +469,7 @@ draw = function drawMiamiNightsFrame() {
   }
   drawMiamiArtwork();
 
-  if (!mobilePerformanceMode || mobileFrameNumber % 2 === 0) {
-    drawDecorativeDisplays(now);
-  }
+  drawDecorativeDisplays(now);
   drawShooterLane();
   drawPassivePlayfieldGeometry();
   drawPlunger();
@@ -488,5 +486,4 @@ draw = function drawMiamiNightsFrame() {
     drawBallTrail(now);
   }
   drawBall();
-  mobileFrameNumber += 1;
 };
