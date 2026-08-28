@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260828-MOUTHS</span>
+        <span class="build-number">Build 20260828-MOUTHS2</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -164,6 +164,15 @@
     };
   </script>
   <script src="theme.js?v=20260828-0225"></script>
+  <script>
+    // theme.js replaces the main draw loop, so draw the tunnel mouths from the
+    // themed ball pass. This keeps them above the artwork but below the ball.
+    const baseDrawBallWithUnderpassMouths = drawBall;
+    drawBall = function drawBallWithUnderpassMouths() {
+      drawUnderpassMouths();
+      baseDrawBallWithUnderpassMouths();
+    };
+  </script>
   <script src="audio.js?v=20260826-2350"></script>
 </body>
 </html>
