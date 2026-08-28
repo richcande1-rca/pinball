@@ -454,16 +454,24 @@ drawLowerApron = function drawMiamiLowerApron() {
   ctx.restore();
 };
 
+const mobilePerformanceMode = window.matchMedia('(pointer: coarse)').matches
+  && window.matchMedia('(max-width: 768px)').matches;
+let mobileFrameNumber = 0;
+
 draw = function drawMiamiNightsFrame() {
   const now = performance.now();
 
   updateEffectTriggers(now);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawTable();
-  drawSunsetGlow(now);
+  if (!mobilePerformanceMode) {
+    drawSunsetGlow(now);
+  }
   drawMiamiArtwork();
 
-  drawDecorativeDisplays(now);
+  if (!mobilePerformanceMode || mobileFrameNumber % 2 === 0) {
+    drawDecorativeDisplays(now);
+  }
   drawShooterLane();
   drawPassivePlayfieldGeometry();
   drawPlunger();
@@ -474,8 +482,11 @@ draw = function drawMiamiNightsFrame() {
 
   drawSlingFlashes(now);
   drawFlipperFlashes(now);
-  drawPlungerChargeGlow();
-  drawPlungerLaunchFlash(now);
-  drawBallTrail(now);
+  if (!mobilePerformanceMode) {
+    drawPlungerChargeGlow();
+    drawPlungerLaunchFlash(now);
+    drawBallTrail(now);
+  }
   drawBall();
+  mobileFrameNumber += 1;
 };
