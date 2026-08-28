@@ -2269,7 +2269,10 @@ function frame(now) {
   }
 
   // Avoid giant physics jumps after the tab has been inactive.
-  frameTime = Math.min(frameTime, 0.05);
+  // Mobile browsers can occasionally render below 20 FPS. Allow the fixed-step
+  // simulation to catch up instead of discarding real elapsed time and visibly
+  // slowing the ball and flippers.
+  frameTime = Math.min(frameTime, 0.125);
   accumulator += frameTime;
 
   while (accumulator >= fixedStep) {
