@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260829-UPPERGATES</span>
+        <span class="build-number">Build 20260829-OUTLANEFLOW</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -712,13 +712,13 @@
     };
 
     // Completing 3-0-5 now earns a physical left-outlane save for the rest of
-    // the current ball. The rail slopes down toward center so a falling ball
-    // rebounds up and right instead of balancing on a flat blocker.
+    // the current ball. The rail continues past the stock lower guide so a saved
+    // ball has a clear downhill path back toward the flipper instead of a cradle.
     const leftOutlaneGate = {
       x1: 28,
       y1: 592,
-      x2: 66,
-      y2: 610,
+      x2: 96,
+      y2: 636,
       radius: 5
     };
     let leftOutlaneProtectionActive = false;
