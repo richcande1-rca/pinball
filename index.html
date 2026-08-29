@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260828-CAPTIVEUP</span>
+        <span class="build-number">Build 20260828-DEFLECTORDOWN</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -239,6 +239,15 @@
 
       return true;
     };
+
+    // Keep the left deflector's existing angle and length, but move the whole
+    // rail down above the 3-0-5 bank to open the captive-ball shooting lane.
+    Object.assign(midPlayfieldGuides[0], {
+      x1: 70,
+      y1: 438,
+      x2: 106,
+      y2: 466
+    });
 
     // A real captive ball lives in the open strip directly above the 3-0-5
     // bank. It is constrained to a short vertical lane, but otherwise keeps
