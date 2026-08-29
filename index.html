@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260828-ROUGHNESS</span>
+        <span class="build-number">Build 20260828-POSTDROP</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -123,9 +123,10 @@
       );
     }
 
-    // Move only the three-post outlet clear of the circle rails. Close the old
-    // roof gap at x=178 and open the same-size physical gap around x=140.
-    underpass.outlets[0].x = 140;
+    // Move only the three-post outlet clear of the circle rails and bias it
+    // toward the lower-right post. Close the old roof gap and open the same-size
+    // physical gap around x=150 so natural exit velocity intersects that post.
+    underpass.outlets[0].x = 150;
     const threePostRoofIndex = underpassRails.findIndex(rail =>
       rail.x1 === 110 && rail.y1 === 180 && rail.x2 === 160 && rail.y2 === 180
     );
@@ -133,8 +134,8 @@
       underpassRails.splice(
         threePostRoofIndex,
         1,
-        { x1: 110, y1: 180, x2: 122, y2: 180, radius: 4 },
-        { x1: 158, y1: 180, x2: 196, y2: 180, radius: 4 }
+        { x1: 110, y1: 180, x2: 132, y2: 180, radius: 4 },
+        { x1: 168, y1: 180, x2: 196, y2: 180, radius: 4 }
       );
     }
 
