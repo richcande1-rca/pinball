@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260829-MUSICFOCUS</span>
+        <span class="build-number">Build 20260829-305SAVE</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -87,7 +87,7 @@
         Magnetic target: 500 points. Complete the upper-left loop: 2500 points.
         Loop bumpers score escalating 100, 200, and 300-point volleys.
         Captive ball: 500 points per solid hit; reach its top switch for 2500 more.
-        Knock down 3-0-5 for 500 each and a 3000-point bank bonus.
+        Knock down 3-0-5 for 500 each and a 3000-point bank bonus; completing the bank blocks the left outlane until that ball drains.
         Take the elevated OCEAN DRIVE ramp for 100 points per spinner rotation.
         Shoot the upper pocket to enter the five-way underpass.
         Three balls per game; <strong>NEW GAME</strong> or <kbd>R</kbd> restarts.
@@ -348,6 +348,81 @@
       if (!gameOver) updateCaptiveBall(dt);
     };
 
+    // Completing 3-0-5 now earns a physical left-outlane save for the rest of
+    // the current ball. The rail slopes down toward center so a falling ball
+    // rebounds up and right instead of balancing on a flat blocker.
+    const leftOutlaneGate = {
+      x1: 28,
+      y1: 592,
+      x2: 66,
+      y2: 610,
+      radius: 5
+    };
+    let leftOutlaneProtectionActive = false;
+    let leftOutlaneGateFlashStartedAt = -Infinity;
+
+    function setLeftOutlaneProtection(active) {
+      if (leftOutlaneProtectionActive === active) return;
+      leftOutlaneProtectionActive = active;
+
+      const gateIndex = lowerGuides.indexOf(leftOutlaneGate);
+      if (active && gateIndex === -1) {
+        lowerGuides.push(leftOutlaneGate);
+        leftOutlaneGateFlashStartedAt = performance.now();
+      } else if (!active && gateIndex !== -1) {
+        lowerGuides.splice(gateIndex, 1);
+      }
+    }
+
+    window.addEventListener('miami-drop-target', event => {
+      if (event.detail && event.detail.bankComplete) {
+        setLeftOutlaneProtection(true);
+      }
+    });
+    window.addEventListener('miami-drain', () => {
+      setLeftOutlaneProtection(false);
+    });
+
+    const baseResetPlayfieldForLeftOutlane = resetPlayfieldForBall;
+    resetPlayfieldForBall = function resetPlayfieldWithLeftOutlaneProtection() {
+      setLeftOutlaneProtection(false);
+      baseResetPlayfieldForLeftOutlane();
+    };
+
+    function drawLeftOutlaneGate() {
+      if (!leftOutlaneProtectionActive) return;
+
+      const flashStrength = clamp(
+        1 - (performance.now() - leftOutlaneGateFlashStartedAt) / 280,
+        0,
+        1
+      );
+
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#4a3b66';
+      ctx.lineWidth = 11;
+      ctx.beginPath();
+      ctx.moveTo(leftOutlaneGate.x1, leftOutlaneGate.y1);
+      ctx.lineTo(leftOutlaneGate.x2, leftOutlaneGate.y2);
+      ctx.stroke();
+
+      ctx.strokeStyle = MIAMI_COLORS.cyan;
+      ctx.lineWidth = 5;
+      ctx.shadowColor = MIAMI_COLORS.cyan;
+      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 :
+        (10 + flashStrength * 18);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#f4ffff';
+      ctx.lineWidth = 1.5 + flashStrength * 1.5;
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 :
+        (4 + flashStrength * 10);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     function drawCaptiveBallAssembly() {
       const now = performance.now();
       const hitStrength = 1 - (now - captiveBall.flashStartedAt) / 160;
@@ -578,10 +653,12 @@
   <script src="theme.js?v=20260828-0225"></script>
   <script>
     // theme.js replaces the main draw loop, so draw the physical captive-ball
-    // toy and tunnel mouths from the themed ball pass, both below the live ball.
+    // toy, earned outlane gate, and tunnel mouths from the themed ball pass,
+    // all below the live ball.
     const baseDrawBallWithUnderpassMouths = drawBall;
     drawBall = function drawBallWithUnderpassMouths() {
       drawCaptiveBallAssembly();
+      drawLeftOutlaneGate();
       drawUnderpassMouths();
       baseDrawBallWithUnderpassMouths();
     };
