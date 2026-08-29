@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260829-CAPTIVEUP2</span>
+        <span class="build-number">Build 20260829-SIDEEXITSTALL</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -193,6 +193,21 @@
     if (underpassLeftFloor) {
       underpassLeftFloor.y2 = 540;
     }
+
+    // The lower-left transition normally waits for a rightward rebound. If the
+    // ball reaches that same mouth with almost no energy left, let it transition
+    // to the visible playfield rather than balancing forever on the hidden seam.
+    // Position and velocity are preserved; this adds no kick or scripted eject.
+    const baseUnderpassOutletReached = underpassOutletReached;
+    underpassOutletReached = function underpassOutletReachedWithSideExitAntiStall(outlet) {
+      if (baseUnderpassOutletReached(outlet)) return true;
+      if (outlet !== underpass.outlets[4]) return false;
+      if (performance.now() - underpass.enteredAt < 180) return false;
+
+      const close = Math.hypot(ball.x - outlet.x, ball.y - outlet.y) <= outlet.radius;
+      const nearlyStopped = Math.hypot(ball.vx, ball.vy) < 90;
+      return close && nearlyStopped;
+    };
 
     // Real hardware never reflects two nominally identical shots at precisely
     // the same microscopic angle. Add only a tiny underpass-local roughness to
