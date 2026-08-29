@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260829-305SAVE</span>
+        <span class="build-number">Build 20260829-CAPTIVEMETER</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -203,7 +203,8 @@
       hitArmed: true,
       topArmed: true,
       flashStartedAt: -Infinity,
-      topFlashStartedAt: -Infinity
+      topFlashStartedAt: -Infinity,
+      topImpactStrength: 0
     };
 
     const captiveBallRails = [
@@ -212,6 +213,8 @@
       { x1: 56, y1: 250, x2: 84, y2: 250, radius: 3 }
     ];
 
+    const captiveMeterLampY = [307, 296, 285, 274, 263];
+
     function resetCaptiveBallMechanism() {
       captiveBall.y = captiveBall.maxY;
       captiveBall.vy = 0;
@@ -219,6 +222,7 @@
       captiveBall.topArmed = true;
       captiveBall.flashStartedAt = -Infinity;
       captiveBall.topFlashStartedAt = -Infinity;
+      captiveBall.topImpactStrength = 0;
     }
 
     const baseResetPlayfieldForCaptiveBall = resetPlayfieldForBall;
@@ -305,6 +309,7 @@
         if (captiveBall.topArmed) {
           captiveBall.topArmed = false;
           captiveBall.topFlashStartedAt = performance.now();
+          captiveBall.topImpactStrength = clamp(impactSpeed / 700, 0.18, 1);
           score += captiveBall.topValue;
           syncStatusDisplay();
           window.dispatchEvent(new CustomEvent('miami-impact', {
@@ -427,6 +432,13 @@
       const now = performance.now();
       const hitStrength = 1 - (now - captiveBall.flashStartedAt) / 160;
       const topStrength = 1 - (now - captiveBall.topFlashStartedAt) / 220;
+      const topFlashAge = now - captiveBall.topFlashStartedAt;
+      const topFlashDuration = 180 + captiveBall.topImpactStrength * 420;
+      const topLampFlash = clamp(
+        1 - topFlashAge / topFlashDuration,
+        0,
+        1
+      );
 
       ctx.save();
       ctx.lineCap = 'round';
@@ -468,6 +480,43 @@
       ctx.arc(56, 310, 4.5, 0, Math.PI * 2);
       ctx.arc(84, 310, 4.5, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
+
+      // Five small inserts read the captive ball's actual travel. They light in
+      // sequence on the way up and fall back out as the ball returns. The top
+      // insert keeps a separate impact-energy flash so hard top hits read harder.
+      ctx.save();
+      for (let index = 0; index < captiveMeterLampY.length; index += 1) {
+        const lampY = captiveMeterLampY[index];
+        const isTopLamp = index === captiveMeterLampY.length - 1;
+        const travelLit = captiveBall.y <= lampY;
+        const impactLit = isTopLamp && topLampFlash > 0;
+        const lit = travelLit || impactLit;
+        const accent = isTopLamp ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
+        const impactBoost = isTopLamp
+          ? topLampFlash * captiveBall.topImpactStrength
+          : 0;
+
+        ctx.globalAlpha = lit ? 1 : 0.42;
+        ctx.fillStyle = lit
+          ? (impactBoost > 0.45 ? '#fff4ff' : accent)
+          : '#070b18';
+        ctx.strokeStyle = lit ? '#f4ffff' : MIAMI_COLORS.lavender;
+        ctx.shadowColor = lit ? accent : MIAMI_COLORS.lavender;
+        ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 :
+          (lit ? 6 + impactBoost * 18 : 2);
+        ctx.lineWidth = lit ? 1.4 : 1;
+        ctx.beginPath();
+        ctx.arc(
+          96,
+          lampY,
+          4 + impactBoost * 1.6,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        ctx.stroke();
+      }
       ctx.restore();
 
       ctx.save();
