@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260829-SIDEEXITSTALL</span>
+        <span class="build-number">Build 20260829-CAPTIVECLEAN</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -469,13 +469,6 @@
       ctx.arc(56, 310, 4.5, 0, Math.PI * 2);
       ctx.arc(84, 310, 4.5, 0, Math.PI * 2);
       ctx.fill();
-
-      ctx.textAlign = 'center';
-      ctx.font = '700 7px ui-monospace, monospace';
-      ctx.fillStyle = MIAMI_COLORS.lavender;
-      ctx.shadowColor = MIAMI_COLORS.magenta;
-      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 4;
-      ctx.fillText('CAPTIVE', captiveBall.x, 238);
       ctx.restore();
 
       ctx.save();
