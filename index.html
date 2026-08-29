@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260829-CAPTIVEROOF</span>
+        <span class="build-number">Build 20260829-UPPERGATES</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -87,7 +87,7 @@
         Magnetic target: 500 points. Complete the upper-left loop: 2500 points.
         Loop bumpers score escalating 100, 200, and 300-point volleys.
         Captive ball: 500 points per solid hit; reach its top switch for 2500 more; five solid hits light all five lamps and award one extra ball. Hit the captive cage roof from above for 1000 points.
-        Complete the three center standups to start 18 seconds of 2X scoring.
+        Knock down the three upper gates above the sunset to start 18 seconds of 2X scoring.
         Knock down 3-0-5 for 500 each and a 3000-point bank bonus; completing the bank blocks the left outlane until that ball drains.
         Take the elevated OCEAN DRIVE ramp for 100 points per spinner rotation.
         Shoot the upper pocket to enter the five-way underpass.
@@ -234,38 +234,46 @@
       y2: 466
     });
 
-    // Three small standups occupy the otherwise open center without closing the
-    // main shooting lanes. Completing the shallow-V bank starts a timed 2X mode.
+    // Three physical drop gates span the open band above the sunset. They are
+    // real obstacles while standing: a live ball rebounds from the plate, then
+    // that gate collapses out of the playfield. The gaps between them keep the
+    // upper table reachable, and the entire bank stays far above flipper shots.
     const centerStandupTargets = [
-      { x1: 153, y1: 500, x2: 169, y2: 494, radius: 3.5, value: 300, accent: 'cyan', hit: false, flashStartedAt: -Infinity },
-      { x1: 202, y1: 507, x2: 218, y2: 507, radius: 3.5, value: 300, accent: 'lavender', hit: false, flashStartedAt: -Infinity },
-      { x1: 251, y1: 494, x2: 267, y2: 500, radius: 3.5, value: 300, accent: 'magenta', hit: false, flashStartedAt: -Infinity }
+      { x1: 122, y1: 278, x2: 166, y2: 278, radius: 4.5, value: 300, accent: 'cyan', hit: false, flashStartedAt: -Infinity },
+      { x1: 188, y1: 264, x2: 232, y2: 264, radius: 4.5, value: 300, accent: 'lavender', hit: false, flashStartedAt: -Infinity },
+      { x1: 254, y1: 278, x2: 298, y2: 278, radius: 4.5, value: 300, accent: 'magenta', hit: false, flashStartedAt: -Infinity }
     ];
     const centerStandupBank = {
-      resetDelay: 0.7,
-      resetRemaining: 0,
       completeFlashStartedAt: -Infinity
     };
     const CENTER_DOUBLE_SCORE_DURATION = 18;
     let centerDoubleScoreRemaining = 0;
 
-    const baseResetGameWithCenterTargets = resetGame;
-    resetGame = function resetGameWithCenterTargets() {
+    function resetCenterStandupTargets() {
       for (const target of centerStandupTargets) {
         target.hit = false;
         target.flashStartedAt = -Infinity;
       }
-      centerStandupBank.resetRemaining = 0;
       centerStandupBank.completeFlashStartedAt = -Infinity;
+    }
+
+    const baseResetGameWithCenterTargets = resetGame;
+    resetGame = function resetGameWithCenterTargets() {
+      resetCenterStandupTargets();
       centerDoubleScoreRemaining = 0;
       baseResetGameWithCenterTargets();
     };
 
+    // Gates remain down for the rest of the current ball so knocking them out
+    // progressively opens the upper playfield. A drain restores the full bank.
     window.addEventListener('miami-drain', () => {
+      resetCenterStandupTargets();
       centerDoubleScoreRemaining = 0;
     });
 
     function collideWithCenterStandupTarget(target) {
+      if (target.hit) return false;
+
       const closest = closestPointOnSegment(
         ball.x,
         ball.y,
@@ -287,41 +295,37 @@
         incomingNormalSpeed = -(ball.vx * nx + ball.vy * ny);
       }
 
+      // The standing plate gives a firm but controlled rebound before dropping.
       const touching = resolveSegmentCollision(
         target,
         { x: 0, y: 0 },
-        incomingNormalSpeed < 45 ? 0.22 : 0.58
+        incomingNormalSpeed < 45 ? 0.28 : 0.7
       );
 
-      if (touching && !target.hit && incomingNormalSpeed >= 55) {
+      if (touching && incomingNormalSpeed >= 55) {
         target.hit = true;
         target.flashStartedAt = performance.now();
         score += target.value;
 
         const bankComplete = centerStandupTargets.every(candidate => candidate.hit);
         if (bankComplete) {
-          centerStandupBank.resetRemaining = centerStandupBank.resetDelay;
           centerStandupBank.completeFlashStartedAt = performance.now();
           centerDoubleScoreRemaining = CENTER_DOUBLE_SCORE_DURATION;
         }
 
         syncStatusDisplay();
+        window.dispatchEvent(new CustomEvent('miami-impact', {
+          detail: {
+            type: 'post',
+            strength: clamp(incomingNormalSpeed / 700, 0.14, 1),
+            x: closest.x,
+            y: closest.y,
+            index: 11 + centerStandupTargets.indexOf(target)
+          }
+        }));
       }
 
       return touching;
-    }
-
-    function updateCenterStandupBank(dt) {
-      if (centerStandupBank.resetRemaining <= 0) return;
-      centerStandupBank.resetRemaining = Math.max(
-        0,
-        centerStandupBank.resetRemaining - dt
-      );
-      if (centerStandupBank.resetRemaining === 0) {
-        for (const target of centerStandupTargets) {
-          target.hit = false;
-        }
-      }
     }
 
     function drawCenterStandupTargets() {
@@ -340,42 +344,73 @@
         const hitFlash = flashAge >= 0 && flashAge < 260
           ? 1 - flashAge / 260
           : 0;
+        const centerX = (target.x1 + target.x2) / 2;
+        const centerY = (target.y1 + target.y2) / 2;
+        const width = Math.hypot(target.x2 - target.x1, target.y2 - target.y1);
+        const angle = Math.atan2(target.y2 - target.y1, target.x2 - target.x1);
 
         ctx.save();
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = MIAMI_COLORS.structure;
-        ctx.lineWidth = 9;
-        ctx.beginPath();
-        ctx.moveTo(target.x1, target.y1);
-        ctx.lineTo(target.x2, target.y2);
-        ctx.stroke();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle);
 
-        ctx.globalAlpha = target.hit ? 1 : 0.75;
+        if (target.hit) {
+          // Briefly show the plate folding flat, then leave a clean open lane.
+          if (hitFlash > 0) {
+            ctx.globalAlpha = hitFlash;
+            ctx.fillStyle = accent;
+            ctx.shadowColor = accent;
+            ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 14;
+            ctx.fillRect(-width / 2, 4, width, 2.5);
+          }
+          ctx.restore();
+          continue;
+        }
+
+        ctx.fillStyle = '#030611';
+        ctx.strokeStyle = MIAMI_COLORS.structure;
+        ctx.lineWidth = 2;
+        ctx.fillRect(-width / 2 - 3, -7, width + 6, 14);
+        ctx.strokeRect(-width / 2 - 3, -7, width + 6, 14);
+
+        ctx.fillStyle = hitFlash > 0 ? '#f4ffff' : '#07101d';
         ctx.strokeStyle = hitFlash > 0 || completionFlash > 0
-          ? '#f4ffff'
+          ? '#ffffff'
           : accent;
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2.5;
         ctx.shadowColor = accent;
         ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 :
-          (6 + hitFlash * 16 + completionFlash * 10);
-        ctx.stroke();
+          (7 + hitFlash * 18 + completionFlash * 8);
+        ctx.fillRect(-width / 2, -5, width, 10);
+        ctx.strokeRect(-width / 2, -5, width, 10);
         ctx.restore();
       }
 
+      // The 2X insert lives with the upper gate bank instead of down near the
+      // flippers. It is visual only and never obstructs the ball.
       ctx.save();
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = '900 10px ui-monospace, monospace';
-      ctx.globalAlpha = centerDoubleScoreRemaining > 0 ? 1 : 0.42;
-      ctx.fillStyle = centerDoubleScoreRemaining > 0
+      ctx.translate(PLAYFIELD_CENTER, 238);
+      ctx.globalAlpha = centerDoubleScoreRemaining > 0 ? 1 : 0.5;
+      ctx.fillStyle = '#050815';
+      ctx.strokeStyle = centerDoubleScoreRemaining > 0
         ? '#f4ffff'
         : MIAMI_COLORS.lavender;
       ctx.shadowColor = centerDoubleScoreRemaining > 0
         ? MIAMI_COLORS.magenta
         : MIAMI_COLORS.lavender;
       ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 :
-        (centerDoubleScoreRemaining > 0 ? 8 + modePulse * 10 : 2);
-      ctx.fillText('2X', PLAYFIELD_CENTER, 526);
+        (centerDoubleScoreRemaining > 0 ? 8 + modePulse * 12 : 3);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = centerDoubleScoreRemaining > 0
+        ? '#f4ffff'
+        : MIAMI_COLORS.lavender;
+      ctx.font = '900 9px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('2X', 0, 0.5);
       ctx.restore();
     }
 
@@ -656,7 +691,6 @@
           centerDoubleScoreRemaining - dt
         );
       }
-      updateCenterStandupBank(dt);
 
       const liveBallOnMainPlayfield =
         !ball.ready &&
@@ -1026,7 +1060,7 @@
   </script>
   <script src="theme.js?v=20260828-0225"></script>
   <script>
-    // theme.js replaces the main draw loop, so draw the center standups,
+    // theme.js replaces the main draw loop, so draw the upper gates,
     // captive-ball toy, earned outlane gate, and tunnel mouths from the themed
     // ball pass, all below the live ball.
     const baseDrawBallWithUnderpassMouths = drawBall;
