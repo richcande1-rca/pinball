@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260829-NEONALLEY</span>
+        <span class="build-number">Build 20260829-BACKWALLNEON</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -88,7 +88,7 @@
         Loop bumpers score escalating 100, 200, and 300-point volleys.
         Captive ball: 500 points per solid hit; reach its top switch for 2500 more; five solid hits light all five lamps and award one extra ball. Hit the captive cage roof from above for 1000 points.
         Knock down the three upper gates above the sunset to start 18 seconds of 2X scoring.
-        Light all five upper Neon Alley inserts for a 1000-point bonus; they stay lit until the ball drains.
+        Loose balls ricocheting behind Ocean Drive flare the upper-wall neon.
         Knock down 3-0-5 for 500 each and a 3000-point bank bonus; completing the bank blocks the left outlane until that ball drains.
         Take the elevated OCEAN DRIVE ramp for 100 points per spinner rotation.
         Shoot the upper pocket to enter the five-way underpass.
@@ -1149,9 +1149,106 @@
   </script>
   <script src="theme.js?v=20260828-0225"></script>
   <script>
-    // theme.js replaces the main draw loop, so draw the passive upper inserts,
-    // upper gates, captive-ball toy, earned outlane gate, and tunnel mouths from
-    // the themed ball pass, all below the live ball.
+    // The original Neon Alley experiment placed five dots in the open playfield.
+    // Keep its existing update hook, but repurpose it for decorative tubes on the
+    // true upper wall: the narrow free-bounce pocket behind and beneath Ocean Drive.
+    const upperWallNeons = [
+      { x1: 214, y1: 38, x2: 239, y2: 38, accent: 'cyan', flashStartedAt: -Infinity },
+      { x1: 248, y1: 34, x2: 274, y2: 34, accent: 'magenta', flashStartedAt: -Infinity },
+      { x1: 282, y1: 34, x2: 308, y2: 34, accent: 'lavender', flashStartedAt: -Infinity },
+      { x1: 316, y1: 38, x2: 342, y2: 38, accent: 'cyan', flashStartedAt: -Infinity }
+    ];
+
+    updateUpperNeonInserts = function updateUpperWallNeons() {
+      const liveBallInUpperPocket =
+        !ball.ready &&
+        !underpass.active &&
+        !oceanRamp.active &&
+        !loopRamp.active &&
+        magneticTarget.state !== 'holding' &&
+        ball.y <= 92 &&
+        ball.x >= 198 &&
+        ball.x <= 356;
+      if (!liveBallInUpperPocket) return;
+
+      const now = performance.now();
+      for (const neon of upperWallNeons) {
+        const centerX = (neon.x1 + neon.x2) / 2;
+        if (Math.abs(ball.x - centerX) <= 24) {
+          neon.flashStartedAt = now;
+        }
+      }
+    };
+
+    function drawUpperWallNeons() {
+      const now = performance.now();
+
+      for (const neon of upperWallNeons) {
+        const accent = MIAMI_COLORS[neon.accent];
+        const flashStrength = clamp(
+          1 - (now - neon.flashStartedAt) / 420,
+          0,
+          1
+        );
+
+        ctx.save();
+        ctx.lineCap = 'round';
+
+        // Tiny dark brackets visually mount each tube to the cabinet back wall.
+        ctx.strokeStyle = MIAMI_COLORS.structure;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(neon.x1 + 4, TABLE.top + 2);
+        ctx.lineTo(neon.x1 + 4, neon.y1 - 4);
+        ctx.moveTo(neon.x2 - 4, TABLE.top + 2);
+        ctx.lineTo(neon.x2 - 4, neon.y2 - 4);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#11182a';
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(neon.x1, neon.y1);
+        ctx.lineTo(neon.x2, neon.y2);
+        ctx.stroke();
+
+        ctx.globalAlpha = 0.62 + flashStrength * 0.38;
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 2.6 + flashStrength * 0.8;
+        ctx.shadowColor = accent;
+        ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 :
+          (6 + flashStrength * 18);
+        ctx.beginPath();
+        ctx.moveTo(neon.x1, neon.y1);
+        ctx.lineTo(neon.x2, neon.y2);
+        ctx.stroke();
+
+        if (flashStrength > 0) {
+          ctx.globalAlpha = flashStrength * 0.9;
+          ctx.strokeStyle = '#f4ffff';
+          ctx.lineWidth = 1;
+          ctx.shadowColor = '#ffffff';
+          ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 9;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    // Suppress the abandoned five-dot artwork. The update wrapper above now
+    // drives only the upper-wall flare state, so it no longer awards a bonus.
+    drawUpperNeonInserts = function drawNoLegacyNeonDots() {};
+
+    // Draw the wall tubes immediately before Ocean Drive so the raised bridge
+    // naturally passes in front of them and they read as scenery behind it.
+    const baseDrawOceanRampWithUpperWallNeons = drawOceanRamp;
+    drawOceanRamp = function drawOceanRampWithUpperWallNeons() {
+      drawUpperWallNeons();
+      baseDrawOceanRampWithUpperWallNeons();
+    };
+
+    // theme.js replaces the main draw loop, so draw the upper gates,
+    // captive-ball toy, earned outlane gate, and tunnel mouths from the themed
+    // ball pass, all below the live ball.
     const baseDrawBallWithUnderpassMouths = drawBall;
     drawBall = function drawBallWithUnderpassMouths() {
       drawUpperNeonInserts();
