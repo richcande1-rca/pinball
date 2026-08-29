@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260828-SPACEFIX</span>
+        <span class="build-number">Build 20260828-UBALANCE</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -135,6 +135,36 @@
         1,
         { x1: 110, y1: 180, x2: 122, y2: 180, radius: 4 },
         { x1: 158, y1: 180, x2: 196, y2: 180, radius: 4 }
+      );
+    }
+
+    // Rebalance only the hidden underpass geometry. The lower floor keeps both
+    // outlet mouths in their existing locations, but moves its peak rightward
+    // so the left and right slopes are effectively equal instead of favoring
+    // the lower-left 3-0-5 exit.
+    const underpassRightFloor = underpassRails.find(rail =>
+      rail.x1 === 395 && rail.y1 === 545 && rail.x2 === 230 && rail.y2 === 500
+    );
+    const underpassLeftFloor = underpassRails.find(rail =>
+      rail.x1 === 230 && rail.y1 === 500 && rail.x2 === 52 && rail.y2 === 565
+    );
+    if (underpassRightFloor && underpassLeftFloor) {
+      Object.assign(underpassRightFloor, { x2: 255, y2: 500 });
+      Object.assign(underpassLeftFloor, { x1: 255, y1: 500 });
+    }
+
+    // The original chamber had one low splitter on the left side only. Replace
+    // it with a matched pair and a generous center gap so small differences in
+    // live velocity can send the ball either direction without creating a trap.
+    const lowerSplitterIndex = underpassRails.findIndex(rail =>
+      rail.x1 === 194 && rail.y1 === 520 && rail.x2 === 254 && rail.y2 === 486
+    );
+    if (lowerSplitterIndex !== -1) {
+      underpassRails.splice(
+        lowerSplitterIndex,
+        1,
+        { x1: 170, y1: 510, x2: 225, y2: 470, radius: 5 },
+        { x1: 340, y1: 510, x2: 285, y2: 470, radius: 5 }
       );
     }
 
