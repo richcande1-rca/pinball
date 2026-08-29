@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260829-OCEANSPACING</span>
+        <span class="build-number">Build 20260829-UNDERPASSRANDOM</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -89,7 +89,7 @@
         Captive ball: 500 points per solid hit; reach its top switch for 2500 more.
         Knock down 3-0-5 for 500 each and a 3000-point bank bonus.
         Take the elevated OCEAN DRIVE ramp for 100 points per spinner rotation.
-        Shoot the upper pocket to enter the physical five-way underpass.
+        Shoot the upper pocket to enter the five-way underpass.
         Three balls per game; <strong>NEW GAME</strong> or <kbd>R</kbd> restarts.
         Cabinet buttons work with touch, mouse, or pen.
       </p>
@@ -105,75 +105,8 @@
     Object.assign(underpassEntryGuides[0], { y1: 100, y2: 78 });
     Object.assign(underpassEntryGuides[1], { y1: 100, y2: 78 });
 
-    // The raised entry still feeds the original hidden chamber physically.
-    // These rails only collide while the ball is already underground, so they
-    // cannot interfere with the normal shooter/launch path.
-    const underpassRoofIndex = underpassRails.findIndex(rail =>
-      rail.x1 === 196 && rail.y1 === 180 && rail.x2 === 395 && rail.y2 === 180
-    );
-
-    if (underpassRoofIndex !== -1) {
-      underpassRails.splice(
-        underpassRoofIndex,
-        1,
-        { x1: 196, y1: 180, x2: 248, y2: 180, radius: 4 },
-        { x1: 292, y1: 180, x2: 395, y2: 180, radius: 4 },
-        { x1: 248, y1: 58, x2: 248, y2: 180, radius: 4 },
-        { x1: 292, y1: 58, x2: 292, y2: 180, radius: 4 },
-        { x1: 248, y1: 58, x2: 292, y2: 58, radius: 4 }
-      );
-    }
-
-    // Move only the three-post outlet clear of the circle rails and bias it
-    // toward the lower-right post. Close the old roof gap and open the same-size
-    // physical gap around x=150 so natural exit velocity intersects that post.
+    // Keep the two outlet relocations that define the visible tunnel mouths.
     underpass.outlets[0].x = 150;
-    const threePostRoofIndex = underpassRails.findIndex(rail =>
-      rail.x1 === 110 && rail.y1 === 180 && rail.x2 === 160 && rail.y2 === 180
-    );
-    if (threePostRoofIndex !== -1) {
-      underpassRails.splice(
-        threePostRoofIndex,
-        1,
-        { x1: 110, y1: 180, x2: 132, y2: 180, radius: 4 },
-        { x1: 168, y1: 180, x2: 196, y2: 180, radius: 4 }
-      );
-    }
-
-    // Rebalance only the hidden underpass geometry. The lower floor keeps both
-    // outlet mouths in their existing locations, but moves its peak rightward
-    // so the left and right slopes are effectively equal instead of favoring
-    // the lower-left 3-0-5 exit.
-    const underpassRightFloor = underpassRails.find(rail =>
-      rail.x1 === 395 && rail.y1 === 545 && rail.x2 === 230 && rail.y2 === 500
-    );
-    const underpassLeftFloor = underpassRails.find(rail =>
-      rail.x1 === 230 && rail.y1 === 500 && rail.x2 === 52 && rail.y2 === 565
-    );
-    if (underpassRightFloor && underpassLeftFloor) {
-      Object.assign(underpassRightFloor, { x2: 255, y2: 500 });
-      Object.assign(underpassLeftFloor, { x1: 255, y1: 500 });
-    }
-
-    // The original chamber had one low splitter on the left side only. Replace
-    // it with a matched pair and a generous center gap so small differences in
-    // live velocity can send the ball either direction without creating a trap.
-    const lowerSplitterIndex = underpassRails.findIndex(rail =>
-      rail.x1 === 194 && rail.y1 === 520 && rail.x2 === 254 && rail.y2 === 486
-    );
-    if (lowerSplitterIndex !== -1) {
-      underpassRails.splice(
-        lowerSplitterIndex,
-        1,
-        { x1: 170, y1: 510, x2: 225, y2: 470, radius: 5 },
-        { x1: 340, y1: 510, x2: 285, y2: 470, radius: 5 }
-      );
-    }
-
-    // The lower-left outlet used to release while the ball was still traveling
-    // left into the cabinet wall. Close that opening, let the hidden wall make
-    // the natural rebound, then transition back to the playfield a few pixels
-    // inward and safely above the left sling.
     Object.assign(underpass.outlets[4], {
       x: 72,
       y: 536,
@@ -181,78 +114,69 @@
       edge: 'right'
     });
 
-    const underpassLeftWall = underpassRails.find(rail =>
-      rail.x1 === 52 && rail.y1 === 527 && rail.x2 === 52 && rail.y2 === 180
-    );
-    if (underpassLeftWall) {
-      underpassLeftWall.y1 = 565;
-    }
-
-    // Bring the final left floor contact up to the new rebound outlet instead
-    // of carrying the ball down beside the sling before it can turn around.
-    if (underpassLeftFloor) {
-      underpassLeftFloor.y2 = 540;
-    }
-
-    // The lower-left transition normally waits for a rightward rebound. If the
-    // ball reaches that same mouth with almost no energy left, let it transition
-    // to the visible playfield rather than balancing forever on the hidden seam.
-    // Position and velocity are preserved; this adds no kick or scripted eject.
-    const baseUnderpassOutletReached = underpassOutletReached;
-    underpassOutletReached = function underpassOutletReachedWithSideExitAntiStall(outlet) {
-      if (baseUnderpassOutletReached(outlet)) return true;
-      if (outlet !== underpass.outlets[4]) return false;
-      if (performance.now() - underpass.enteredAt < 180) return false;
-
-      const close = Math.hypot(ball.x - outlet.x, ball.y - outlet.y) <= outlet.radius;
-      const nearlyStopped = Math.hypot(ball.vx, ball.vy) < 90;
-      return close && nearlyStopped;
+    // The underground path is intentionally abstract now. A ball visibly enters
+    // the scoop, disappears beneath the playfield for a short random travel time,
+    // then emerges from one of the five existing mouths with preserved shot energy.
+    // No hidden rails, splitters, wall bounces, or stall recovery are simulated.
+    const underpassRandomizer = {
+      exitIndex: 0,
+      travelRemaining: 0,
+      entrySpeed: 0
     };
 
-    // Real hardware never reflects two nominally identical shots at precisely
-    // the same microscopic angle. Add only a tiny underpass-local roughness to
-    // actual rail impacts so the existing splitters can amplify natural-looking
-    // differences without selecting or scripting any destination.
-    const UNDERPASS_ROUGHNESS = 1.5 * Math.PI / 180;
-    updateUnderpass = function updateUnderpassWithRoughness(dt) {
+    const baseTryEnterUnderpass = tryEnterUnderpass;
+    tryEnterUnderpass = function tryEnterUnderpassRandomized() {
+      const entered = baseTryEnterUnderpass();
+      if (!entered) return false;
+
+      underpassRandomizer.exitIndex = Math.floor(
+        Math.random() * underpass.outlets.length
+      );
+      underpassRandomizer.travelRemaining = 0.4 + Math.random() * 0.5;
+      underpassRandomizer.entrySpeed = Math.hypot(ball.vx, ball.vy);
+      return true;
+    };
+
+    updateUnderpass = function updateUnderpassRandomized(dt) {
       if (!underpass.active) return false;
 
-      ball.vy += gravity * dt;
-      ball.x += ball.vx * dt;
-      ball.y += ball.vy * dt;
-      ball.vx *= rollingDrag;
-      ball.vy *= rollingDrag;
+      underpassRandomizer.travelRemaining = Math.max(
+        0,
+        underpassRandomizer.travelRemaining - dt
+      );
 
-      for (const rail of underpassRails) {
-        const beforeVx = ball.vx;
-        const beforeVy = ball.vy;
-        const touching = resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.97);
-        const reflected = touching && Math.hypot(
-          ball.vx - beforeVx,
-          ball.vy - beforeVy
-        ) > 0.01;
-
-        if (reflected) {
-          const angle = (Math.random() * 2 - 1) * UNDERPASS_ROUGHNESS;
-          const cos = Math.cos(angle);
-          const sin = Math.sin(angle);
-          const vx = ball.vx;
-          const vy = ball.vy;
-          ball.vx = vx * cos - vy * sin;
-          ball.vy = vx * sin + vy * cos;
-        }
+      if (underpassRandomizer.travelRemaining > 0) {
+        // Off-table storage keeps the ball visually underground while preserving
+        // the normal draw rule: it is invisible unless near a tunnel transition.
+        ball.x = -100;
+        ball.y = -100;
+        ball.vx = 0;
+        ball.vy = 0;
+        return true;
       }
 
-      for (const outlet of underpass.outlets) {
-        if (underpassOutletReached(outlet)) {
-          underpass.active = false;
-          ballHasEnteredPlayfield = true;
-          shooterRoute = 'released';
-          return false;
-        }
-      }
+      const outlet = underpass.outlets[underpassRandomizer.exitIndex];
+      const baseAngle = outlet.edge === 'top'
+        ? -Math.PI / 2
+        : outlet.edge === 'right'
+          ? 0
+          : Math.PI;
+      const angle = baseAngle + (Math.random() * 2 - 1) * 16 * Math.PI / 180;
+      const exitSpeed = clamp(
+        underpassRandomizer.entrySpeed * (0.82 + Math.random() * 0.2),
+        180,
+        760
+      );
+      const clearance = ball.radius + 5;
 
-      return true;
+      ball.x = outlet.x + Math.cos(baseAngle) * clearance;
+      ball.y = outlet.y + Math.sin(baseAngle) * clearance;
+      ball.vx = Math.cos(angle) * exitSpeed;
+      ball.vy = Math.sin(angle) * exitSpeed;
+      underpass.active = false;
+      ballHasEnteredPlayfield = true;
+      shooterRoute = 'released';
+      return false;
     };
 
     // Keep the left deflector's existing angle and length, but move the whole
