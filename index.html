@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260829-CAPTIVECLEAN</span>
+        <span class="build-number">Build 20260829-OCEANLETTERS</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -499,6 +499,94 @@
       ctx.fill();
       ctx.restore();
     }
+
+    // Replace the tiny ramp label with large pass-progress letters across the
+    // upper bridge. One successful Ocean Drive traversal lights one new letter.
+    // Progress survives individual ball drains and resets only with a new game.
+    const oceanDriveProgressLetters = 'OCEANDRIVE';
+    const oceanDriveLetterProgress = [
+      0.91, 0.885, 0.86, 0.835, 0.81,
+      0.77, 0.745, 0.72, 0.695, 0.67
+    ];
+    let oceanDriveLettersLit = 0;
+
+    const baseResetGameWithOceanDriveLetters = resetGame;
+    resetGame = function resetGameWithOceanDriveLetters() {
+      oceanDriveLettersLit = 0;
+      baseResetGameWithOceanDriveLetters();
+    };
+
+    window.addEventListener('miami-spinner-exit', () => {
+      oceanDriveLettersLit = Math.min(
+        oceanDriveProgressLetters.length,
+        oceanDriveLettersLit + 1
+      );
+    });
+
+    function drawOceanDriveProgressLetters() {
+      const now = performance.now();
+      const completionAge = now - oceanRamp.flashStartedAt;
+      const completionFlash =
+        oceanDriveLettersLit === oceanDriveProgressLetters.length &&
+        completionAge >= 0 && completionAge < 520
+          ? 1 - completionAge / 520
+          : 0;
+
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '900 16px ui-monospace, monospace';
+      ctx.lineWidth = 1.2;
+
+      for (let index = 0; index < oceanDriveProgressLetters.length; index += 1) {
+        const point = sampleSmoothPath(
+          oceanRampPath,
+          oceanDriveLetterProgress[index]
+        );
+        const lit = index < oceanDriveLettersLit;
+        const accent = index % 2 === 0
+          ? MIAMI_COLORS.cyan
+          : MIAMI_COLORS.magenta;
+
+        if (lit) {
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = completionFlash > 0 ? '#ffffff' : accent;
+          ctx.strokeStyle = '#f4ffff';
+          ctx.shadowColor = accent;
+          ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 :
+            (10 + completionFlash * 18);
+          ctx.strokeText(oceanDriveProgressLetters[index], point.x, point.y);
+          ctx.fillText(oceanDriveProgressLetters[index], point.x, point.y);
+        } else {
+          ctx.globalAlpha = 0.48;
+          ctx.fillStyle = '#070b18';
+          ctx.strokeStyle = MIAMI_COLORS.lavender;
+          ctx.shadowColor = MIAMI_COLORS.lavender;
+          ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 3;
+          ctx.fillText(oceanDriveProgressLetters[index], point.x, point.y);
+          ctx.strokeText(oceanDriveProgressLetters[index], point.x, point.y);
+        }
+      }
+
+      ctx.restore();
+    }
+
+    const baseDrawOceanRampWithSmallLabel = drawOceanRamp;
+    drawOceanRamp = function drawOceanRampWithPassLetters() {
+      const baseFillText = ctx.fillText;
+      ctx.fillText = function suppressOldOceanDriveLabel(text, ...args) {
+        if (text === 'OCEAN DRIVE') return;
+        return baseFillText.call(ctx, text, ...args);
+      };
+
+      try {
+        baseDrawOceanRampWithSmallLabel();
+      } finally {
+        ctx.fillText = baseFillText;
+      }
+
+      drawOceanDriveProgressLetters();
+    };
 
     function drawProminentUnderpassMouth(mouth, accent) {
       const radius = 18;
