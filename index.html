@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260828-UBALANCE</span>
+        <span class="build-number">Build 20260828-SIDEEXITFIX</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -168,6 +168,30 @@
       );
     }
 
+    // The lower-left outlet used to release while the ball was still traveling
+    // left into the cabinet wall. Close that opening, let the hidden wall make
+    // the natural rebound, then transition back to the playfield a few pixels
+    // inward and safely above the left sling.
+    Object.assign(underpass.outlets[4], {
+      x: 72,
+      y: 536,
+      radius: 13,
+      edge: 'right'
+    });
+
+    const underpassLeftWall = underpassRails.find(rail =>
+      rail.x1 === 52 && rail.y1 === 527 && rail.x2 === 52 && rail.y2 === 180
+    );
+    if (underpassLeftWall) {
+      underpassLeftWall.y1 = 565;
+    }
+
+    // Bring the final left floor contact up to the new rebound outlet instead
+    // of carrying the ball down beside the sling before it can turn around.
+    if (underpassLeftFloor) {
+      underpassLeftFloor.y2 = 540;
+    }
+
     function drawProminentUnderpassMouth(mouth, accent) {
       const radius = 18;
       ctx.save();
@@ -204,7 +228,7 @@
       const radius = 10;
       ctx.save();
       ctx.translate(mouth.x, mouth.y);
-      ctx.rotate(Math.PI / 2);
+      ctx.rotate(-Math.PI / 2);
       ctx.fillStyle = '#01030a';
       ctx.strokeStyle = '#4a3b66';
       ctx.lineWidth = 7;
