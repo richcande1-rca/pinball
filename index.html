@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260829-OCEANLETTERS</span>
+        <span class="build-number">Build 20260829-OCEANSPACING</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -500,13 +500,13 @@
       ctx.restore();
     }
 
-    // Replace the tiny ramp label with large pass-progress letters across the
-    // upper bridge. One successful Ocean Drive traversal lights one new letter.
-    // Progress survives individual ball drains and resets only with a new game.
+    // Replace the tiny ramp label with pass-progress letters across the upper
+    // bridge. The progress values below are spaced by actual distance along the
+    // curved deck, with one larger intentional gap between OCEAN and DRIVE.
     const oceanDriveProgressLetters = 'OCEANDRIVE';
     const oceanDriveLetterProgress = [
-      0.91, 0.885, 0.86, 0.835, 0.81,
-      0.77, 0.745, 0.72, 0.695, 0.67
+      0.8558, 0.8355, 0.8189, 0.8017, 0.7850,
+      0.7604, 0.7433, 0.7260, 0.7081, 0.6898
     ];
     let oceanDriveLettersLit = 0;
 
@@ -535,7 +535,7 @@
       ctx.save();
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = '900 16px ui-monospace, monospace';
+      ctx.font = '900 14px ui-monospace, monospace';
       ctx.lineWidth = 1.2;
 
       for (let index = 0; index < oceanDriveProgressLetters.length; index += 1) {
