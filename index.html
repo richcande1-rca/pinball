@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260829-CAPTIVEMETER</span>
+        <span class="build-number">Build 20260829-CAPTIVEEXTRABALL</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -86,7 +86,7 @@
         Cradle a ball to charge its flipper glow; release, aim, then flip again for a powered shot.
         Magnetic target: 500 points. Complete the upper-left loop: 2500 points.
         Loop bumpers score escalating 100, 200, and 300-point volleys.
-        Captive ball: 500 points per solid hit; reach its top switch for 2500 more.
+        Captive ball: 500 points per solid hit; reach its top switch for 2500 more; five solid hits light all five lamps and award one extra ball.
         Knock down 3-0-5 for 500 each and a 3000-point bank bonus; completing the bank blocks the left outlane until that ball drains.
         Take the elevated OCEAN DRIVE ramp for 100 points per spinner rotation.
         Shoot the upper pocket to enter the five-way underpass.
@@ -203,8 +203,7 @@
       hitArmed: true,
       topArmed: true,
       flashStartedAt: -Infinity,
-      topFlashStartedAt: -Infinity,
-      topImpactStrength: 0
+      topFlashStartedAt: -Infinity
     };
 
     const captiveBallRails = [
@@ -213,7 +212,11 @@
       { x1: 56, y1: 250, x2: 84, y2: 250, radius: 3 }
     ];
 
-    const captiveMeterLampY = [307, 296, 285, 274, 263];
+    const CAPTIVE_EXTRA_BALL_HITS = 5;
+    const captiveHitLampY = [307, 296, 285, 274, 263];
+    let captiveHitProgress = 0;
+    let captiveExtraBallAwarded = false;
+    let captiveExtraBallFlashStartedAt = -Infinity;
 
     function resetCaptiveBallMechanism() {
       captiveBall.y = captiveBall.maxY;
@@ -222,13 +225,22 @@
       captiveBall.topArmed = true;
       captiveBall.flashStartedAt = -Infinity;
       captiveBall.topFlashStartedAt = -Infinity;
-      captiveBall.topImpactStrength = 0;
     }
 
     const baseResetPlayfieldForCaptiveBall = resetPlayfieldForBall;
     resetPlayfieldForBall = function resetPlayfieldWithCaptiveBall() {
       baseResetPlayfieldForCaptiveBall();
       resetCaptiveBallMechanism();
+    };
+
+    // Lamp progress survives normal ball drains. Only a new game clears it,
+    // and the captive toy can award at most one extra ball per game.
+    const baseResetGameWithCaptiveProgress = resetGame;
+    resetGame = function resetGameWithCaptiveProgress() {
+      captiveHitProgress = 0;
+      captiveExtraBallAwarded = false;
+      captiveExtraBallFlashStartedAt = -Infinity;
+      baseResetGameWithCaptiveProgress();
     };
 
     function collideWithCaptiveBall() {
@@ -281,6 +293,20 @@
         captiveBall.hitArmed = false;
         captiveBall.flashStartedAt = performance.now();
         score += captiveBall.hitValue;
+
+        if (!captiveExtraBallAwarded) {
+          captiveHitProgress = Math.min(
+            CAPTIVE_EXTRA_BALL_HITS,
+            captiveHitProgress + 1
+          );
+
+          if (captiveHitProgress === CAPTIVE_EXTRA_BALL_HITS) {
+            captiveExtraBallAwarded = true;
+            captiveExtraBallFlashStartedAt = performance.now();
+            ballsRemaining += 1;
+          }
+        }
+
         syncStatusDisplay();
         window.dispatchEvent(new CustomEvent('miami-impact', {
           detail: {
@@ -309,7 +335,6 @@
         if (captiveBall.topArmed) {
           captiveBall.topArmed = false;
           captiveBall.topFlashStartedAt = performance.now();
-          captiveBall.topImpactStrength = clamp(impactSpeed / 700, 0.18, 1);
           score += captiveBall.topValue;
           syncStatusDisplay();
           window.dispatchEvent(new CustomEvent('miami-impact', {
@@ -432,10 +457,8 @@
       const now = performance.now();
       const hitStrength = 1 - (now - captiveBall.flashStartedAt) / 160;
       const topStrength = 1 - (now - captiveBall.topFlashStartedAt) / 220;
-      const topFlashAge = now - captiveBall.topFlashStartedAt;
-      const topFlashDuration = 180 + captiveBall.topImpactStrength * 420;
-      const topLampFlash = clamp(
-        1 - topFlashAge / topFlashDuration,
+      const extraBallFlash = clamp(
+        1 - (now - captiveExtraBallFlashStartedAt) / 720,
         0,
         1
       );
@@ -482,35 +505,31 @@
       ctx.fill();
       ctx.restore();
 
-      // Five small inserts read the captive ball's actual travel. They light in
-      // sequence on the way up and fall back out as the ball returns. The top
-      // insert keeps a separate impact-energy flash so hard top hits read harder.
+      // The inserts are now persistent hit progress rather than a height meter.
+      // Each solid captive-ball hit earns the next lamp. The fifth hit flashes
+      // the full bank and awards the game's single extra ball.
       ctx.save();
-      for (let index = 0; index < captiveMeterLampY.length; index += 1) {
-        const lampY = captiveMeterLampY[index];
-        const isTopLamp = index === captiveMeterLampY.length - 1;
-        const travelLit = captiveBall.y <= lampY;
-        const impactLit = isTopLamp && topLampFlash > 0;
-        const lit = travelLit || impactLit;
-        const accent = isTopLamp ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
-        const impactBoost = isTopLamp
-          ? topLampFlash * captiveBall.topImpactStrength
-          : 0;
+      for (let index = 0; index < captiveHitLampY.length; index += 1) {
+        const lampY = captiveHitLampY[index];
+        const lit = index < captiveHitProgress;
+        const accent = index % 2 === 0
+          ? MIAMI_COLORS.cyan
+          : MIAMI_COLORS.magenta;
 
         ctx.globalAlpha = lit ? 1 : 0.42;
         ctx.fillStyle = lit
-          ? (impactBoost > 0.45 ? '#fff4ff' : accent)
+          ? (extraBallFlash > 0.38 ? '#fff4ff' : accent)
           : '#070b18';
         ctx.strokeStyle = lit ? '#f4ffff' : MIAMI_COLORS.lavender;
         ctx.shadowColor = lit ? accent : MIAMI_COLORS.lavender;
         ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 :
-          (lit ? 6 + impactBoost * 18 : 2);
+          (lit ? 7 + extraBallFlash * 18 : 2);
         ctx.lineWidth = lit ? 1.4 : 1;
         ctx.beginPath();
         ctx.arc(
           96,
           lampY,
-          4 + impactBoost * 1.6,
+          4 + extraBallFlash * 1.4,
           0,
           Math.PI * 2
         );
