@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260829-OUTLANEFLOW</span>
+        <span class="build-number">Build 20260829-NEONALLEY</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -88,6 +88,7 @@
         Loop bumpers score escalating 100, 200, and 300-point volleys.
         Captive ball: 500 points per solid hit; reach its top switch for 2500 more; five solid hits light all five lamps and award one extra ball. Hit the captive cage roof from above for 1000 points.
         Knock down the three upper gates above the sunset to start 18 seconds of 2X scoring.
+        Light all five upper Neon Alley inserts for a 1000-point bonus; they stay lit until the ball drains.
         Knock down 3-0-5 for 500 each and a 3000-point bank bonus; completing the bank blocks the left outlane until that ball drains.
         Take the elevated OCEAN DRIVE ramp for 100 points per spinner rotation.
         Shoot the upper pocket to enter the five-way underpass.
@@ -414,6 +415,88 @@
       ctx.restore();
     }
 
+    // Five passive inserts turn the loose upper-center ricochet pocket into a
+    // light-chasing feature without adding any new collision geometry.
+    const upperNeonInserts = [
+      { x: 146, y: 210, accent: 'cyan', lit: false },
+      { x: 184, y: 228, accent: 'magenta', lit: false },
+      { x: 226, y: 216, accent: 'lavender', lit: false },
+      { x: 269, y: 228, accent: 'cyan', lit: false },
+      { x: 309, y: 210, accent: 'magenta', lit: false }
+    ];
+    const UPPER_NEON_TRIGGER_RADIUS = 20;
+    const UPPER_NEON_BONUS = 1000;
+    let upperNeonBonusAwarded = false;
+    let upperNeonCompleteFlashStartedAt = -Infinity;
+
+    function resetUpperNeonInserts() {
+      for (const insert of upperNeonInserts) {
+        insert.lit = false;
+      }
+      upperNeonBonusAwarded = false;
+      upperNeonCompleteFlashStartedAt = -Infinity;
+    }
+
+    const baseResetGameWithUpperNeons = resetGame;
+    resetGame = function resetGameWithUpperNeons() {
+      resetUpperNeonInserts();
+      baseResetGameWithUpperNeons();
+    };
+
+    window.addEventListener('miami-drain', resetUpperNeonInserts);
+
+    function updateUpperNeonInserts() {
+      const liveBallOnMainPlayfield =
+        !ball.ready &&
+        !underpass.active &&
+        !oceanRamp.active &&
+        !loopRamp.active &&
+        magneticTarget.state !== 'holding';
+      if (!liveBallOnMainPlayfield) return;
+
+      for (const insert of upperNeonInserts) {
+        if (insert.lit) continue;
+        if (Math.hypot(ball.x - insert.x, ball.y - insert.y) <= UPPER_NEON_TRIGGER_RADIUS) {
+          insert.lit = true;
+        }
+      }
+
+      if (!upperNeonBonusAwarded && upperNeonInserts.every(insert => insert.lit)) {
+        upperNeonBonusAwarded = true;
+        upperNeonCompleteFlashStartedAt = performance.now();
+        score += UPPER_NEON_BONUS * (centerDoubleScoreRemaining > 0 ? 2 : 1);
+        syncStatusDisplay();
+      }
+    }
+
+    function drawUpperNeonInserts() {
+      const now = performance.now();
+      const completionAge = now - upperNeonCompleteFlashStartedAt;
+      const completionFlash = completionAge >= 0 && completionAge < 700
+        ? 1 - completionAge / 700
+        : 0;
+
+      for (const insert of upperNeonInserts) {
+        const accent = MIAMI_COLORS[insert.accent];
+        ctx.save();
+        ctx.translate(insert.x, insert.y);
+        ctx.fillStyle = insert.lit
+          ? (completionFlash > 0.45 ? '#f4ffff' : accent)
+          : '#050815';
+        ctx.strokeStyle = insert.lit ? '#f4ffff' : accent;
+        ctx.globalAlpha = insert.lit ? 1 : 0.42;
+        ctx.shadowColor = accent;
+        ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 :
+          (insert.lit ? 8 + completionFlash * 16 : 3);
+        ctx.lineWidth = insert.lit ? 1.7 : 1.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 5.5 + completionFlash * 1.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     // A real captive ball lives in the open strip directly above the 3-0-5
     // bank. It is constrained to a short vertical lane, but otherwise keeps
     // live velocity, gravity, rebounds, and impact energy like the main ball.
@@ -709,6 +792,12 @@
         score += score - scoreBeforeTargets;
         syncStatusDisplay();
       }
+    };
+
+    const baseUpdateWithUpperNeons = update;
+    update = function updateWithUpperNeons(dt) {
+      baseUpdateWithUpperNeons(dt);
+      if (!gameOver) updateUpperNeonInserts();
     };
 
     // Completing 3-0-5 now earns a physical left-outlane save for the rest of
@@ -1060,11 +1149,12 @@
   </script>
   <script src="theme.js?v=20260828-0225"></script>
   <script>
-    // theme.js replaces the main draw loop, so draw the upper gates,
-    // captive-ball toy, earned outlane gate, and tunnel mouths from the themed
-    // ball pass, all below the live ball.
+    // theme.js replaces the main draw loop, so draw the passive upper inserts,
+    // upper gates, captive-ball toy, earned outlane gate, and tunnel mouths from
+    // the themed ball pass, all below the live ball.
     const baseDrawBallWithUnderpassMouths = drawBall;
     drawBall = function drawBallWithUnderpassMouths() {
+      drawUpperNeonInserts();
       drawCenterStandupTargets();
       drawCaptiveBallAssembly();
       drawLeftOutlaneGate();
