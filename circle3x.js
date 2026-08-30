@@ -285,9 +285,28 @@
   };
   lowerGuides.push(rightOutlaneTopGuide);
 
+  // M toggles the existing music button without moving gameplay focus. The
+  // button's normal click handler owns the mute state; the existing blur handler
+  // also keeps mouse/touch taps from leaving the control focused.
+  const musicMuteShortcutButton = document.getElementById('music-mute');
+  if (musicMuteShortcutButton) {
+    window.addEventListener('keydown', event => {
+      if (
+        event.code !== 'KeyM' ||
+        event.repeat ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey
+      ) return;
+
+      event.preventDefault();
+      musicMuteShortcutButton.click();
+    }, true);
+  }
+
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-REPLUNGE';
+    buildNumberDisplay.textContent = 'Build 20260830-MUSICKEY';
   }
 
   const instructions = document.querySelector('.instruction-content');
