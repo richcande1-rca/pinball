@@ -210,15 +210,41 @@
     y2: 232
   });
 
-  // Re-shape the lower return/low-launch guide around the narrow lane instead
-  // of leaving its old inner endpoint stranded far left of the moved divider.
-  Object.assign(shooterRecoveryGuidePoints[0], { x: TABLE.right - 1, y: 510 });
-  Object.assign(shooterRecoveryGuidePoints[1], { x: 449, y: 522 });
-  Object.assign(shooterRecoveryGuidePoints[2], { x: 438, y: 533 });
-  Object.assign(shooterRecoveryGuidePoints[3], {
-    x: narrowLaunchDividerX - ball.radius - 4,
-    y: 538
-  });
+  // Replace the old visual-only recovery guide with a physical diverter fitted
+  // to the skinny lane. Its lower placement keeps the underpass side outlet clear,
+  // while the shallow slash converts a falling stray ball's speed into a leftward
+  // and slightly upward exit through the 500-560 divider opening.
+  Object.assign(shooterRecoveryGuidePoints[0], { x: 455, y: 544 });
+  Object.assign(shooterRecoveryGuidePoints[1], { x: 449, y: 548 });
+  Object.assign(shooterRecoveryGuidePoints[2], { x: 443, y: 553 });
+  Object.assign(shooterRecoveryGuidePoints[3], { x: 436, y: 558 });
+  const physicalShooterRecoveryRails = makeRailSegments(shooterRecoveryGuidePoints);
+
+  // Disable the old fixed-position/fixed-velocity recovery shove. Recovery now
+  // comes entirely from normal segment collision, and the route releases once the
+  // ball has physically cleared the divider back into the playfield.
+  SHOOTER.recoveryFeedY = TABLE.bottom + ball.radius + 40;
+  const baseUpdateWithPhysicalShooterRecovery = update;
+  update = function updateWithPhysicalShooterRecovery(dt) {
+    baseUpdateWithPhysicalShooterRecovery(dt);
+
+    if (
+      shooterRoute === 'recovery' &&
+      ball.vy > 0 &&
+      ballIsInShooterLane()
+    ) {
+      for (const rail of physicalShooterRecoveryRails) {
+        resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.88);
+      }
+    }
+
+    if (
+      shooterRoute === 'recovery' &&
+      ball.x + ball.radius < SHOOTER.dividerX
+    ) {
+      shooterRoute = 'released';
+    }
+  };
 
   // The blue right lower guide belongs beside the pink sling/outlane, not beside
   // the narrowed shooter divider. Restore its original mirrored position so the
@@ -247,7 +273,7 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-RIGHTOUTLANE';
+    buildNumberDisplay.textContent = 'Build 20260830-PHYSRECOVERY';
   }
 
   const instructions = document.querySelector('.instruction-content');
