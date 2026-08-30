@@ -67,7 +67,7 @@
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
   const circleTripleScript = document.createElement('script');
-  circleTripleScript.src = 'circle3x.js?v=20260830-mediumgutter';
+  circleTripleScript.src = 'circle3x.js?v=20260830-rightoutlane';
   circleTripleScript.async = false;
   document.body.appendChild(circleTripleScript);
 }, { once: true });
