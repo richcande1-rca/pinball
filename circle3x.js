@@ -149,21 +149,67 @@
     ball.x = narrowLaunchBallX;
   }
 
-  // The medium-launch entry deflector used to catch the ball well inside its
-  // angled face. After the lane moved right, the new launch line reached only
-  // its old endpoint and could slip past. Shift/shorten that hidden chute so the
-  // x=447 launch line again strikes the middle of the same-angle surface and is
-  // physically redirected left through the divider opening.
+  // Restore the original medium-launch deflector. A short hidden lead-in now
+  // catches the new x=447 launch line lower in the divider opening and steers it
+  // left/up onto the original ramp face before Ocean Drive can become the first
+  // collision surface.
   Object.assign(shooterDiverter, {
-    x1: 417,
+    x1: 400,
     y1: 190,
+    x2: 447,
+    y2: 232
+  });
+  const narrowLaunchLeadIn = {
+    x1: narrowLaunchDividerX + 5,
+    y1: 212,
     x2: TABLE.right - 1,
-    y2: 224
+    y2: 260,
+    radius: 4
+  };
+
+  const baseUpdateWithNarrowLaunchLeadIn = update;
+  update = function updateWithNarrowLaunchLeadIn(dt) {
+    if (
+      !ball.ready &&
+      shooterRoute === 'playfield' &&
+      ball.vy < 0 &&
+      ball.x > SHOOTER.dividerX &&
+      ball.y > 205 &&
+      ball.y < 270
+    ) {
+      resolveSegmentCollision(
+        narrowLaunchLeadIn,
+        { x: 0, y: 0 },
+        0.88
+      );
+    }
+    baseUpdateWithNarrowLaunchLeadIn(dt);
+  };
+
+  // Re-shape the lower return/low-launch guide around the narrow lane instead
+  // of leaving its old inner endpoint stranded far left of the moved divider.
+  Object.assign(shooterRecoveryGuidePoints[0], { x: TABLE.right - 1, y: 510 });
+  Object.assign(shooterRecoveryGuidePoints[1], { x: 449, y: 522 });
+  Object.assign(shooterRecoveryGuidePoints[2], { x: 438, y: 533 });
+  Object.assign(shooterRecoveryGuidePoints[3], {
+    x: narrowLaunchDividerX - ball.radius - 4,
+    y: 538
+  });
+
+  // Move the existing right blue gutter rail with the divider. Keeping its old
+  // 41/48-pixel offsets from the launch wall restores the original right-outlane
+  // envelope instead of leaving a new full-width escape chute beside the flipper.
+  const rightLowerGuide = lowerGuides[1];
+  Object.assign(rightLowerGuide, {
+    x1: narrowLaunchDividerX - 41,
+    y1: 590,
+    x2: narrowLaunchDividerX - 48,
+    y2: 640
   });
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-ENTRYFIX';
+    buildNumberDisplay.textContent = 'Build 20260830-LANEALIGN';
   }
 
   const instructions = document.querySelector('.instruction-content');
