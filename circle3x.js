@@ -125,9 +125,33 @@
   drawLeftOutlaneGate = function drawNoSeparateLeftOutlaneGate() {};
   clearLegacyLeftOutlaneGate();
 
+  // Narrow the launch lane as far as practical: the physical gap between the
+  // divider surface and the cabinet's right wall is exactly the ball diameter
+  // plus two pixels. That leaves one pixel of side clearance around the parked
+  // ball and opens the former launch-lane width back into the main playfield.
+  // Apply this late so PLAYFIELD_CENTER and the existing flipper positions do
+  // not move with the divider.
+  const narrowLaunchLaneWidth = ball.radius * 2 + 2;
+  const narrowLaunchDividerX =
+    TABLE.right - shooterDivider.radius - narrowLaunchLaneWidth;
+  const narrowLaunchBallX = TABLE.right - ball.radius - 1;
+
+  SHOOTER.dividerX = narrowLaunchDividerX;
+  SHOOTER.ballX = narrowLaunchBallX;
+  shooterDivider.x1 = narrowLaunchDividerX;
+  shooterDivider.x2 = narrowLaunchDividerX;
+  for (const rail of shooterDividerRails) {
+    rail.x1 = narrowLaunchDividerX;
+    rail.x2 = narrowLaunchDividerX;
+  }
+  plunger.x = narrowLaunchBallX;
+  if (ball.ready) {
+    ball.x = narrowLaunchBallX;
+  }
+
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-305HOLD';
+    buildNumberDisplay.textContent = 'Build 20260830-LANESLIM';
   }
 
   const instructions = document.querySelector('.instruction-content');
