@@ -62,3 +62,12 @@
   window.addEventListener('keydown', blockGameKeys);
   window.addEventListener('keyup', blockGameKeys);
 })();
+
+// Late-load small feature hooks after all core/table scripts have established
+// their globals. Keeping this separate avoids touching the stable physics core.
+window.addEventListener('load', () => {
+  const circleTripleScript = document.createElement('script');
+  circleTripleScript.src = 'circle3x.js?v=20260830-circle3x';
+  circleTripleScript.async = false;
+  document.body.appendChild(circleTripleScript);
+}, { once: true });
