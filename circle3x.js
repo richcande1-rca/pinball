@@ -149,9 +149,21 @@
     ball.x = narrowLaunchBallX;
   }
 
+  // The medium-launch entry deflector used to catch the ball well inside its
+  // angled face. After the lane moved right, the new launch line reached only
+  // its old endpoint and could slip past. Shift/shorten that hidden chute so the
+  // x=447 launch line again strikes the middle of the same-angle surface and is
+  // physically redirected left through the divider opening.
+  Object.assign(shooterDiverter, {
+    x1: 417,
+    y1: 190,
+    x2: TABLE.right - 1,
+    y2: 224
+  });
+
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-LANESLIM';
+    buildNumberDisplay.textContent = 'Build 20260830-ENTRYFIX';
   }
 
   const instructions = document.querySelector('.instruction-content');
