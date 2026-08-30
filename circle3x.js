@@ -231,9 +231,23 @@
     y2: 640
   });
 
+  // The narrowed shooter divider left a huge entrance from the main playfield
+  // into the right outlane. Add a passive cyan guide from the outside tip of the
+  // pink sling toward the cabinet, leaving only a roughly one-ball-wide opening
+  // instead of a 70-pixel trapdoor. This is not powered and does not touch either
+  // launch route.
+  const rightOutlaneTopGuide = {
+    x1: 370,
+    y1: 548,
+    x2: 414,
+    y2: 536,
+    radius: 4
+  };
+  lowerGuides.push(rightOutlaneTopGuide);
+
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-MEDIUMGUTTER';
+    buildNumberDisplay.textContent = 'Build 20260830-RIGHTOUTLANE';
   }
 
   const instructions = document.querySelector('.instruction-content');
