@@ -149,16 +149,22 @@
     ball.x = narrowLaunchBallX;
   }
 
-  // The narrowed launch line runs only five pixels inside the old bottom outer
-  // orbit rail at x=452. With an 8px ball and 4px rail that segment necessarily
-  // collides before the ball can reach the intended entry chute. Open the mouth
-  // where the orbit meets Ocean Drive by removing only that bottom outer segment.
-  // Collapse its final visual point too, so the artwork shows the same real gap.
+  // The cyan outer orbit wall still reached down into the narrowed launch line
+  // even after its final vertical segment was removed. Cut the preceding segment
+  // back to y=100, preserving the upper orbit guide while leaving a true ball-width
+  // mouth for the medium launch to pass upward beneath Ocean Drive.
+  const orbitEntryCutback = { x: 448, y: 100 };
   if (coastalOrbitOuterPoints.length >= 8) {
-    coastalOrbitOuterPoints[7].x = coastalOrbitOuterPoints[6].x;
-    coastalOrbitOuterPoints[7].y = coastalOrbitOuterPoints[6].y;
+    coastalOrbitOuterPoints[6].x = orbitEntryCutback.x;
+    coastalOrbitOuterPoints[6].y = orbitEntryCutback.y;
+    coastalOrbitOuterPoints[7].x = orbitEntryCutback.x;
+    coastalOrbitOuterPoints[7].y = orbitEntryCutback.y;
   }
   if (coastalOrbitRails.length > 6) {
+    Object.assign(coastalOrbitRails[5], {
+      x2: orbitEntryCutback.x,
+      y2: orbitEntryCutback.y
+    });
     coastalOrbitRails.splice(6, 1);
   }
 
@@ -198,7 +204,7 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-ENTRYOPEN';
+    buildNumberDisplay.textContent = 'Build 20260830-ENTRYCUT';
   }
 
   const instructions = document.querySelector('.instruction-content');
