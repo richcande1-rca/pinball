@@ -149,23 +149,26 @@
     ball.x = narrowLaunchBallX;
   }
 
-  // The cyan outer orbit wall still reached down into the narrowed launch line
-  // even after its final vertical segment was removed. Cut the preceding segment
-  // back to y=100, preserving the upper orbit guide while leaving a true ball-width
-  // mouth for the medium launch to pass upward beneath Ocean Drive.
-  const orbitEntryCutback = { x: 448, y: 100 };
+  // The previous cutback still left the cyan rail's lower endpoint almost on
+  // the x=447 launch centerline. Pull the last visible/physical outer-orbit leg
+  // fully left of the launch corridor, then collapse the two lower segments.
+  // The upper hook remains intact for strong launches while medium launches get
+  // a clean vertical run into the entry beneath Ocean Drive.
+  const orbitEntryCutback = { x: 426, y: 88 };
   if (coastalOrbitOuterPoints.length >= 8) {
+    coastalOrbitOuterPoints[5].x = orbitEntryCutback.x;
+    coastalOrbitOuterPoints[5].y = orbitEntryCutback.y;
     coastalOrbitOuterPoints[6].x = orbitEntryCutback.x;
     coastalOrbitOuterPoints[6].y = orbitEntryCutback.y;
     coastalOrbitOuterPoints[7].x = orbitEntryCutback.x;
     coastalOrbitOuterPoints[7].y = orbitEntryCutback.y;
   }
   if (coastalOrbitRails.length > 6) {
-    Object.assign(coastalOrbitRails[5], {
+    Object.assign(coastalOrbitRails[4], {
       x2: orbitEntryCutback.x,
       y2: orbitEntryCutback.y
     });
-    coastalOrbitRails.splice(6, 1);
+    coastalOrbitRails.splice(5, 2);
   }
 
   // Keep the medium-launch entry as one collision surface. The ball moved
@@ -204,7 +207,7 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-ENTRYCUT';
+    buildNumberDisplay.textContent = 'Build 20260830-ENTRYCLEAR';
   }
 
   const instructions = document.querySelector('.instruction-content');
