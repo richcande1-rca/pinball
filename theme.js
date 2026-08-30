@@ -487,3 +487,58 @@ draw = function drawMiamiNightsFrame() {
   drawPlungerLaunchFlash(now);
   drawBall();
 };
+
+// Surgical polish: widen the lower-right mouth of the upper-left loop so the
+// live ball cannot settle between the two rail tips.
+const upperLeftLoopExitInnerRail = upperLeftLoopRails[upperLeftLoopRails.length - 1];
+if (upperLeftLoopExitInnerRail) {
+  upperLeftLoopExitInnerRail.x2 = 164;
+  upperLeftLoopExitInnerRail.y2 = 176;
+}
+if (upperLeftLoopInnerPoints.length) {
+  Object.assign(upperLeftLoopInnerPoints[upperLeftLoopInnerPoints.length - 1], {
+    x: 164,
+    y: 176
+  });
+}
+
+// Make the already-scoring captive cage roof unmistakably light when its
+// 1000-point top-side hit registers, without adding another gameplay effect.
+const baseDrawCaptiveBallAssemblyWithRoofLight = drawCaptiveBallAssembly;
+drawCaptiveBallAssembly = function drawCaptiveBallAssemblyWithRoofLight() {
+  baseDrawCaptiveBallAssemblyWithRoofLight();
+
+  const strength = clamp(
+    1 - (performance.now() - captiveRoofTarget.flashStartedAt) / 480,
+    0,
+    1
+  );
+  if (strength <= 0) return;
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.globalAlpha = 0.45 + strength * 0.55;
+  ctx.strokeStyle = '#fff4ff';
+  ctx.shadowColor = MIAMI_COLORS.magenta;
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 26;
+  ctx.lineWidth = 5 + strength * 2;
+  ctx.beginPath();
+  ctx.moveTo(56, 250);
+  ctx.lineTo(84, 250);
+  ctx.stroke();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = MIAMI_COLORS.magenta;
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 18;
+  for (const x of [56, 84]) {
+    ctx.beginPath();
+    ctx.arc(x, 250, 3 + strength * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+};
+
+const buildNumberDisplay = document.querySelector('.build-number');
+if (buildNumberDisplay) {
+  buildNumberDisplay.textContent = 'Build 20260830-CAPTIVEFLASH';
+}
