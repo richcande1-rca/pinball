@@ -72,49 +72,53 @@
     }
   };
 
-  // 3-0-5 outlane save: while active, replace the stock near-vertical left
-  // lower guide with one continuous downhill safety rail. This removes both
-  // the crossing-rail pinch and the tiny gutter-side catch while preserving
-  // ordinary collision physics all the way back toward the left flipper.
+  // 3-0-5 outlane save: use the existing left pink diverter itself as the
+  // physical blocker. Completing the bank extends its outside end across the
+  // gutter while leaving the flipper-side end untouched, so the cradle geometry
+  // stays exactly as-is and no second safety rail can create a pinch point.
+  const leftPinkDiverter = sideBumpers[0];
+  const leftPinkDiverterRest = {
+    x1: leftPinkDiverter.x1,
+    y1: leftPinkDiverter.y1
+  };
   const stockLeftLowerGuide = lowerGuides[0];
-  Object.assign(leftOutlaneGate, {
-    x1: TABLE.left + 1,
-    y1: 590,
-    x2: 98,
-    y2: 620,
-    radius: 5
-  });
 
-  setLeftOutlaneProtection = function setContinuousLeftOutlaneProtection(active) {
-    if (leftOutlaneProtectionActive === active) return;
-    leftOutlaneProtectionActive = active;
-
-    if (active) {
-      const stockIndex = lowerGuides.indexOf(stockLeftLowerGuide);
-      if (stockIndex !== -1) {
-        lowerGuides.splice(stockIndex, 1);
-      }
-
-      if (!lowerGuides.includes(leftOutlaneGate)) {
-        lowerGuides.unshift(leftOutlaneGate);
-      }
-      leftOutlaneGateFlashStartedAt = performance.now();
-      return;
-    }
-
+  function clearLegacyLeftOutlaneGate() {
     const gateIndex = lowerGuides.indexOf(leftOutlaneGate);
     if (gateIndex !== -1) {
       lowerGuides.splice(gateIndex, 1);
     }
-
-    if (!lowerGuides.includes(stockLeftLowerGuide)) {
+    if (stockLeftLowerGuide && !lowerGuides.includes(stockLeftLowerGuide)) {
       lowerGuides.unshift(stockLeftLowerGuide);
     }
+  }
+
+  setLeftOutlaneProtection = function setPinkDiverterOutlaneProtection(active) {
+    if (leftOutlaneProtectionActive === active) return;
+    leftOutlaneProtectionActive = active;
+    clearLegacyLeftOutlaneGate();
+
+    if (active) {
+      // Continue the diverter on its existing angle until it reaches the cabinet
+      // side, blocking the gutter before the ball can commit to the outlane.
+      leftPinkDiverter.x1 = TABLE.left + 4;
+      leftPinkDiverter.y1 = 530;
+      leftOutlaneGateFlashStartedAt = performance.now();
+      return;
+    }
+
+    leftPinkDiverter.x1 = leftPinkDiverterRest.x1;
+    leftPinkDiverter.y1 = leftPinkDiverterRest.y1;
   };
+
+  // The pink diverter now is the visible and physical 3-0-5 save. Suppress the
+  // obsolete separate cyan safety rail artwork entirely.
+  drawLeftOutlaneGate = function drawNoSeparateLeftOutlaneGate() {};
+  clearLegacyLeftOutlaneGate();
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-305SAVE';
+    buildNumberDisplay.textContent = 'Build 20260830-305PINK';
   }
 
   const instructions = document.querySelector('.instruction-content');
