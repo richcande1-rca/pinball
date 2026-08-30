@@ -149,42 +149,18 @@
     ball.x = narrowLaunchBallX;
   }
 
-  // Restore the original medium-launch deflector. A short hidden lead-in now
-  // catches the new x=447 launch line lower in the divider opening and steers it
-  // left/up onto the original ramp face before Ocean Drive can become the first
-  // collision surface.
+  // Keep the medium-launch entry as one collision surface. The ball moved
+  // 17 pixels right when the lane was narrowed, so translate the entire original
+  // chute by the same amount without changing its angle, length, restitution,
+  // or the point where the launch line meets it. The far endpoint may sit just
+  // beyond the cabinet wall; that hidden portion is unreachable by the ball.
+  const launchLaneShift = narrowLaunchBallX - 430;
   Object.assign(shooterDiverter, {
-    x1: 400,
+    x1: 400 + launchLaneShift,
     y1: 190,
-    x2: 447,
+    x2: 447 + launchLaneShift,
     y2: 232
   });
-  const narrowLaunchLeadIn = {
-    x1: narrowLaunchDividerX + 5,
-    y1: 212,
-    x2: TABLE.right - 1,
-    y2: 260,
-    radius: 4
-  };
-
-  const baseUpdateWithNarrowLaunchLeadIn = update;
-  update = function updateWithNarrowLaunchLeadIn(dt) {
-    if (
-      !ball.ready &&
-      shooterRoute === 'playfield' &&
-      ball.vy < 0 &&
-      ball.x > SHOOTER.dividerX &&
-      ball.y > 205 &&
-      ball.y < 270
-    ) {
-      resolveSegmentCollision(
-        narrowLaunchLeadIn,
-        { x: 0, y: 0 },
-        0.88
-      );
-    }
-    baseUpdateWithNarrowLaunchLeadIn(dt);
-  };
 
   // Re-shape the lower return/low-launch guide around the narrow lane instead
   // of leaving its old inner endpoint stranded far left of the moved divider.
@@ -209,7 +185,7 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-LANEALIGN';
+    buildNumberDisplay.textContent = 'Build 20260830-CHUTEALIGN';
   }
 
   const instructions = document.querySelector('.instruction-content');
