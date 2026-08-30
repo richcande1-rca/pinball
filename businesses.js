@@ -61,6 +61,20 @@
     cafeOcho.flashStartedAt = -Infinity;
   }
 
+  function businessScoreMultiplier() {
+    return typeof centerDoubleScoreRemaining !== 'undefined' &&
+      centerDoubleScoreRemaining > 0
+      ? 2
+      : 1;
+  }
+
+  function awardBusinessPoints(points) {
+    const awarded = points * businessScoreMultiplier();
+    score += awarded;
+    syncStatusDisplay();
+    return awarded;
+  }
+
   window.addEventListener('miami-drain', resetOceanDriveBusinesses);
 
   const baseResetGameWithBusinesses = resetGame;
@@ -100,15 +114,14 @@
     if (touching && !target.lit && incomingNormalSpeed >= 55) {
       target.lit = true;
       target.flashStartedAt = performance.now();
-      score += reefHotel.targetValue;
+      awardBusinessPoints(reefHotel.targetValue);
 
       if (!reefHotel.completed && reefHotel.targets.every(candidate => candidate.lit)) {
         reefHotel.completed = true;
         reefHotel.flashStartedAt = performance.now();
-        score += reefHotel.completionValue;
+        awardBusinessPoints(reefHotel.completionValue);
       }
 
-      syncStatusDisplay();
       window.dispatchEvent(new CustomEvent('miami-impact', {
         detail: {
           type: 'post',
@@ -161,10 +174,8 @@
 
     while (neonPalms.rotationAccumulator >= Math.PI * 2) {
       neonPalms.rotationAccumulator -= Math.PI * 2;
-      neonPalms.lastPoints = neonPalms.value;
+      neonPalms.lastPoints = awardBusinessPoints(neonPalms.value);
       neonPalms.flashStartedAt = performance.now();
-      score += neonPalms.value;
-      syncStatusDisplay();
     }
 
     neonPalms.angularVelocity *= Math.exp(-neonPalms.drag * dt);
@@ -187,8 +198,7 @@
     ball.y = cafeOcho.y;
     ball.vx = 0;
     ball.vy = 0;
-    score += cafeOcho.value;
-    syncStatusDisplay();
+    awardBusinessPoints(cafeOcho.value);
     return true;
   }
 
@@ -215,11 +225,19 @@
 
   const baseUpdateWithBusinesses = update;
   update = function updateWithOceanDriveBusinesses(dt) {
-    updateNeonPalms(dt);
+    if (!gameOver) {
+      updateNeonPalms(dt);
+    }
 
     if (cafeOcho.active) {
       for (const flipper of flippers) {
         updateFlipper(flipper, dt);
+      }
+      if (
+        typeof centerDoubleScoreRemaining !== 'undefined' &&
+        centerDoubleScoreRemaining > 0
+      ) {
+        centerDoubleScoreRemaining = Math.max(0, centerDoubleScoreRemaining - dt);
       }
       updateCafeOcho(dt);
       return;
