@@ -198,16 +198,15 @@
     y2: fullLaunchInnerMouth[1].y
   });
 
-  // Keep the medium-launch entry as one collision surface. The ball moved
-  // 17 pixels right when the lane was narrowed, so translate the entire original
-  // chute by the same amount without changing its angle, length, restitution,
-  // or the point where the launch line meets it. The far endpoint may sit just
-  // beyond the cabinet wall; that hidden portion is unreachable by the ball.
-  const launchLaneShift = narrowLaunchBallX - 430;
+  // Medium charge uses the playfield route through the divider fork. Keep this
+  // deflector entirely inside the cabinet and make it steep enough that a rising
+  // ball rebounds left while retaining an upward component, cleanly crossing the
+  // open 178-262 divider gap into the main playfield. The full-launch chute above
+  // is route-independent geometry and remains untouched.
   Object.assign(shooterDiverter, {
-    x1: 400 + launchLaneShift,
-    y1: 190,
-    x2: 447 + launchLaneShift,
+    x1: 421,
+    y1: 178,
+    x2: 455,
     y2: 232
   });
 
@@ -221,20 +220,20 @@
     y: 538
   });
 
-  // Move the existing right blue gutter rail with the divider. Keeping its old
-  // 41/48-pixel offsets from the launch wall restores the original right-outlane
-  // envelope instead of leaving a new full-width escape chute beside the flipper.
+  // The blue right lower guide belongs beside the pink sling/outlane, not beside
+  // the narrowed shooter divider. Restore its original mirrored position so the
+  // normal right gutter is closed without changing the shooter lane or full chute.
   const rightLowerGuide = lowerGuides[1];
   Object.assign(rightLowerGuide, {
-    x1: narrowLaunchDividerX - 41,
+    x1: 355,
     y1: 590,
-    x2: narrowLaunchDividerX - 48,
+    x2: 348,
     y2: 640
   });
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-FULLCHUTE';
+    buildNumberDisplay.textContent = 'Build 20260830-MEDIUMGUTTER';
   }
 
   const instructions = document.querySelector('.instruction-content');
