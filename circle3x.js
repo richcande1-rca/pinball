@@ -210,27 +210,37 @@
     y2: 232
   });
 
-  // Raise the recovery opening to meet the cyan outlane guide instead of making
-  // a returned stray ball cross the lower right danger pocket. The divider gap
-  // now finishes at the cyan guide's y=536 handoff, and the physical pink rail
-  // crosses that opening on a steep slash that preserves a little downward speed
-  // while turning the ball strongly left onto the protected return geometry.
-  SHOOTER.recoveryGateTop = 486;
-  SHOOTER.recoveryGateBottom = 536;
+  // Keep the recovery opening below the lower underpass mouth. The physical pink
+  // rail starts inside the skinny lane, turns a falling ball strongly left with a
+  // little downward velocity, and hands it to the cyan return guide at y=556.
+  // This leaves more than a ball diameter of clearance around the underpass exit.
+  SHOOTER.recoveryGateTop = 500;
+  SHOOTER.recoveryGateBottom = 560;
   shooterDividerRails[1].y2 = SHOOTER.recoveryGateTop;
   shooterDividerRails[2].y1 = SHOOTER.recoveryGateBottom;
-  Object.assign(shooterRecoveryGuidePoints[0], { x: 455, y: 484 });
-  Object.assign(shooterRecoveryGuidePoints[1], { x: 448, y: 493 });
-  Object.assign(shooterRecoveryGuidePoints[2], { x: 431, y: 514 });
-  Object.assign(shooterRecoveryGuidePoints[3], { x: 414, y: 536 });
+  Object.assign(shooterRecoveryGuidePoints[0], { x: 455, y: 514 });
+  Object.assign(shooterRecoveryGuidePoints[1], { x: 448, y: 522 });
+  Object.assign(shooterRecoveryGuidePoints[2], { x: 431, y: 540 });
+  Object.assign(shooterRecoveryGuidePoints[3], { x: 414, y: 556 });
   const physicalShooterRecoveryRails = makeRailSegments(shooterRecoveryGuidePoints);
 
   // Disable the old fixed-position/fixed-velocity recovery shove. Recovery now
-  // comes entirely from normal segment collision, and the route releases once the
-  // ball has physically cleared the divider back into the playfield.
+  // comes entirely from normal segment collision. Any ball that nevertheless
+  // reaches the bottom of the shooter lane is caught by the normal plunger and
+  // becomes immediately replungable instead of counting as a drain.
   SHOOTER.recoveryFeedY = TABLE.bottom + ball.radius + 40;
   const baseUpdateWithPhysicalShooterRecovery = update;
   update = function updateWithPhysicalShooterRecovery(dt) {
+    if (
+      !ball.ready &&
+      ball.vy > 0 &&
+      ballIsInShooterLane() &&
+      ball.y >= SHOOTER.ballY - 4
+    ) {
+      parkBallAtPlunger();
+      return;
+    }
+
     baseUpdateWithPhysicalShooterRecovery(dt);
 
     if (
@@ -263,22 +273,21 @@
   });
 
   // The narrowed shooter divider left a huge entrance from the main playfield
-  // into the right outlane. Add a passive cyan guide from the outside tip of the
-  // pink sling toward the cabinet, leaving only a roughly one-ball-wide opening
-  // instead of a 70-pixel trapdoor. This is not powered and does not touch either
-  // launch route.
+  // into the right outlane. Keep the passive cyan extension, but drop its cabinet
+  // end below the underpass mouth so an exiting underpass ball cannot spawn pinched
+  // between this guide and the recovery rail.
   const rightOutlaneTopGuide = {
     x1: 370,
     y1: 548,
     x2: 414,
-    y2: 536,
+    y2: 556,
     radius: 4
   };
   lowerGuides.push(rightOutlaneTopGuide);
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-RECOVERYALIGN';
+    buildNumberDisplay.textContent = 'Build 20260830-REPLUNGE';
   }
 
   const instructions = document.querySelector('.instruction-content');
