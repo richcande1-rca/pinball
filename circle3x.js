@@ -111,6 +111,15 @@
     leftPinkDiverter.y1 = leftPinkDiverterRest.y1;
   };
 
+  // Completing 3-0-5 now leaves the bank physically down for the rest of the
+  // current ball. The normal ball reset raises the targets again on the drain,
+  // at the same time the pink outlane save retracts.
+  window.addEventListener('miami-drop-target', event => {
+    if (event.detail && event.detail.bankComplete) {
+      dropTargetBank.resetRemaining = 0;
+    }
+  });
+
   // The pink diverter now is the visible and physical 3-0-5 save. Suppress the
   // obsolete separate cyan safety rail artwork entirely.
   drawLeftOutlaneGate = function drawNoSeparateLeftOutlaneGate() {};
@@ -118,7 +127,7 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-305PINK';
+    buildNumberDisplay.textContent = 'Build 20260830-305HOLD';
   }
 
   const instructions = document.querySelector('.instruction-content');
