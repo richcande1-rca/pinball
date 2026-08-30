@@ -77,7 +77,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260830-ENTRYCUT</span>
+        <span class="build-number">Build 20260830-ENTRYCLEAR</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -98,7 +98,7 @@
     </details>
   </main>
 
-  <script src="intro.js?v=20260830-entrycut"></script>
+  <script src="intro.js?v=20260830-entryclear"></script>
   <script src="game.js?v=20260828-underpass"></script>
   <script>
     // Tuck the scoop immediately beneath Ocean Drive and keep its playfield
@@ -117,9 +117,6 @@
     ];
     popBumpers.push(...underpassPopBumpers);
 
-    // The stock pop artwork is sized for the original seven-pixel posts. Keep
-    // that core artwork, then add a lightweight outer housing around only these
-    // two larger posts so their visible footprint matches their larger physics.
     const baseDrawPopBumpersWithUnderpassPops = drawPopBumpers;
     drawPopBumpers = function drawPopBumpersWithUnderpassPops() {
       baseDrawPopBumpersWithUnderpassPops();
@@ -152,7 +149,6 @@
       }
     };
 
-    // Keep the two outlet relocations that define the visible tunnel mouths.
     underpass.outlets[0].x = 150;
     Object.assign(underpass.outlets[4], {
       x: 72,
@@ -161,10 +157,6 @@
       edge: 'right'
     });
 
-    // The underground path is intentionally abstract now. A ball visibly enters
-    // the scoop, disappears beneath the playfield for a short random travel time,
-    // then emerges from one of the five existing mouths with preserved shot energy.
-    // No hidden rails, splitters, wall bounces, or stall recovery are simulated.
     const underpassRandomizer = {
       exitIndex: 0,
       travelRemaining: 0,
@@ -193,8 +185,6 @@
       );
 
       if (underpassRandomizer.travelRemaining > 0) {
-        // Off-table storage keeps the ball visually underground while preserving
-        // the normal draw rule: it is invisible unless near a tunnel transition.
         ball.x = -100;
         ball.y = -100;
         ball.vx = 0;
@@ -226,8 +216,6 @@
       return false;
     };
 
-    // Keep the left deflector's existing angle and length, but move the whole
-    // rail down above the 3-0-5 bank to open the captive-ball shooting lane.
     Object.assign(midPlayfieldGuides[0], {
       x1: 70,
       y1: 438,
@@ -235,10 +223,6 @@
       y2: 466
     });
 
-    // Three physical drop gates span the open band above the sunset. They are
-    // real obstacles while standing: a live ball rebounds from the plate, then
-    // that gate collapses out of the playfield. The gaps between them keep the
-    // upper table reachable, and the entire bank stays far above flipper shots.
     const centerStandupTargets = [
       { x1: 122, y1: 278, x2: 166, y2: 278, radius: 4.5, value: 300, accent: 'cyan', hit: false, flashStartedAt: -Infinity },
       { x1: 188, y1: 264, x2: 232, y2: 264, radius: 4.5, value: 300, accent: 'lavender', hit: false, flashStartedAt: -Infinity },
@@ -265,8 +249,6 @@
       baseResetGameWithCenterTargets();
     };
 
-    // Gates remain down for the rest of the current ball so knocking them out
-    // progressively opens the upper playfield. A drain restores the full bank.
     window.addEventListener('miami-drain', () => {
       resetCenterStandupTargets();
       centerDoubleScoreRemaining = 0;
@@ -296,7 +278,6 @@
         incomingNormalSpeed = -(ball.vx * nx + ball.vy * ny);
       }
 
-      // The standing plate gives a firm but controlled rebound before dropping.
       const touching = resolveSegmentCollision(
         target,
         { x: 0, y: 0 },
@@ -355,7 +336,6 @@
         ctx.rotate(angle);
 
         if (target.hit) {
-          // Briefly show the plate folding flat, then leave a clean open lane.
           if (hitFlash > 0) {
             ctx.globalAlpha = hitFlash;
             ctx.fillStyle = accent;
@@ -386,8 +366,6 @@
         ctx.restore();
       }
 
-      // The 2X insert lives with the upper gate bank instead of down near the
-      // flippers. It is visual only and never obstructs the ball.
       ctx.save();
       ctx.translate(PLAYFIELD_CENTER, 238);
       ctx.globalAlpha = centerDoubleScoreRemaining > 0 ? 1 : 0.5;
@@ -415,8 +393,6 @@
       ctx.restore();
     }
 
-    // Five passive inserts turn the loose upper-center ricochet pocket into a
-    // light-chasing feature without adding any new collision geometry.
     const upperNeonInserts = [
       { x: 146, y: 210, accent: 'cyan', lit: false },
       { x: 184, y: 228, accent: 'magenta', lit: false },
@@ -497,9 +473,6 @@
       }
     }
 
-    // A real captive ball lives in the open strip directly above the 3-0-5
-    // bank. It is constrained to a short vertical lane, but otherwise keeps
-    // live velocity, gravity, rebounds, and impact energy like the main ball.
     const captiveBall = {
       x: 70,
       y: 320,
@@ -550,8 +523,6 @@
       resetCaptiveBallMechanism();
     };
 
-    // Lamp progress survives normal ball drains. Only a new game clears it,
-    // and the captive toy can award at most one extra ball per game.
     const baseResetGameWithCaptiveProgress = resetGame;
     resetGame = function resetGameWithCaptiveProgress() {
       captiveHitProgress = 0;
@@ -566,9 +537,7 @@
       let distance = Math.hypot(dx, dy);
       const contactDistance = ball.radius + captiveBall.radius;
 
-      if (distance > contactDistance + 6) {
-        captiveBall.hitArmed = true;
-      }
+      if (distance > contactDistance + 6) captiveBall.hitArmed = true;
       if (distance >= contactDistance) return;
 
       let nx;
@@ -595,9 +564,6 @@
         ball.vx * nx + (ball.vy - captiveBall.vy) * ny;
       if (relativeNormalSpeed >= 0) return;
 
-      // The trapped ball can exchange momentum only along its vertical rail.
-      // That makes a side strike feel like a fixed post while a clean upward
-      // shot transfers much more energy into the captive ball itself.
       const restitution = 0.82;
       const effectiveMass = 1 + ny * ny;
       const impulse = -(1 + restitution) * relativeNormalSpeed / effectiveMass;
@@ -701,9 +667,7 @@
       if (captiveBall.y <= captiveBall.minY) {
         const impactSpeed = Math.max(0, -captiveBall.vy);
         captiveBall.y = captiveBall.minY;
-        if (captiveBall.vy < 0) {
-          captiveBall.vy = impactSpeed * 0.55;
-        }
+        if (captiveBall.vy < 0) captiveBall.vy = impactSpeed * 0.55;
 
         if (captiveBall.topArmed) {
           captiveBall.topArmed = false;
@@ -752,8 +716,6 @@
       if (!gameOver) updateCaptiveBall(dt);
     };
 
-    // Apply the timed center-bank mode around the complete update path so all
-    // normal scoring sources, including the captive toy, are doubled uniformly.
     const baseUpdateWithCenterTargets = update;
     update = function updateWithCenterTargets(dt) {
       const doubleWasActive = centerDoubleScoreRemaining > 0;
@@ -800,9 +762,6 @@
       if (!gameOver) updateUpperNeonInserts();
     };
 
-    // Completing 3-0-5 now earns a physical left-outlane save for the rest of
-    // the current ball. The rail continues past the stock lower guide so a saved
-    // ball has a clear downhill path back toward the flipper instead of a cradle.
     const leftOutlaneGate = {
       x1: 28,
       y1: 592,
@@ -934,9 +893,6 @@
       ctx.fill();
       ctx.restore();
 
-      // The inserts are now persistent hit progress rather than a height meter.
-      // Each solid captive-ball hit earns the next lamp. The fifth hit flashes
-      // the full bank and awards the game's single extra ball.
       ctx.save();
       for (let index = 0; index < captiveHitLampY.length; index += 1) {
         const lampY = captiveHitLampY[index];
@@ -996,9 +952,6 @@
       ctx.restore();
     }
 
-    // Replace the tiny ramp label with pass-progress letters across the upper
-    // bridge. The progress values below are spaced by actual distance along the
-    // curved deck, with one larger intentional gap between OCEAN and DRIVE.
     const oceanDriveProgressLetters = 'OCEANDRIVE';
     const oceanDriveLetterProgress = [
       0.8558, 0.8355, 0.8189, 0.8017, 0.7850,
@@ -1149,9 +1102,6 @@
   </script>
   <script src="theme.js?v=20260830-laneslim"></script>
   <script>
-    // The original Neon Alley experiment placed five dots in the open playfield.
-    // Keep its existing update hook, but repurpose it for decorative tubes on the
-    // true upper wall: the narrow free-bounce pocket behind and beneath Ocean Drive.
     const upperWallNeons = [
       { x1: 214, y1: 38, x2: 239, y2: 38, accent: 'cyan', flashStartedAt: -Infinity },
       { x1: 248, y1: 34, x2: 274, y2: 34, accent: 'magenta', flashStartedAt: -Infinity },
@@ -1193,8 +1143,6 @@
 
         ctx.save();
         ctx.lineCap = 'round';
-
-        // Tiny dark brackets visually mount each tube to the cabinet back wall.
         ctx.strokeStyle = MIAMI_COLORS.structure;
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -1234,21 +1182,14 @@
       }
     }
 
-    // Suppress the abandoned five-dot artwork. The update wrapper above now
-    // drives only the upper-wall flare state, so it no longer awards a bonus.
     drawUpperNeonInserts = function drawNoLegacyNeonDots() {};
 
-    // Draw the wall tubes immediately before Ocean Drive so the raised bridge
-    // naturally passes in front of them and they read as scenery behind it.
     const baseDrawOceanRampWithUpperWallNeons = drawOceanRamp;
     drawOceanRamp = function drawOceanRampWithUpperWallNeons() {
       drawUpperWallNeons();
       baseDrawOceanRampWithUpperWallNeons();
     };
 
-    // theme.js replaces the main draw loop, so draw the upper gates,
-    // captive-ball toy, earned outlane gate, and tunnel mouths from the themed
-    // ball pass, all below the live ball.
     const baseDrawBallWithUnderpassMouths = drawBall;
     drawBall = function drawBallWithUnderpassMouths() {
       drawUpperNeonInserts();
@@ -1261,8 +1202,6 @@
   </script>
   <script src="audio.js?v=20260826-2350"></script>
   <script>
-    // Space always belongs to the plunger, even if the MUSIC button still has
-    // focus from a mouse/touch click. Enter remains available to toggle music.
     const musicMuteControl = document.getElementById('music-mute');
     if (musicMuteControl) {
       musicMuteControl.addEventListener('click', () => musicMuteControl.blur());
