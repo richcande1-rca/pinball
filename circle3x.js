@@ -211,9 +211,9 @@
   });
 
   // Keep the recovery opening below the lower underpass mouth. The physical pink
-  // rail starts inside the skinny lane, turns a falling ball strongly left with a
-  // little downward velocity, and hands it to the cyan return guide at y=556.
-  // This leaves more than a ball diameter of clearance around the underpass exit.
+  // rail and cyan extension now form one continuous downhill chain toward the
+  // right flipper instead of meeting in a concave cup. The shared junction sits
+  // at y=548, still comfortably clear of the underpass exit above it.
   SHOOTER.recoveryGateTop = 500;
   SHOOTER.recoveryGateBottom = 560;
   shooterDividerRails[1].y2 = SHOOTER.recoveryGateTop;
@@ -221,7 +221,7 @@
   Object.assign(shooterRecoveryGuidePoints[0], { x: 455, y: 514 });
   Object.assign(shooterRecoveryGuidePoints[1], { x: 448, y: 522 });
   Object.assign(shooterRecoveryGuidePoints[2], { x: 431, y: 540 });
-  Object.assign(shooterRecoveryGuidePoints[3], { x: 414, y: 556 });
+  Object.assign(shooterRecoveryGuidePoints[3], { x: 414, y: 548 });
   const physicalShooterRecoveryRails = makeRailSegments(shooterRecoveryGuidePoints);
 
   // Disable the old fixed-position/fixed-velocity recovery shove. Recovery now
@@ -273,14 +273,13 @@
   });
 
   // The narrowed shooter divider left a huge entrance from the main playfield
-  // into the right outlane. Keep the passive cyan extension, but drop its cabinet
-  // end below the underpass mouth so an exiting underpass ball cannot spawn pinched
-  // between this guide and the recovery rail.
+  // into the right outlane. The passive cyan extension now continues downhill
+  // from the recovery junction rather than climbing back into it and making a cup.
   const rightOutlaneTopGuide = {
     x1: 370,
-    y1: 548,
+    y1: 556,
     x2: 414,
-    y2: 556,
+    y2: 548,
     radius: 4
   };
   lowerGuides.push(rightOutlaneTopGuide);
@@ -306,7 +305,7 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-MUSICKEY';
+    buildNumberDisplay.textContent = 'Build 20260830-HANDOFF';
   }
 
   const instructions = document.querySelector('.instruction-content');
