@@ -69,5 +69,11 @@ window.addEventListener('load', () => {
   const circleTripleScript = document.createElement('script');
   circleTripleScript.src = 'circle3x.js?v=20260830-handoff';
   circleTripleScript.async = false;
+  circleTripleScript.addEventListener('load', () => {
+    const businessesScript = document.createElement('script');
+    businessesScript.src = 'businesses.js?v=20260830-businesses';
+    businessesScript.async = false;
+    document.body.appendChild(businessesScript);
+  }, { once: true });
   document.body.appendChild(circleTripleScript);
 }, { once: true });
