@@ -149,6 +149,19 @@
     ball.x = narrowLaunchBallX;
   }
 
+  // The narrowed launch line runs only five pixels inside the old bottom outer
+  // orbit rail at x=452. With an 8px ball and 4px rail that segment necessarily
+  // collides before the ball can reach the intended entry chute. Open the mouth
+  // where the orbit meets Ocean Drive by removing only that bottom outer segment.
+  // Collapse its final visual point too, so the artwork shows the same real gap.
+  if (coastalOrbitOuterPoints.length >= 8) {
+    coastalOrbitOuterPoints[7].x = coastalOrbitOuterPoints[6].x;
+    coastalOrbitOuterPoints[7].y = coastalOrbitOuterPoints[6].y;
+  }
+  if (coastalOrbitRails.length > 6) {
+    coastalOrbitRails.splice(6, 1);
+  }
+
   // Keep the medium-launch entry as one collision surface. The ball moved
   // 17 pixels right when the lane was narrowed, so translate the entire original
   // chute by the same amount without changing its angle, length, restitution,
@@ -185,7 +198,7 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-CHUTEALIGN';
+    buildNumberDisplay.textContent = 'Build 20260830-ENTRYOPEN';
   }
 
   const instructions = document.querySelector('.instruction-content');
