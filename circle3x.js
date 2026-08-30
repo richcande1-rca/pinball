@@ -149,27 +149,54 @@
     ball.x = narrowLaunchBallX;
   }
 
-  // The previous cutback still left the cyan rail's lower endpoint almost on
-  // the x=447 launch centerline. Pull the last visible/physical outer-orbit leg
-  // fully left of the launch corridor, then collapse the two lower segments.
-  // The upper hook remains intact for strong launches while medium launches get
-  // a clean vertical run into the entry beneath Ocean Drive.
-  const orbitEntryCutback = { x: 426, y: 88 };
-  if (coastalOrbitOuterPoints.length >= 8) {
-    coastalOrbitOuterPoints[5].x = orbitEntryCutback.x;
-    coastalOrbitOuterPoints[5].y = orbitEntryCutback.y;
-    coastalOrbitOuterPoints[6].x = orbitEntryCutback.x;
-    coastalOrbitOuterPoints[6].y = orbitEntryCutback.y;
-    coastalOrbitOuterPoints[7].x = orbitEntryCutback.x;
-    coastalOrbitOuterPoints[7].y = orbitEntryCutback.y;
-  }
-  if (coastalOrbitRails.length > 6) {
-    Object.assign(coastalOrbitRails[4], {
-      x2: orbitEntryCutback.x,
-      y2: orbitEntryCutback.y
-    });
-    coastalOrbitRails.splice(5, 2);
-  }
+  // Full charge uses the orbit route. Rebuild the bottom of that route as an
+  // actual two-sided chute around the new x=447 launch line instead of cutting
+  // its outer wall away. The cabinet-side rail begins just beyond the playable
+  // edge, then bends left above the mouth; that first sloped contact turns a full
+  // launch up-left while preserving upward velocity into the existing hook under
+  // Ocean Drive. The inner rail forms the opposite side of the same physical lane.
+  const fullLaunchOuterMouth = [
+    { x: 448, y: 84 },
+    { x: 460, y: 122 },
+    { x: 460, y: 174 }
+  ];
+  const fullLaunchInnerMouth = [
+    { x: 418, y: 148 },
+    { x: 426, y: 174 }
+  ];
+
+  Object.assign(coastalOrbitOuterPoints[5], fullLaunchOuterMouth[0]);
+  Object.assign(coastalOrbitOuterPoints[6], fullLaunchOuterMouth[1]);
+  Object.assign(coastalOrbitOuterPoints[7], fullLaunchOuterMouth[2]);
+  Object.assign(coastalOrbitRails[4], {
+    x2: fullLaunchOuterMouth[0].x,
+    y2: fullLaunchOuterMouth[0].y
+  });
+  Object.assign(coastalOrbitRails[5], {
+    x1: fullLaunchOuterMouth[0].x,
+    y1: fullLaunchOuterMouth[0].y,
+    x2: fullLaunchOuterMouth[1].x,
+    y2: fullLaunchOuterMouth[1].y
+  });
+  Object.assign(coastalOrbitRails[6], {
+    x1: fullLaunchOuterMouth[1].x,
+    y1: fullLaunchOuterMouth[1].y,
+    x2: fullLaunchOuterMouth[2].x,
+    y2: fullLaunchOuterMouth[2].y
+  });
+
+  Object.assign(coastalOrbitInnerPoints[6], fullLaunchInnerMouth[0]);
+  Object.assign(coastalOrbitInnerPoints[7], fullLaunchInnerMouth[1]);
+  Object.assign(coastalOrbitRails[12], {
+    x2: fullLaunchInnerMouth[0].x,
+    y2: fullLaunchInnerMouth[0].y
+  });
+  Object.assign(coastalOrbitRails[13], {
+    x1: fullLaunchInnerMouth[0].x,
+    y1: fullLaunchInnerMouth[0].y,
+    x2: fullLaunchInnerMouth[1].x,
+    y2: fullLaunchInnerMouth[1].y
+  });
 
   // Keep the medium-launch entry as one collision surface. The ball moved
   // 17 pixels right when the lane was narrowed, so translate the entire original
@@ -207,7 +234,7 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-ENTRYCLEAR';
+    buildNumberDisplay.textContent = 'Build 20260830-FULLCHUTE';
   }
 
   const instructions = document.querySelector('.instruction-content');
