@@ -73,6 +73,12 @@ window.addEventListener('load', () => {
     const businessesScript = document.createElement('script');
     businessesScript.src = 'businesses.js?v=20260830-businesses';
     businessesScript.async = false;
+    businessesScript.addEventListener('load', () => {
+      const carsScript = document.createElement('script');
+      carsScript.src = 'cars.js?v=20260830-cars';
+      carsScript.async = false;
+      document.body.appendChild(carsScript);
+    }, { once: true });
     document.body.appendChild(businessesScript);
   }, { once: true });
   document.body.appendChild(circleTripleScript);
