@@ -72,9 +72,49 @@
     }
   };
 
+  // 3-0-5 outlane save: while active, replace the stock near-vertical left
+  // lower guide with one continuous downhill safety rail. This removes both
+  // the crossing-rail pinch and the tiny gutter-side catch while preserving
+  // ordinary collision physics all the way back toward the left flipper.
+  const stockLeftLowerGuide = lowerGuides[0];
+  Object.assign(leftOutlaneGate, {
+    x1: TABLE.left + 1,
+    y1: 590,
+    x2: 98,
+    y2: 620,
+    radius: 5
+  });
+
+  setLeftOutlaneProtection = function setContinuousLeftOutlaneProtection(active) {
+    if (leftOutlaneProtectionActive === active) return;
+    leftOutlaneProtectionActive = active;
+
+    if (active) {
+      const stockIndex = lowerGuides.indexOf(stockLeftLowerGuide);
+      if (stockIndex !== -1) {
+        lowerGuides.splice(stockIndex, 1);
+      }
+
+      if (!lowerGuides.includes(leftOutlaneGate)) {
+        lowerGuides.unshift(leftOutlaneGate);
+      }
+      leftOutlaneGateFlashStartedAt = performance.now();
+      return;
+    }
+
+    const gateIndex = lowerGuides.indexOf(leftOutlaneGate);
+    if (gateIndex !== -1) {
+      lowerGuides.splice(gateIndex, 1);
+    }
+
+    if (!lowerGuides.includes(stockLeftLowerGuide)) {
+      lowerGuides.unshift(stockLeftLowerGuide);
+    }
+  };
+
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-CIRCLE3X';
+    buildNumberDisplay.textContent = 'Build 20260830-305SAVE';
   }
 
   const instructions = document.querySelector('.instruction-content');
