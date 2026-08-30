@@ -210,14 +210,19 @@
     y2: 232
   });
 
-  // Replace the old visual-only recovery guide with a physical diverter fitted
-  // to the skinny lane. Its lower placement keeps the underpass side outlet clear,
-  // while the shallow slash converts a falling stray ball's speed into a leftward
-  // and slightly upward exit through the 500-560 divider opening.
-  Object.assign(shooterRecoveryGuidePoints[0], { x: 455, y: 544 });
-  Object.assign(shooterRecoveryGuidePoints[1], { x: 449, y: 548 });
-  Object.assign(shooterRecoveryGuidePoints[2], { x: 443, y: 553 });
-  Object.assign(shooterRecoveryGuidePoints[3], { x: 436, y: 558 });
+  // Raise the recovery opening to meet the cyan outlane guide instead of making
+  // a returned stray ball cross the lower right danger pocket. The divider gap
+  // now finishes at the cyan guide's y=536 handoff, and the physical pink rail
+  // crosses that opening on a steep slash that preserves a little downward speed
+  // while turning the ball strongly left onto the protected return geometry.
+  SHOOTER.recoveryGateTop = 486;
+  SHOOTER.recoveryGateBottom = 536;
+  shooterDividerRails[1].y2 = SHOOTER.recoveryGateTop;
+  shooterDividerRails[2].y1 = SHOOTER.recoveryGateBottom;
+  Object.assign(shooterRecoveryGuidePoints[0], { x: 455, y: 484 });
+  Object.assign(shooterRecoveryGuidePoints[1], { x: 448, y: 493 });
+  Object.assign(shooterRecoveryGuidePoints[2], { x: 431, y: 514 });
+  Object.assign(shooterRecoveryGuidePoints[3], { x: 414, y: 536 });
   const physicalShooterRecoveryRails = makeRailSegments(shooterRecoveryGuidePoints);
 
   // Disable the old fixed-position/fixed-velocity recovery shove. Recovery now
@@ -273,7 +278,7 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-PHYSRECOVERY';
+    buildNumberDisplay.textContent = 'Build 20260830-RECOVERYALIGN';
   }
 
   const instructions = document.querySelector('.instruction-content');
