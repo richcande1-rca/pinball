@@ -25,13 +25,12 @@
   }
 
   function drawMiamiExotics() {
-    // Keep the established three-quarter art, but place both cars deeper into
-    // the open lower playfield and soften the grading so they read more like
-    // photographic artwork under clearcoat than high-contrast pasted sprites.
+    // Keep the current three-quarter artwork and rendering exactly as-is;
+    // only stagger the cars vertically so the pair is less level and static.
     drawPhotoDecal(
       countachRear,
       150,
-      542,
+      550,
       98,
       56,
       -0.035,
@@ -40,7 +39,7 @@
     drawPhotoDecal(
       ferrariFront,
       268,
-      542,
+      534,
       98,
       61,
       0.025,
@@ -56,6 +55,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260831-CARBLEND';
+    buildNumberDisplay.textContent = 'Build 20260831-CARSTAGGER';
   }
 })();
