@@ -7,18 +7,16 @@
 
   countachRear.decoding = 'async';
   ferrariFront.decoding = 'async';
-  countachRear.src = 'assets/countach-rear.webp?v=20260830-photocars';
-  ferrariFront.src = 'assets/ferrari-front.webp?v=20260830-photocars';
+  countachRear.src = 'assets/countach-rear.webp?v=20260831-topdecals';
+  ferrariFront.src = 'assets/ferrari-front.webp?v=20260831-topdecals';
 
-  function drawPhotoDecal(image, centerX, centerY, width, height, glow) {
+  function drawPhotoDecal(image, centerX, centerY, width, height) {
     if (!image.complete || !image.naturalWidth) return;
 
+    // Intentionally no canvas shadow/glow here. These should read as artwork
+    // printed into the playfield rather than objects hovering above it.
     ctx.save();
-    ctx.globalAlpha = 0.98;
-    if (!window.miamiMobilePerformanceMode) {
-      ctx.shadowColor = glow;
-      ctx.shadowBlur = 5;
-    }
+    ctx.globalAlpha = 1;
     ctx.drawImage(
       image,
       centerX - width / 2,
@@ -30,24 +28,10 @@
   }
 
   function drawMiamiExotics() {
-    // Keep the established lower-center placement, but make the two cars read
-    // in opposite directions: white Countach rear, black Ferrari front.
-    drawPhotoDecal(
-      countachRear,
-      150,
-      522,
-      92,
-      44,
-      'rgba(255, 80, 190, 0.42)'
-    );
-    drawPhotoDecal(
-      ferrariFront,
-      268,
-      522,
-      92,
-      46,
-      'rgba(40, 225, 255, 0.38)'
-    );
+    // Preserve the established lower-center centers while allowing a little
+    // more vertical room for the slightly top-down roof/deck perspective.
+    drawPhotoDecal(countachRear, 150, 522, 92, 50);
+    drawPhotoDecal(ferrariFront, 268, 522, 92, 52);
   }
 
   const baseDrawBallWithPhotoExotics = drawBall;
@@ -58,6 +42,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-PHOTOCARS';
+    buildNumberDisplay.textContent = 'Build 20260831-TOPDECALS';
   }
 })();
