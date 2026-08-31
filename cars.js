@@ -7,31 +7,28 @@
 
   countachRear.decoding = 'async';
   ferrariFront.decoding = 'async';
-  countachRear.src = 'assets/countach-rear.webp?v=20260831-topdecals';
-  ferrariFront.src = 'assets/ferrari-front.webp?v=20260831-topdecals';
+  countachRear.src = 'assets/countach-rear-3q.webp?v=20260831-3qpolish';
+  ferrariFront.src = 'assets/ferrari-front-3q.webp?v=20260831-3qpolish';
 
-  function drawPhotoDecal(image, centerX, centerY, width, height) {
+  function drawPhotoDecal(image, centerX, centerY, width, height, rotation) {
     if (!image.complete || !image.naturalWidth) return;
 
-    // Intentionally no canvas shadow/glow here. These should read as artwork
-    // printed into the playfield rather than objects hovering above it.
     ctx.save();
-    ctx.globalAlpha = 1;
-    ctx.drawImage(
-      image,
-      centerX - width / 2,
-      centerY - height / 2,
-      width,
-      height
-    );
+    ctx.translate(centerX, centerY);
+    ctx.rotate(rotation);
+    ctx.globalAlpha = 0.99;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(image, -width / 2, -height / 2, width, height);
     ctx.restore();
   }
 
   function drawMiamiExotics() {
-    // Preserve the established lower-center centers while allowing a little
-    // more vertical room for the slightly top-down roof/deck perspective.
-    drawPhotoDecal(countachRear, 150, 522, 92, 50);
-    drawPhotoDecal(ferrariFront, 268, 522, 92, 52);
+    // Keep the established lower-center placement, but settle the cars at a
+    // subtle opposing three-quarter angle so they read like polished printed
+    // playfield artwork rather than perfectly horizontal pasted sprites.
+    drawPhotoDecal(countachRear, 150, 522, 98, 56, -0.035);
+    drawPhotoDecal(ferrariFront, 268, 522, 98, 61, 0.025);
   }
 
   const baseDrawBallWithPhotoExotics = drawBall;
@@ -42,6 +39,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260831-TOPDECALS';
+    buildNumberDisplay.textContent = 'Build 20260831-3QPOLISH';
   }
 })();
