@@ -79,11 +79,11 @@ window.addEventListener('load', () => {
       carsScript.async = false;
       carsScript.addEventListener('load', () => {
         const displaysScript = document.createElement('script');
-        displaysScript.src = 'displays.js?v=20260901-display3x';
+        displaysScript.src = 'displays.js?v=20260901-perfdisplay';
         displaysScript.async = false;
         displaysScript.addEventListener('load', () => {
           const reefFeedbackScript = document.createElement('script');
-          reefFeedbackScript.src = 'reef-feedback.js?v=20260901-reefblink';
+          reefFeedbackScript.src = 'reef-feedback.js?v=20260901-perfdisplay';
           reefFeedbackScript.async = false;
           document.body.appendChild(reefFeedbackScript);
         }, { once: true });
