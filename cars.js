@@ -7,58 +7,8 @@
 
   whiteFront.decoding = 'async';
   nightFront.decoding = 'async';
-  whiteFront.src = 'assets/countach-front-white.svg?v=20260831-caralpha';
-  nightFront.src = 'assets/ferrari-front-3q.webp?v=20260831-caralpha';
-
-  // Both source images are clipped tightly to their car silhouettes so the
-  // playfield shows through around them instead of revealing image rectangles.
-  const whiteSilhouette = {
-    sourceWidth: 220,
-    sourceHeight: 161,
-    points: [
-      [210, 19], [130, 13], [121, 19], [135, 19], [132, 25],
-      [117, 25], [98, 30], [64, 55], [62, 49], [53, 48],
-      [52, 54], [58, 57], [36, 67], [13, 96], [8, 107],
-      [11, 117], [9, 125], [116, 145], [142, 137], [158, 138],
-      [168, 127], [172, 110], [189, 95], [204, 96], [210, 91],
-      [214, 56], [211, 39], [207, 35], [190, 29], [192, 22],
-      [205, 26]
-    ]
-  };
-
-  const frontSilhouette = {
-    sourceWidth: 390,
-    sourceHeight: 245,
-    points: [
-      [16, 72], [18, 126], [28, 157], [28, 176], [72, 204],
-      [115, 211], [130, 221], [141, 214], [164, 219], [228, 220],
-      [336, 208], [340, 203], [347, 202], [353, 197], [353, 192],
-      [359, 187], [359, 180], [369, 176], [366, 172], [370, 167],
-      [374, 172], [375, 165], [370, 155], [371, 138], [363, 131],
-      [348, 88], [299, 47], [292, 45], [285, 38], [273, 37],
-      [257, 30], [247, 22], [124, 15], [89, 18], [70, 38],
-      [67, 36], [56, 46], [51, 45], [51, 54], [41, 47],
-      [33, 51], [35, 61]
-    ]
-  };
-
-  function traceSilhouette(silhouette, width, height) {
-    const { sourceWidth, sourceHeight, points } = silhouette;
-    ctx.beginPath();
-    for (let index = 0; index < points.length; index += 1) {
-      const [sourceX, sourceY] = points[index];
-      const x = (sourceX / sourceWidth - 0.5) * width;
-      const y = (sourceY / sourceHeight - 0.5) * height;
-      if (index === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.closePath();
-  }
-
-  function clipToSilhouette(silhouette, width, height) {
-    traceSilhouette(silhouette, width, height);
-    ctx.clip();
-  }
+  whiteFront.src = 'assets/countach-front-white.svg?v=20260831-caralpha2';
+  nightFront.src = 'assets/ferrari-front-transparent.webp?v=20260831-caralpha2';
 
   function drawGrounding(centerX, centerY, width, height, rotation, cyanWeight) {
     ctx.save();
@@ -91,9 +41,7 @@
     height,
     rotation,
     filter,
-    silhouette,
-    cyanWeight,
-    mirrorX = false
+    cyanWeight
   ) {
     if (!image.complete || !image.naturalWidth) return;
 
@@ -102,8 +50,6 @@
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(rotation);
-    if (mirrorX) ctx.scale(-1, 1);
-    clipToSilhouette(silhouette, width, height);
 
     ctx.globalAlpha = 0.97;
     ctx.imageSmoothingEnabled = true;
@@ -111,11 +57,11 @@
     ctx.filter = filter;
     ctx.drawImage(image, -width / 2, -height / 2, width, height);
 
-    // Very restrained reflected table light makes the artwork share the
-    // cyan/magenta environment instead of reading like a pasted-on decal.
+    // Keep the neon reflection and molded sheen inside the image alpha only.
+    // This avoids rectangular overlays and removes the need for runtime masks.
     ctx.filter = 'none';
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = 0.11;
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.globalAlpha = 0.10;
     const neonReflection = ctx.createLinearGradient(-width / 2, 0, width / 2, 0);
     neonReflection.addColorStop(0, cyanWeight ? '#20e1ff' : '#ff279a');
     neonReflection.addColorStop(0.48, 'rgba(255,255,255,0)');
@@ -123,8 +69,7 @@
     ctx.fillStyle = neonReflection;
     ctx.fillRect(-width / 2, -height / 2, width, height);
 
-    // A faint upper-body sheen gives the image a molded/toy-like surface.
-    ctx.globalAlpha = 0.07;
+    ctx.globalAlpha = 0.06;
     const sheen = ctx.createLinearGradient(0, -height / 2, 0, height / 2);
     sheen.addColorStop(0, 'rgba(255,255,255,0.9)');
     sheen.addColorStop(0.42, 'rgba(255,255,255,0.05)');
@@ -136,8 +81,8 @@
   }
 
   function drawMiamiExotics() {
-    // Dedicated white front-facing exotic on the left; dark front-facing
-    // exotic on the right. Preserve the approved stagger and toy treatment.
+    // Both cars use real transparent-background assets. Preserve the approved
+    // stagger, forward-facing 3/4 stance, scale and mounted-toy treatment.
     drawPhotoToy(
       whiteFront,
       150,
@@ -146,8 +91,6 @@
       70,
       -0.03,
       'saturate(0.92) contrast(0.98) brightness(1.02)',
-      whiteSilhouette,
-      false,
       false
     );
     drawPhotoToy(
@@ -158,9 +101,7 @@
       61,
       0.025,
       'saturate(0.84) contrast(0.95) brightness(1.06)',
-      frontSilhouette,
-      true,
-      false
+      true
     );
   }
 
@@ -172,6 +113,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260831-CARALPHA';
+    buildNumberDisplay.textContent = 'Build 20260831-CARALPHA2';
   }
 })();
