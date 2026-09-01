@@ -7,11 +7,11 @@
 
   whiteFront.decoding = 'async';
   nightFront.decoding = 'async';
-  whiteFront.src = 'assets/ferrari-front-3q.webp?v=20260831-frontpair';
-  nightFront.src = 'assets/ferrari-front-3q.webp?v=20260831-frontpair';
+  whiteFront.src = 'assets/countach-front-white.svg?v=20260831-whitefront';
+  nightFront.src = 'assets/ferrari-front-3q.webp?v=20260831-whitefront';
 
   // This silhouette trims only the leftover oval/matte around the generated
-  // front-facing car artwork. It does not alter the image itself.
+  // dark front-facing car artwork. The new white car asset already has alpha.
   const frontSilhouette = {
     sourceWidth: 390,
     sourceHeight: 245,
@@ -89,7 +89,7 @@
     ctx.translate(centerX, centerY);
     ctx.rotate(rotation);
     if (mirrorX) ctx.scale(-1, 1);
-    clipToSilhouette(silhouette, width, height);
+    if (silhouette) clipToSilhouette(silhouette, width, height);
 
     ctx.globalAlpha = 0.97;
     ctx.imageSmoothingEnabled = true;
@@ -109,8 +109,7 @@
     ctx.fillStyle = neonReflection;
     ctx.fillRect(-width / 2, -height / 2, width, height);
 
-    // A faint upper-body sheen gives the clipped image a molded/toy-like
-    // surface while keeping the car render intact.
+    // A faint upper-body sheen gives the image a molded/toy-like surface.
     ctx.globalAlpha = 0.07;
     const sheen = ctx.createLinearGradient(0, -height / 2, 0, height / 2);
     sheen.addColorStop(0, 'rgba(255,255,255,0.9)');
@@ -123,20 +122,19 @@
   }
 
   function drawMiamiExotics() {
-    // Both cars now present their front ends toward the player. Keep the
-    // approved stagger and mounted-toy treatment; mirror the left car so the
-    // pair has a natural opposing 3/4 stance rather than looking duplicated.
+    // Dedicated white front-facing exotic on the left; dark front-facing
+    // exotic on the right. Preserve the approved stagger and toy treatment.
     drawPhotoToy(
       whiteFront,
       150,
       550,
-      94,
-      61,
+      96,
+      70,
       -0.03,
-      'grayscale(0.82) saturate(0.28) brightness(1.72) contrast(0.72)',
-      frontSilhouette,
+      'saturate(0.92) contrast(0.98) brightness(1.02)',
+      null,
       false,
-      true
+      false
     );
     drawPhotoToy(
       nightFront,
@@ -160,6 +158,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260831-FRONTPAIR';
+    buildNumberDisplay.textContent = 'Build 20260831-WHITEFRONT';
   }
 })();
