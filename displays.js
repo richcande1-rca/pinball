@@ -14,6 +14,7 @@
     leftAccent: 'cyan',
     rightAccent: 'magenta'
   };
+  let circleDisplayProgress = 0;
 
   function flashDisplays(
     left,
@@ -53,6 +54,10 @@
 
   function idleRightText() {
     if (gameOver) return 'OVER';
+
+    // Once the three circle passes are complete, keep the earned 3X mode visible
+    // between event flashes until the ball drains, matching circle3x.js behavior.
+    if (circleDisplayProgress >= 3) return '3X ACTIVE';
 
     if (
       typeof captiveHitProgress !== 'undefined' &&
@@ -172,10 +177,32 @@
     flashDisplays('OCEAN DRIVE', 'PASS', 1100, 'cyan', 'magenta');
   });
 
+  // Mirror the circle-pass progress used by circle3x.js. Both systems are driven
+  // by the same loop-complete event and both reset on a drain/new game, so this
+  // adds display feedback only; scoring and the actual 3X state remain untouched.
   window.addEventListener('miami-loop-complete', event => {
     const points = event.detail && event.detail.points
       ? event.detail.points
       : 2500;
+    const wasTripleActive = circleDisplayProgress >= 3;
+    circleDisplayProgress = Math.min(3, circleDisplayProgress + 1);
+
+    if (!wasTripleActive && circleDisplayProgress === 3) {
+      flashDisplays('CIRCLE 3X', 'ACTIVE!', 2200, 'cyan', 'magenta');
+      return;
+    }
+
+    if (circleDisplayProgress < 3) {
+      flashDisplays(
+        `CIRCLE ${circleDisplayProgress}/3`,
+        `+${points}`,
+        1700,
+        'cyan',
+        'magenta'
+      );
+      return;
+    }
+
     flashDisplays('LOOP', `+${points}`, 1500, 'cyan', 'magenta');
   });
 
@@ -207,8 +234,15 @@
   });
 
   window.addEventListener('miami-drain', () => {
+    circleDisplayProgress = 0;
     flashDisplays('DRAIN', 'NEXT BALL', 1200, 'magenta', 'cyan');
   });
+
+  const baseResetGameWithCircleDisplay = resetGame;
+  resetGame = function resetGameWithCircleDisplay() {
+    circleDisplayProgress = 0;
+    baseResetGameWithCircleDisplay();
+  };
 
   // Give the underpass a display callout without changing its physical/random
   // routing behavior.
@@ -226,12 +260,12 @@
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
     instructions.append(document.createTextNode(
-      ' Each completed Ocean Drive pass lights three letters toward OCEAN DRIVE.'
+      ' Each completed Ocean Drive pass lights three letters toward OCEAN DRIVE. Circle loop passes show 1/3, 2/3, then persistent 3X ACTIVE feedback until drain.'
     ));
   }
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260901-DISPLAYS';
+    buildNumberDisplay.textContent = 'Build 20260901-DISPLAY3X';
   }
 })();
