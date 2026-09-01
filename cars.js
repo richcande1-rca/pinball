@@ -2,32 +2,17 @@
 // Visual only: no collision geometry, scoring, or gameplay behavior.
 
 (() => {
-  const countachRear = new Image();
-  const ferrariFront = new Image();
+  const whiteFront = new Image();
+  const nightFront = new Image();
 
-  countachRear.decoding = 'async';
-  ferrariFront.decoding = 'async';
-  countachRear.src = 'assets/countach-rear-3q.webp?v=20260831-3qpolish';
-  ferrariFront.src = 'assets/ferrari-front-3q.webp?v=20260831-3qpolish';
+  whiteFront.decoding = 'async';
+  nightFront.decoding = 'async';
+  whiteFront.src = 'assets/ferrari-front-3q.webp?v=20260831-frontpair';
+  nightFront.src = 'assets/ferrari-front-3q.webp?v=20260831-frontpair';
 
-  // These silhouette paths trim only the leftover oval/matte around the
-  // generated car artwork. They do not alter the image itself.
-  const countachSilhouette = {
-    sourceWidth: 395,
-    sourceHeight: 225,
-    points: [
-      [20, 104], [21, 126], [62, 143], [71, 139], [115, 140],
-      [164, 147], [180, 146], [205, 176], [258, 171], [270, 165],
-      [285, 176], [288, 196], [292, 199], [314, 199], [316, 191],
-      [327, 191], [328, 170], [348, 148], [347, 116], [360, 65],
-      [357, 57], [347, 48], [316, 67], [304, 68], [284, 38],
-      [296, 25], [290, 17], [282, 14], [282, 6], [156, 6],
-      [154, 9], [147, 7], [143, 14], [148, 17], [178, 17],
-      [185, 21], [141, 41], [118, 43], [96, 50], [46, 82]
-    ]
-  };
-
-  const ferrariSilhouette = {
+  // This silhouette trims only the leftover oval/matte around the generated
+  // front-facing car artwork. It does not alter the image itself.
+  const frontSilhouette = {
     sourceWidth: 390,
     sourceHeight: 245,
     points: [
@@ -93,7 +78,8 @@
     rotation,
     filter,
     silhouette,
-    cyanWeight
+    cyanWeight,
+    mirrorX = false
   ) {
     if (!image.complete || !image.naturalWidth) return;
 
@@ -102,6 +88,7 @@
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(rotation);
+    if (mirrorX) ctx.scale(-1, 1);
     clipToSilhouette(silhouette, width, height);
 
     ctx.globalAlpha = 0.97;
@@ -123,7 +110,7 @@
     ctx.fillRect(-width / 2, -height / 2, width, height);
 
     // A faint upper-body sheen gives the clipped image a molded/toy-like
-    // surface while keeping the original car render intact.
+    // surface while keeping the car render intact.
     ctx.globalAlpha = 0.07;
     const sheen = ctx.createLinearGradient(0, -height / 2, 0, height / 2);
     sheen.addColorStop(0, 'rgba(255,255,255,0.9)');
@@ -136,29 +123,32 @@
   }
 
   function drawMiamiExotics() {
-    // Keep the approved cars, stagger, scale and 3/4 poses. The grounding,
-    // reflected neon and sheen make them read as mounted physical toys.
+    // Both cars now present their front ends toward the player. Keep the
+    // approved stagger and mounted-toy treatment; mirror the left car so the
+    // pair has a natural opposing 3/4 stance rather than looking duplicated.
     drawPhotoToy(
-      countachRear,
+      whiteFront,
       150,
       550,
-      98,
-      56,
-      -0.035,
-      'saturate(0.86) contrast(0.97) brightness(1.01)',
-      countachSilhouette,
-      false
+      94,
+      61,
+      -0.03,
+      'grayscale(0.82) saturate(0.28) brightness(1.72) contrast(0.72)',
+      frontSilhouette,
+      false,
+      true
     );
     drawPhotoToy(
-      ferrariFront,
+      nightFront,
       268,
       534,
       98,
       61,
       0.025,
       'saturate(0.84) contrast(0.95) brightness(1.06)',
-      ferrariSilhouette,
-      true
+      frontSilhouette,
+      true,
+      false
     );
   }
 
@@ -170,6 +160,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260831-CARMOUNT';
+    buildNumberDisplay.textContent = 'Build 20260831-FRONTPAIR';
   }
 })();
