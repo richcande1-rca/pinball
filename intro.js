@@ -77,6 +77,12 @@ window.addEventListener('load', () => {
       const carsScript = document.createElement('script');
       carsScript.src = 'cars.js?v=20260901-passfix2';
       carsScript.async = false;
+      carsScript.addEventListener('load', () => {
+        const displaysScript = document.createElement('script');
+        displaysScript.src = 'displays.js?v=20260901-displays';
+        displaysScript.async = false;
+        document.body.appendChild(displaysScript);
+      }, { once: true });
       document.body.appendChild(carsScript);
     }, { once: true });
     document.body.appendChild(businessesScript);
