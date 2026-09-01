@@ -66,6 +66,12 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
+  const CURRENT_BUILD = 'Build 20260901-PERFDISPLAY2';
+  const stampCurrentBuild = () => {
+    const buildNumberDisplay = document.querySelector('.build-number');
+    if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
+  };
+
   const circleTripleScript = document.createElement('script');
   circleTripleScript.src = 'circle3x.js?v=20260830-handoff';
   circleTripleScript.async = false;
@@ -75,7 +81,7 @@ window.addEventListener('load', () => {
     businessesScript.async = false;
     businessesScript.addEventListener('load', () => {
       const carsScript = document.createElement('script');
-      carsScript.src = 'cars.js?v=20260901-passfix2';
+      carsScript.src = 'cars.js?v=20260901-buildlock';
       carsScript.async = false;
       carsScript.addEventListener('load', () => {
         const displaysScript = document.createElement('script');
@@ -85,6 +91,13 @@ window.addEventListener('load', () => {
           const reefFeedbackScript = document.createElement('script');
           reefFeedbackScript.src = 'reef-feedback.js?v=20260901-perfdisplay';
           reefFeedbackScript.async = false;
+          reefFeedbackScript.addEventListener('load', () => {
+            // The loader owns the final visible version. Stamp immediately after
+            // the full late-load chain and once more after old delayed shims have
+            // had time to run, so a legacy feature cannot roll the label backward.
+            stampCurrentBuild();
+            window.setTimeout(stampCurrentBuild, 400);
+          }, { once: true });
           document.body.appendChild(reefFeedbackScript);
         }, { once: true });
         document.body.appendChild(displaysScript);
