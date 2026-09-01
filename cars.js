@@ -7,8 +7,8 @@
 
   whiteFront.decoding = 'async';
   nightFront.decoding = 'async';
-  whiteFront.src = 'assets/countach-front-white.svg?v=20260831-caralpha2';
-  nightFront.src = 'assets/ferrari-front-transparent.webp?v=20260831-caralpha2';
+  whiteFront.src = 'assets/countach-front-white.svg?v=20260831-ferrari2';
+  nightFront.src = 'assets/ferrari-front-clean.svg?v=20260831-ferrari2';
 
   function drawGrounding(centerX, centerY, width, height, rotation, cyanWeight) {
     ctx.save();
@@ -81,8 +81,9 @@
   }
 
   function drawMiamiExotics() {
-    // Both cars use real transparent-background assets. Preserve the approved
-    // stagger, forward-facing 3/4 stance, scale and mounted-toy treatment.
+    // Keep the approved white car unchanged. The Ferrari uses a cleaner,
+    // brighter front 3/4 asset with its natural aspect ratio so the nose,
+    // windshield and headlights read clearly at game scale.
     drawPhotoToy(
       whiteFront,
       150,
@@ -97,10 +98,10 @@
       nightFront,
       268,
       534,
-      98,
-      61,
-      0.025,
-      'saturate(0.84) contrast(0.95) brightness(1.06)',
+      104,
+      58,
+      0.015,
+      'saturate(0.92) contrast(1.04) brightness(1.10)',
       true
     );
   }
@@ -113,6 +114,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260831-CARALPHA2';
+    buildNumberDisplay.textContent = 'Build 20260831-FERRARI2';
   }
 })();
