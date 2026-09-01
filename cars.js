@@ -7,8 +7,8 @@
 
   whiteFront.decoding = 'async';
   nightFront.decoding = 'async';
-  whiteFront.src = 'assets/countach-front-white.svg?v=20260831-ferrari2';
-  nightFront.src = 'assets/ferrari-front-clean.svg?v=20260831-ferrari2';
+  whiteFront.src = 'assets/countach-front-white.svg?v=20260831-ferrari3';
+  nightFront.src = 'assets/ferrari-front-clean-edgefix.webp?v=20260831-ferrari3';
 
   function drawGrounding(centerX, centerY, width, height, rotation, cyanWeight) {
     ctx.save();
@@ -81,9 +81,8 @@
   }
 
   function drawMiamiExotics() {
-    // Keep the approved white car unchanged. The Ferrari uses a cleaner,
-    // brighter front 3/4 asset with its natural aspect ratio so the nose,
-    // windshield and headlights read clearly at game scale.
+    // Keep the approved white car unchanged. The Ferrari uses the same clean
+    // front 3/4 art with only the small right-edge mirror/protrusion removed.
     drawPhotoToy(
       whiteFront,
       150,
@@ -114,6 +113,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260831-FERRARI2';
+    buildNumberDisplay.textContent = 'Build 20260831-FERRARI3';
   }
 })();
