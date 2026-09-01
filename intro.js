@@ -75,7 +75,7 @@ window.addEventListener('load', () => {
     businessesScript.async = false;
     businessesScript.addEventListener('load', () => {
       const carsScript = document.createElement('script');
-      carsScript.src = 'cars.js?v=20260831-caralpha2';
+      carsScript.src = 'cars.js?v=20260831-ferrari2';
       carsScript.async = false;
       document.body.appendChild(carsScript);
     }, { once: true });
