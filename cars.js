@@ -115,17 +115,11 @@
     rightOutlaneTopGuide.radius = rightPinkSling.radius;
   }
 
-  function stampPocketFixBuild() {
-    applyRightPocketFix();
-    const buildNumberDisplay = document.querySelector('.build-number');
-    if (buildNumberDisplay) {
-      buildNumberDisplay.textContent = 'Build 20260901-PASSFIX2';
-    }
-  }
-
   // Run once now and again after the older load-time PASSFIX has had a chance
-  // to finish, so its geometry shim cannot restore the mismatched radius.
-  stampPocketFixBuild();
-  window.setTimeout(stampPocketFixBuild, 100);
-  window.setTimeout(stampPocketFixBuild, 300);
+  // to finish. This compatibility shim no longer stamps a build number; the
+  // late loader owns the visible current-build label so old feature scripts
+  // cannot overwrite it after a newer release has loaded.
+  applyRightPocketFix();
+  window.setTimeout(applyRightPocketFix, 100);
+  window.setTimeout(applyRightPocketFix, 300);
 })();
