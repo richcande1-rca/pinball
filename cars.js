@@ -1,5 +1,6 @@
 // Miami Nights photorealistic exotic-car toys beneath the center logo.
-// Visual only: no collision geometry, scoring, or gameplay behavior.
+// The late-loaded file also carries one tiny compatibility fix for the right
+// outlane seam so the approved visuals can stay untouched.
 
 (() => {
   const whiteFront = new Image();
@@ -90,8 +91,41 @@
     baseDrawBallWithPhotoExotics();
   };
 
-  const buildNumberDisplay = document.querySelector('.build-number');
-  if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260901-PASSFIX';
+  // PASSFIX2: the first repair made the cyan guide and pink sling meet at the
+  // same point, but their collision radii were still 4px versus 10px. That left
+  // a small physical step around the shared endpoint where a slow ball could
+  // settle. Give the joined guide the same collider radius as the sling so the
+  // two capsules form one continuous downhill surface instead of a tiny cup.
+  function applyRightPocketFix() {
+    if (
+      typeof sideBumpers === 'undefined' ||
+      typeof lowerGuides === 'undefined' ||
+      !sideBumpers[1]
+    ) return;
+
+    const rightPinkSling = sideBumpers[1];
+    const rightOutlaneTopGuide = lowerGuides.find(guide =>
+      Math.abs(guide.x2 - 414) < 0.01 &&
+      Math.abs(guide.y2 - 548) < 0.01
+    );
+    if (!rightOutlaneTopGuide) return;
+
+    rightOutlaneTopGuide.x1 = rightPinkSling.x1;
+    rightOutlaneTopGuide.y1 = rightPinkSling.y1;
+    rightOutlaneTopGuide.radius = rightPinkSling.radius;
   }
+
+  function stampPocketFixBuild() {
+    applyRightPocketFix();
+    const buildNumberDisplay = document.querySelector('.build-number');
+    if (buildNumberDisplay) {
+      buildNumberDisplay.textContent = 'Build 20260901-PASSFIX2';
+    }
+  }
+
+  // Run once now and again after the older load-time PASSFIX has had a chance
+  // to finish, so its geometry shim cannot restore the mismatched radius.
+  stampPocketFixBuild();
+  window.setTimeout(stampPocketFixBuild, 100);
+  window.setTimeout(stampPocketFixBuild, 300);
 })();
