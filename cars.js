@@ -7,11 +7,25 @@
 
   whiteFront.decoding = 'async';
   nightFront.decoding = 'async';
-  whiteFront.src = 'assets/countach-front-white.svg?v=20260831-whitefront';
-  nightFront.src = 'assets/ferrari-front-3q.webp?v=20260831-whitefront';
+  whiteFront.src = 'assets/countach-front-white.svg?v=20260831-caralpha';
+  nightFront.src = 'assets/ferrari-front-3q.webp?v=20260831-caralpha';
 
-  // This silhouette trims only the leftover oval/matte around the generated
-  // dark front-facing car artwork. The new white car asset already has alpha.
+  // Both source images are clipped tightly to their car silhouettes so the
+  // playfield shows through around them instead of revealing image rectangles.
+  const whiteSilhouette = {
+    sourceWidth: 220,
+    sourceHeight: 161,
+    points: [
+      [210, 19], [130, 13], [121, 19], [135, 19], [132, 25],
+      [117, 25], [98, 30], [64, 55], [62, 49], [53, 48],
+      [52, 54], [58, 57], [36, 67], [13, 96], [8, 107],
+      [11, 117], [9, 125], [116, 145], [142, 137], [158, 138],
+      [168, 127], [172, 110], [189, 95], [204, 96], [210, 91],
+      [214, 56], [211, 39], [207, 35], [190, 29], [192, 22],
+      [205, 26]
+    ]
+  };
+
   const frontSilhouette = {
     sourceWidth: 390,
     sourceHeight: 245,
@@ -89,7 +103,7 @@
     ctx.translate(centerX, centerY);
     ctx.rotate(rotation);
     if (mirrorX) ctx.scale(-1, 1);
-    if (silhouette) clipToSilhouette(silhouette, width, height);
+    clipToSilhouette(silhouette, width, height);
 
     ctx.globalAlpha = 0.97;
     ctx.imageSmoothingEnabled = true;
@@ -132,7 +146,7 @@
       70,
       -0.03,
       'saturate(0.92) contrast(0.98) brightness(1.02)',
-      null,
+      whiteSilhouette,
       false,
       false
     );
@@ -158,6 +172,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260831-WHITEFRONT';
+    buildNumberDisplay.textContent = 'Build 20260831-CARALPHA';
   }
 })();
