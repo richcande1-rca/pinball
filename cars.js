@@ -92,6 +92,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260901-CARFIX';
+    buildNumberDisplay.textContent = 'Build 20260901-PASSFIX';
   }
 })();
