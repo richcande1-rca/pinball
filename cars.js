@@ -7,16 +7,18 @@
 
   whiteFront.decoding = 'async';
   nightFront.decoding = 'async';
-  whiteFront.src = 'assets/countach-front-white-transparent.webp?v=20260901-caralpha4';
-  nightFront.src = 'assets/ferrari-front-clean-transparent.webp?v=20260901-caralpha4';
+
+  // Restore the known-good white-car artwork and keep the cleaned Ferrari.
+  // Do not apply any rectangular compositing overlays to either asset.
+  whiteFront.src = 'assets/countach-front-white.svg?v=20260901-carfix';
+  nightFront.src = 'assets/ferrari-front-clean-edgefix.webp?v=20260901-carfix';
 
   function drawGrounding(centerX, centerY, width, height, rotation, cyanWeight) {
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(rotation);
 
-    // Cheap layered ellipses make the cars sit on the glass without using
-    // per-frame blur filters (important for the mobile build).
+    // Lightweight contact shadow only. No per-frame blur filters.
     ctx.fillStyle = 'rgba(0, 0, 0, 0.42)';
     ctx.beginPath();
     ctx.ellipse(0, height * 0.25, width * 0.44, height * 0.20, 0, 0, Math.PI * 2);
@@ -50,39 +52,16 @@
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(rotation);
-
     ctx.globalAlpha = 0.97;
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.filter = filter;
     ctx.drawImage(image, -width / 2, -height / 2, width, height);
-
-    // Both assets contain real alpha. Keep the neon reflection and molded
-    // sheen inside only the visible car pixels, never the transparent area.
-    ctx.filter = 'none';
-    ctx.globalCompositeOperation = 'source-atop';
-    ctx.globalAlpha = 0.10;
-    const neonReflection = ctx.createLinearGradient(-width / 2, 0, width / 2, 0);
-    neonReflection.addColorStop(0, cyanWeight ? '#20e1ff' : '#ff279a');
-    neonReflection.addColorStop(0.48, 'rgba(255,255,255,0)');
-    neonReflection.addColorStop(1, cyanWeight ? '#ff279a' : '#20e1ff');
-    ctx.fillStyle = neonReflection;
-    ctx.fillRect(-width / 2, -height / 2, width, height);
-
-    ctx.globalAlpha = 0.06;
-    const sheen = ctx.createLinearGradient(0, -height / 2, 0, height / 2);
-    sheen.addColorStop(0, 'rgba(255,255,255,0.9)');
-    sheen.addColorStop(0.42, 'rgba(255,255,255,0.05)');
-    sheen.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = sheen;
-    ctx.fillRect(-width / 2, -height / 2, width, height);
-
     ctx.restore();
   }
 
   function drawMiamiExotics() {
     // Preserve the approved positions, scale, stagger and forward 3/4 stance.
-    // The Ferrari asset also has the stray passenger-side edge piece removed.
     drawPhotoToy(
       whiteFront,
       150,
@@ -113,6 +92,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260901-CARALPHA4';
+    buildNumberDisplay.textContent = 'Build 20260901-CARFIX';
   }
 })();
