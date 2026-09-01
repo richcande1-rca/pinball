@@ -79,7 +79,7 @@ window.addEventListener('load', () => {
       carsScript.async = false;
       carsScript.addEventListener('load', () => {
         const displaysScript = document.createElement('script');
-        displaysScript.src = 'displays.js?v=20260901-displays';
+        displaysScript.src = 'displays.js?v=20260901-display3x';
         displaysScript.async = false;
         document.body.appendChild(displaysScript);
       }, { once: true });
