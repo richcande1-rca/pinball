@@ -75,7 +75,7 @@ window.addEventListener('load', () => {
     businessesScript.async = false;
     businessesScript.addEventListener('load', () => {
       const carsScript = document.createElement('script');
-      carsScript.src = 'cars.js?v=20260831-whitefront';
+      carsScript.src = 'cars.js?v=20260831-caralpha';
       carsScript.async = false;
       document.body.appendChild(carsScript);
     }, { once: true });
