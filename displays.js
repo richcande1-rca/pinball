@@ -10,7 +10,9 @@
   const displayEvent = {
     left: 'MIAMI',
     right: 'NIGHTS',
+    startedAt: 0,
     until: 0,
+    blinkInterval: 0,
     leftAccent: 'cyan',
     rightAccent: 'magenta'
   };
@@ -21,11 +23,15 @@
     right,
     duration = DISPLAY_HOLD_MS,
     leftAccent = 'cyan',
-    rightAccent = 'magenta'
+    rightAccent = 'magenta',
+    blinkInterval = 0
   ) {
+    const now = performance.now();
     displayEvent.left = left;
     displayEvent.right = right;
-    displayEvent.until = performance.now() + duration;
+    displayEvent.startedAt = now;
+    displayEvent.until = now + duration;
+    displayEvent.blinkInterval = blinkInterval;
     displayEvent.leftAccent = leftAccent;
     displayEvent.rightAccent = rightAccent;
   }
@@ -87,7 +93,7 @@
     ctx.closePath();
   }
 
-  function drawOneDisplay(side, text, accentName) {
+  function drawOneDisplay(side, text, accentName, eventActive = false) {
     const centerX = side === 'left' ? 108 : 312;
     const accent = MIAMI_COLORS[accentName] || MIAMI_COLORS.lavender;
 
@@ -96,22 +102,18 @@
     ctx.fillStyle = 'rgba(1, 4, 10, 0.96)';
     ctx.fill();
 
-    ctx.globalAlpha = 0.78;
-    ctx.strokeStyle = '#3e3657';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.globalAlpha = 0.9;
+    // Keep the displays visibly alive at all times, but reserve canvas shadow
+    // work for short event flashes. The solid accent border/text are much cheaper
+    // than two blurred passes every frame and still read clearly on mobile.
+    ctx.globalAlpha = eventActive ? 1 : 0.82;
     ctx.strokeStyle = accent;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = eventActive ? 1.6 : 1.1;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 5;
+    ctx.shadowBlur = eventActive && !window.miamiMobilePerformanceMode ? 3 : 0;
     traceDisplayPanel(side);
     ctx.stroke();
 
-    // A couple of faint horizontal phosphor lines give the inserts a smoked
-    // VFD/alphanumeric feel without adding expensive effects on mobile.
-    ctx.globalAlpha = 0.12;
+    ctx.globalAlpha = 0.11;
     ctx.strokeStyle = '#f4ffff';
     ctx.shadowBlur = 0;
     ctx.beginPath();
@@ -124,10 +126,12 @@
     ctx.globalAlpha = 1;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '800 9px ui-monospace, monospace';
-    ctx.fillStyle = '#f4ffff';
+    ctx.font = eventActive
+      ? '900 9px ui-monospace, monospace'
+      : '800 9px ui-monospace, monospace';
+    ctx.fillStyle = eventActive ? '#ffffff' : accent;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 6;
+    ctx.shadowBlur = eventActive && !window.miamiMobilePerformanceMode ? 3 : 0;
     ctx.fillText(String(text).toUpperCase(), centerX, 686, 112);
     ctx.restore();
   }
@@ -135,15 +139,24 @@
   function drawLowerDisplays() {
     const now = performance.now();
     const showingEvent = now < displayEvent.until;
+    const blinkShowsEvent =
+      showingEvent &&
+      (!displayEvent.blinkInterval ||
+        Math.floor((now - displayEvent.startedAt) / displayEvent.blinkInterval) % 2 === 0);
+
+    // Blinking never blanks a panel: the alternate phase falls back to its live
+    // idle/status readout, so both lower displays are always visibly active.
     drawOneDisplay(
       'left',
-      showingEvent ? displayEvent.left : idleLeftText(),
-      showingEvent ? displayEvent.leftAccent : 'cyan'
+      blinkShowsEvent ? displayEvent.left : idleLeftText(),
+      blinkShowsEvent ? displayEvent.leftAccent : 'cyan',
+      blinkShowsEvent
     );
     drawOneDisplay(
       'right',
-      showingEvent ? displayEvent.right : idleRightText(),
-      showingEvent ? displayEvent.rightAccent : 'magenta'
+      blinkShowsEvent ? displayEvent.right : idleRightText(),
+      blinkShowsEvent ? displayEvent.rightAccent : 'magenta',
+      blinkShowsEvent
     );
   }
 
@@ -233,6 +246,20 @@
     );
   });
 
+  window.addEventListener('miami-reef-complete', event => {
+    const award = event.detail && event.detail.award
+      ? event.detail.award
+      : 2500;
+    flashDisplays(
+      'REEF HOTEL',
+      `BONUS +${award}`,
+      2400,
+      'cyan',
+      'magenta',
+      140
+    );
+  });
+
   window.addEventListener('miami-drain', () => {
     circleDisplayProgress = 0;
     flashDisplays('DRAIN', 'NEXT BALL', 1200, 'magenta', 'cyan');
@@ -266,6 +293,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260901-DISPLAY3X';
+    buildNumberDisplay.textContent = 'Build 20260901-PERFDISPLAY';
   }
 })();
