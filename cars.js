@@ -7,8 +7,8 @@
 
   whiteFront.decoding = 'async';
   nightFront.decoding = 'async';
-  whiteFront.src = 'assets/countach-front-white.svg?v=20260831-ferrari3';
-  nightFront.src = 'assets/ferrari-front-clean-edgefix.webp?v=20260831-ferrari3';
+  whiteFront.src = 'assets/countach-front-white-transparent.webp?v=20260901-caralpha4';
+  nightFront.src = 'assets/ferrari-front-clean-transparent.webp?v=20260901-caralpha4';
 
   function drawGrounding(centerX, centerY, width, height, rotation, cyanWeight) {
     ctx.save();
@@ -57,8 +57,8 @@
     ctx.filter = filter;
     ctx.drawImage(image, -width / 2, -height / 2, width, height);
 
-    // Keep the neon reflection and molded sheen inside the image alpha only.
-    // This avoids rectangular overlays and removes the need for runtime masks.
+    // Both assets contain real alpha. Keep the neon reflection and molded
+    // sheen inside only the visible car pixels, never the transparent area.
     ctx.filter = 'none';
     ctx.globalCompositeOperation = 'source-atop';
     ctx.globalAlpha = 0.10;
@@ -81,8 +81,8 @@
   }
 
   function drawMiamiExotics() {
-    // Keep the approved white car unchanged. The Ferrari uses the same clean
-    // front 3/4 art with only the small right-edge mirror/protrusion removed.
+    // Preserve the approved positions, scale, stagger and forward 3/4 stance.
+    // The Ferrari asset also has the stray passenger-side edge piece removed.
     drawPhotoToy(
       whiteFront,
       150,
@@ -113,6 +113,6 @@
 
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260831-FERRARI3';
+    buildNumberDisplay.textContent = 'Build 20260901-CARALPHA4';
   }
 })();
