@@ -101,9 +101,4 @@
     baseDrawOceanRampWithReefFeedback();
     if (completionActive()) drawReefHotelBlink();
   };
-
-  const buildNumberDisplay = document.querySelector('.build-number');
-  if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260901-PERFDISPLAY';
-  }
 })();
