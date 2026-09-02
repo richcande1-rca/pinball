@@ -1,6 +1,6 @@
-// Miami Nights: dual lower cabinet displays and faster Ocean Drive lettering.
-// Loaded last so it can layer display feedback over the existing lower bezels
-// without disturbing stable gameplay geometry.
+// Miami Nights: dual lower apron displays and faster Ocean Drive lettering.
+// Loaded late so it can add presentation feedback inside the existing lower
+// MIAMI / NIGHTS panels without disturbing stable gameplay geometry.
 
 (() => {
   if (window.miamiDisplaysInstalled) return;
@@ -18,14 +18,13 @@
   };
   let circleDisplayProgress = 0;
 
-  // Each panel is rendered into a tiny offscreen canvas only when its text or
-  // visual state changes. Normal frames now do two small drawImage calls instead
-  // of rebuilding fonts, paths and glow effects every frame.
-  const PANEL_WIDTH = 145;
-  const PANEL_HEIGHT = 26;
+  // Each inset is rendered into a tiny offscreen canvas only when its text or
+  // visual state changes. Normal frames remain two small drawImage calls.
+  const PANEL_WIDTH = 160;
+  const PANEL_HEIGHT = 22;
   const panelCache = {
-    left: makePanelCache('left', 40, 672, 68),
-    right: makePanelCache('right', 236, 672, 76)
+    left: makePanelCache('left', 30, 673, 76),
+    right: makePanelCache('right', 230, 673, 86)
   };
 
   function makePanelCache(side, x, y, centerX) {
@@ -102,18 +101,21 @@
     return `BALL ${ballNumber}`;
   }
 
+  // These are inset versions of the existing apron polygons. They deliberately
+  // leave the original cabinet edges visible so the displays read as built into
+  // the MIAMI / NIGHTS panels rather than floating on top of the playfield.
   function traceCachedPanel(targetCtx, side) {
     targetCtx.beginPath();
     if (side === 'left') {
-      targetCtx.moveTo(0, 0);
-      targetCtx.lineTo(130, 0);
-      targetCtx.lineTo(144, 25);
-      targetCtx.lineTo(0, 25);
+      targetCtx.moveTo(2, 1);
+      targetCtx.lineTo(131, 1);
+      targetCtx.lineTo(150, 20);
+      targetCtx.lineTo(2, 20);
     } else {
-      targetCtx.moveTo(14, 0);
-      targetCtx.lineTo(144, 0);
-      targetCtx.lineTo(144, 25);
-      targetCtx.lineTo(0, 25);
+      targetCtx.moveTo(158, 1);
+      targetCtx.lineTo(29, 1);
+      targetCtx.lineTo(10, 20);
+      targetCtx.lineTo(158, 20);
     }
     targetCtx.closePath();
   }
@@ -134,38 +136,47 @@
     panelCtx.clearRect(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
     panelCtx.save();
 
+    const face = panelCtx.createLinearGradient(0, 0, 0, PANEL_HEIGHT);
+    face.addColorStop(0, 'rgba(5, 16, 34, 0.98)');
+    face.addColorStop(1, 'rgba(1, 4, 10, 0.98)');
     traceCachedPanel(panelCtx, cache.side);
-    panelCtx.fillStyle = 'rgba(1, 4, 10, 0.96)';
+    panelCtx.fillStyle = face;
     panelCtx.fill();
 
-    panelCtx.globalAlpha = eventActive ? 1 : 0.82;
+    panelCtx.globalAlpha = eventActive ? 1 : 0.8;
     panelCtx.strokeStyle = accent;
-    panelCtx.lineWidth = eventActive ? 1.6 : 1.1;
+    panelCtx.lineWidth = eventActive ? 1.5 : 1.1;
     panelCtx.shadowColor = accent;
-    panelCtx.shadowBlur = eventActive && !mobile ? 3 : 0;
+    panelCtx.shadowBlur = mobile ? 0 : (eventActive ? 4 : 2);
     traceCachedPanel(panelCtx, cache.side);
     panelCtx.stroke();
 
-    panelCtx.globalAlpha = 0.11;
+    // A restrained glass highlight gives these the same dark-neon-display feel
+    // as the top score strip without adding another animated effect.
+    panelCtx.globalAlpha = 0.12;
     panelCtx.strokeStyle = '#f4ffff';
+    panelCtx.lineWidth = 1;
     panelCtx.shadowBlur = 0;
     panelCtx.beginPath();
-    panelCtx.moveTo(cache.centerX - 52, 9);
-    panelCtx.lineTo(cache.centerX + 52, 9);
-    panelCtx.moveTo(cache.centerX - 52, 19);
-    panelCtx.lineTo(cache.centerX + 52, 19);
+    if (cache.side === 'left') {
+      panelCtx.moveTo(8, 5);
+      panelCtx.lineTo(128, 5);
+    } else {
+      panelCtx.moveTo(32, 5);
+      panelCtx.lineTo(152, 5);
+    }
     panelCtx.stroke();
 
     panelCtx.globalAlpha = 1;
     panelCtx.textAlign = 'center';
     panelCtx.textBaseline = 'middle';
     panelCtx.font = eventActive
-      ? '900 9px ui-monospace, monospace'
-      : '800 9px ui-monospace, monospace';
-    panelCtx.fillStyle = eventActive ? '#ffffff' : accent;
+      ? '800 10px ui-monospace, monospace'
+      : '700 10px ui-monospace, monospace';
+    panelCtx.fillStyle = eventActive ? '#f7fbff' : accent;
     panelCtx.shadowColor = accent;
-    panelCtx.shadowBlur = eventActive && !mobile ? 3 : 0;
-    panelCtx.fillText(String(text).toUpperCase(), cache.centerX, 14, 112);
+    panelCtx.shadowBlur = mobile ? 0 : (eventActive ? 5 : 3);
+    panelCtx.fillText(String(text).toUpperCase(), cache.centerX, 12, 116);
     panelCtx.restore();
   }
 
@@ -200,9 +211,11 @@
     );
   }
 
-  const baseDrawTableWithLowerDisplays = drawTable;
-  drawTable = function drawTableWithLowerDisplays() {
-    baseDrawTableWithLowerDisplays();
+  // Draw directly after the existing lower apron. This is a presentation-only
+  // layer: the panel geometry is left untouched and no physics path reads it.
+  const baseDrawLowerApronWithDisplays = drawLowerApron;
+  drawLowerApron = function drawLowerApronWithDisplays() {
+    baseDrawLowerApronWithDisplays();
     drawLowerDisplays();
   };
 
@@ -383,7 +396,7 @@
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
     instructions.append(document.createTextNode(
-      ' Lower displays show event/bonus callouts on the left and live mode/progress status on the right. Each completed Ocean Drive pass lights three letters toward OCEAN DRIVE. Circle loop passes show 1/3, 2/3, then persistent 3X ACTIVE feedback until drain.'
+      ' Lower apron displays show event/bonus callouts on the left and live mode/progress status on the right. Each completed Ocean Drive pass lights three letters toward OCEAN DRIVE. Circle loop passes show 1/3, 2/3, then persistent 3X ACTIVE feedback until drain.'
     ));
   }
 })();
