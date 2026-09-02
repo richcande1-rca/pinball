@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260902-DISPLAYCACHE';
+  const CURRENT_BUILD = 'Build 20260902-PANELDISPLAYS';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -90,7 +90,7 @@ window.addEventListener('load', () => {
       carsScript.async = false;
       carsScript.addEventListener('load', () => {
         const displaysScript = document.createElement('script');
-        displaysScript.src = 'displays.js?v=20260902-displaycache';
+        displaysScript.src = 'displays.js?v=20260902-paneldisplays';
         displaysScript.async = false;
         displaysScript.addEventListener('load', () => {
           const reefFeedbackScript = document.createElement('script');
