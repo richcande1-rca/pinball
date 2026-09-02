@@ -11,7 +11,67 @@
   whiteFront.decoding = 'async';
   nightFront.decoding = 'async';
 
-  function buildCarCache(image, width, height, rotation, filter, cyanWeight) {
+  function drawCarArtwork(
+    targetCtx,
+    image,
+    width,
+    height,
+    filter,
+    trimSoftAlpha = false
+  ) {
+    if (!trimSoftAlpha) {
+      targetCtx.imageSmoothingEnabled = true;
+      targetCtx.imageSmoothingQuality = 'high';
+      targetCtx.filter = filter;
+      targetCtx.drawImage(image, -width / 2, -height / 2, width, height);
+      targetCtx.filter = 'none';
+      return;
+    }
+
+    // Ferrari only: suppress the very faint transparent fringe that reads as a
+    // large purple/black cloud at game scale. Solid body pixels and ordinary
+    // anti-aliased edges remain intact; the source asset itself is unchanged.
+    const sprite = document.createElement('canvas');
+    sprite.width = Math.ceil(width);
+    sprite.height = Math.ceil(height);
+    const spriteCtx = sprite.getContext('2d');
+    spriteCtx.imageSmoothingEnabled = true;
+    spriteCtx.imageSmoothingQuality = 'high';
+    spriteCtx.filter = filter;
+    spriteCtx.drawImage(image, 0, 0, sprite.width, sprite.height);
+    spriteCtx.filter = 'none';
+
+    const imageData = spriteCtx.getImageData(
+      0,
+      0,
+      sprite.width,
+      sprite.height
+    );
+    const pixels = imageData.data;
+
+    for (let offset = 3; offset < pixels.length; offset += 4) {
+      const alpha = pixels[offset];
+      if (alpha < 24) {
+        pixels[offset] = 0;
+      } else if (alpha < 128) {
+        const normalized = (alpha - 24) / 104;
+        pixels[offset] = Math.round(alpha * normalized * normalized);
+      }
+    }
+
+    spriteCtx.putImageData(imageData, 0, 0);
+    targetCtx.drawImage(sprite, -width / 2, -height / 2);
+  }
+
+  function buildCarCache(
+    image,
+    width,
+    height,
+    rotation,
+    filter,
+    cyanWeight,
+    trimSoftAlpha = false
+  ) {
     if (!image.complete || !image.naturalWidth) return null;
 
     const padding = 18;
@@ -41,11 +101,14 @@
 
     cacheCtx.globalCompositeOperation = 'source-over';
     cacheCtx.globalAlpha = 0.97;
-    cacheCtx.imageSmoothingEnabled = true;
-    cacheCtx.imageSmoothingQuality = 'high';
-    cacheCtx.filter = filter;
-    cacheCtx.drawImage(image, -width / 2, -height / 2, width, height);
-    cacheCtx.filter = 'none';
+    drawCarArtwork(
+      cacheCtx,
+      image,
+      width,
+      height,
+      filter,
+      trimSoftAlpha
+    );
     cacheCtx.restore();
 
     return cache;
@@ -69,6 +132,7 @@
       58,
       0.015,
       'saturate(0.92) contrast(1.04) brightness(1.10)',
+      true,
       true
     );
   }
@@ -77,7 +141,7 @@
   nightFront.addEventListener('load', rebuildNightCache, { once: true });
 
   // Restore the known-good white-car artwork and keep the cleaned Ferrari.
-  // Cache bust the assets together with this static render pass.
+  // The source assets are unchanged; this pass only tightens Ferrari compositing.
   whiteFront.src = 'assets/countach-front-white.svg?v=20260902-displaycache';
   nightFront.src = 'assets/ferrari-front-clean-edgefix.webp?v=20260902-displaycache';
 
