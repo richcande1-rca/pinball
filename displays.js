@@ -8,8 +8,8 @@
 
   const DISPLAY_HOLD_MS = 1500;
   const displayEvent = {
-    left: 'MIAMI',
-    right: 'NIGHTS',
+    left: 'READY',
+    right: 'BALL 1',
     startedAt: 0,
     until: 0,
     blinkInterval: 0,
@@ -17,6 +17,31 @@
     rightAccent: 'magenta'
   };
   let circleDisplayProgress = 0;
+
+  // Each panel is rendered into a tiny offscreen canvas only when its text or
+  // visual state changes. Normal frames now do two small drawImage calls instead
+  // of rebuilding fonts, paths and glow effects every frame.
+  const PANEL_WIDTH = 145;
+  const PANEL_HEIGHT = 26;
+  const panelCache = {
+    left: makePanelCache('left', 40, 672, 68),
+    right: makePanelCache('right', 236, 672, 76)
+  };
+
+  function makePanelCache(side, x, y, centerX) {
+    const canvas = document.createElement('canvas');
+    canvas.width = PANEL_WIDTH;
+    canvas.height = PANEL_HEIGHT;
+    return {
+      side,
+      x,
+      y,
+      centerX,
+      canvas,
+      ctx: canvas.getContext('2d'),
+      key: ''
+    };
+  }
 
   function flashDisplays(
     left,
@@ -37,8 +62,16 @@
   }
 
   function idleLeftText() {
-    if (gameOver) return 'GAME';
+    if (gameOver) return 'GAME OVER';
+    if (ball.ready) return 'READY';
+    return 'PLAY';
+  }
 
+  function idleRightText() {
+    if (gameOver) return `BALL ${ballNumber}`;
+
+    // Timed/scoring modes get first priority, then persistent progress. The top
+    // strip remains the only score display; this panel is for useful mode state.
     if (
       typeof centerDoubleScoreRemaining !== 'undefined' &&
       centerDoubleScoreRemaining > 0
@@ -46,23 +79,6 @@
       return `2X ${Math.ceil(centerDoubleScoreRemaining)}S`;
     }
 
-    if (
-      typeof oceanDriveLettersLit !== 'undefined' &&
-      oceanDriveLettersLit > 0
-    ) {
-      return oceanDriveLettersLit >= 10
-        ? 'OCEAN LIT'
-        : `OCEAN ${oceanDriveLettersLit}/10`;
-    }
-
-    return 'MIAMI';
-  }
-
-  function idleRightText() {
-    if (gameOver) return 'OVER';
-
-    // Once the three circle passes are complete, keep the earned 3X mode visible
-    // between event flashes until the ball drains, matching circle3x.js behavior.
     if (circleDisplayProgress >= 3) return '3X ACTIVE';
 
     if (
@@ -74,66 +90,89 @@
       return `EXTRA ${captiveHitProgress}/5`;
     }
 
-    return 'NIGHTS';
-  }
-
-  function traceDisplayPanel(side) {
-    ctx.beginPath();
-    if (side === 'left') {
-      ctx.moveTo(40, 672);
-      ctx.lineTo(170, 672);
-      ctx.lineTo(184, 697);
-      ctx.lineTo(40, 697);
-    } else {
-      ctx.moveTo(250, 672);
-      ctx.lineTo(380, 672);
-      ctx.lineTo(380, 697);
-      ctx.lineTo(236, 697);
+    if (
+      typeof oceanDriveLettersLit !== 'undefined' &&
+      oceanDriveLettersLit > 0
+    ) {
+      return oceanDriveLettersLit >= 10
+        ? 'OCEAN LIT'
+        : `OCEAN ${oceanDriveLettersLit}/10`;
     }
-    ctx.closePath();
+
+    return `BALL ${ballNumber}`;
   }
 
-  function drawOneDisplay(side, text, accentName, eventActive = false) {
-    const centerX = side === 'left' ? 108 : 312;
+  function traceCachedPanel(targetCtx, side) {
+    targetCtx.beginPath();
+    if (side === 'left') {
+      targetCtx.moveTo(0, 0);
+      targetCtx.lineTo(130, 0);
+      targetCtx.lineTo(144, 25);
+      targetCtx.lineTo(0, 25);
+    } else {
+      targetCtx.moveTo(14, 0);
+      targetCtx.lineTo(144, 0);
+      targetCtx.lineTo(144, 25);
+      targetCtx.lineTo(0, 25);
+    }
+    targetCtx.closePath();
+  }
+
+  function renderPanel(cache, text, accentName, eventActive) {
     const accent = MIAMI_COLORS[accentName] || MIAMI_COLORS.lavender;
+    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const nextKey = [
+      text,
+      accentName,
+      eventActive ? 'event' : 'idle',
+      mobile ? 'mobile' : 'desktop'
+    ].join('|');
+    if (cache.key === nextKey) return;
+    cache.key = nextKey;
 
-    ctx.save();
-    traceDisplayPanel(side);
-    ctx.fillStyle = 'rgba(1, 4, 10, 0.96)';
-    ctx.fill();
+    const panelCtx = cache.ctx;
+    panelCtx.clearRect(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
+    panelCtx.save();
 
-    // Keep the displays visibly alive at all times, but reserve canvas shadow
-    // work for short event flashes. The solid accent border/text are much cheaper
-    // than two blurred passes every frame and still read clearly on mobile.
-    ctx.globalAlpha = eventActive ? 1 : 0.82;
-    ctx.strokeStyle = accent;
-    ctx.lineWidth = eventActive ? 1.6 : 1.1;
-    ctx.shadowColor = accent;
-    ctx.shadowBlur = eventActive && !window.miamiMobilePerformanceMode ? 3 : 0;
-    traceDisplayPanel(side);
-    ctx.stroke();
+    traceCachedPanel(panelCtx, cache.side);
+    panelCtx.fillStyle = 'rgba(1, 4, 10, 0.96)';
+    panelCtx.fill();
 
-    ctx.globalAlpha = 0.11;
-    ctx.strokeStyle = '#f4ffff';
-    ctx.shadowBlur = 0;
-    ctx.beginPath();
-    ctx.moveTo(centerX - 52, 681);
-    ctx.lineTo(centerX + 52, 681);
-    ctx.moveTo(centerX - 52, 691);
-    ctx.lineTo(centerX + 52, 691);
-    ctx.stroke();
+    panelCtx.globalAlpha = eventActive ? 1 : 0.82;
+    panelCtx.strokeStyle = accent;
+    panelCtx.lineWidth = eventActive ? 1.6 : 1.1;
+    panelCtx.shadowColor = accent;
+    panelCtx.shadowBlur = eventActive && !mobile ? 3 : 0;
+    traceCachedPanel(panelCtx, cache.side);
+    panelCtx.stroke();
 
-    ctx.globalAlpha = 1;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = eventActive
+    panelCtx.globalAlpha = 0.11;
+    panelCtx.strokeStyle = '#f4ffff';
+    panelCtx.shadowBlur = 0;
+    panelCtx.beginPath();
+    panelCtx.moveTo(cache.centerX - 52, 9);
+    panelCtx.lineTo(cache.centerX + 52, 9);
+    panelCtx.moveTo(cache.centerX - 52, 19);
+    panelCtx.lineTo(cache.centerX + 52, 19);
+    panelCtx.stroke();
+
+    panelCtx.globalAlpha = 1;
+    panelCtx.textAlign = 'center';
+    panelCtx.textBaseline = 'middle';
+    panelCtx.font = eventActive
       ? '900 9px ui-monospace, monospace'
       : '800 9px ui-monospace, monospace';
-    ctx.fillStyle = eventActive ? '#ffffff' : accent;
-    ctx.shadowColor = accent;
-    ctx.shadowBlur = eventActive && !window.miamiMobilePerformanceMode ? 3 : 0;
-    ctx.fillText(String(text).toUpperCase(), centerX, 686, 112);
-    ctx.restore();
+    panelCtx.fillStyle = eventActive ? '#ffffff' : accent;
+    panelCtx.shadowColor = accent;
+    panelCtx.shadowBlur = eventActive && !mobile ? 3 : 0;
+    panelCtx.fillText(String(text).toUpperCase(), cache.centerX, 14, 112);
+    panelCtx.restore();
+  }
+
+  function drawCachedPanel(side, text, accentName, eventActive) {
+    const cache = panelCache[side];
+    renderPanel(cache, text, accentName, eventActive);
+    ctx.drawImage(cache.canvas, cache.x, cache.y);
   }
 
   function drawLowerDisplays() {
@@ -144,15 +183,16 @@
       (!displayEvent.blinkInterval ||
         Math.floor((now - displayEvent.startedAt) / displayEvent.blinkInterval) % 2 === 0);
 
-    // Blinking never blanks a panel: the alternate phase falls back to its live
-    // idle/status readout, so both lower displays are always visibly active.
-    drawOneDisplay(
+    // Left answers "what just happened?"; right answers "what mode am I in?".
+    // During an event the right panel can briefly show award/detail information,
+    // then it automatically returns to the persistent live mode/progress state.
+    drawCachedPanel(
       'left',
       blinkShowsEvent ? displayEvent.left : idleLeftText(),
       blinkShowsEvent ? displayEvent.leftAccent : 'cyan',
       blinkShowsEvent
     );
-    drawOneDisplay(
+    drawCachedPanel(
       'right',
       blinkShowsEvent ? displayEvent.right : idleRightText(),
       blinkShowsEvent ? displayEvent.rightAccent : 'magenta',
@@ -177,8 +217,8 @@
       flashDisplays('OCEAN DRIVE', 'COMPLETE', 2200, 'cyan', 'magenta');
     } else {
       flashDisplays(
-        `OCEAN ${oceanDriveLettersLit}/10`,
-        '+3 LETTERS',
+        'OCEAN DRIVE',
+        `${oceanDriveLettersLit}/10 LIT`,
         1800,
         'cyan',
         'magenta'
@@ -201,7 +241,7 @@
     circleDisplayProgress = Math.min(3, circleDisplayProgress + 1);
 
     if (!wasTripleActive && circleDisplayProgress === 3) {
-      flashDisplays('CIRCLE 3X', 'ACTIVE!', 2200, 'cyan', 'magenta');
+      flashDisplays('3X ACTIVE!', 'CIRCLE MODE', 2200, 'cyan', 'magenta');
       return;
     }
 
@@ -216,20 +256,26 @@
       return;
     }
 
-    flashDisplays('LOOP', `+${points}`, 1500, 'cyan', 'magenta');
+    flashDisplays('LOOP!', `+${points}`, 1500, 'cyan', 'magenta');
   });
 
   window.addEventListener('miami-magnet-capture', event => {
     const points = event.detail && event.detail.points
       ? event.detail.points
       : 500;
-    flashDisplays('MAGNET', `+${points}`, 1400, 'magenta', 'cyan');
+    flashDisplays('MAGNET!', `+${points}`, 1400, 'magenta', 'cyan');
   });
 
   window.addEventListener('miami-drop-target', event => {
     const detail = event.detail || {};
     if (detail.bankComplete) {
-      flashDisplays('3-0-5', `BANK +${detail.bankBonus || 3000}`, 1900, 'magenta', 'cyan');
+      flashDisplays(
+        'BONUS!',
+        `3-0-5 +${detail.bankBonus || 3000}`,
+        1900,
+        'magenta',
+        'cyan'
+      );
       return;
     }
     flashDisplays('3-0-5', `+${detail.points || 500}`, 900, 'magenta', 'cyan');
@@ -246,13 +292,61 @@
     );
   });
 
+  // Reuse existing impact events for presentation-only mode announcements.
+  // No score, collision or timing values are changed here.
+  window.addEventListener('miami-impact', event => {
+    const detail = event.detail || {};
+    const index = Number(detail.index);
+
+    if (
+      index >= 11 &&
+      index <= 13 &&
+      typeof centerDoubleScoreRemaining !== 'undefined' &&
+      centerDoubleScoreRemaining > 0
+    ) {
+      flashDisplays(
+        '2X SCORE!',
+        `${Math.ceil(centerDoubleScoreRemaining)} SECONDS`,
+        1900,
+        'magenta',
+        'cyan'
+      );
+      return;
+    }
+
+    if (index === 8 && typeof captiveHitProgress !== 'undefined') {
+      if (
+        typeof captiveExtraBallAwarded !== 'undefined' &&
+        captiveExtraBallAwarded &&
+        captiveHitProgress >= 5
+      ) {
+        flashDisplays('EXTRA BALL!', 'AWARDED', 2400, 'cyan', 'magenta', 160);
+      } else {
+        flashDisplays(
+          'CAPTIVE',
+          `EXTRA ${captiveHitProgress}/5`,
+          950,
+          'cyan',
+          'magenta'
+        );
+      }
+      return;
+    }
+
+    if (index === 9) {
+      flashDisplays('TOP SWITCH!', '+2500', 1300, 'magenta', 'cyan');
+    } else if (index === 10) {
+      flashDisplays('ROOF HIT!', '+1000', 1200, 'cyan', 'magenta');
+    }
+  });
+
   window.addEventListener('miami-reef-complete', event => {
     const award = event.detail && event.detail.award
       ? event.detail.award
       : 2500;
     flashDisplays(
-      'REEF HOTEL',
-      `BONUS +${award}`,
+      'BONUS!',
+      `REEF +${award}`,
       2400,
       'cyan',
       'magenta',
@@ -268,6 +362,8 @@
   const baseResetGameWithCircleDisplay = resetGame;
   resetGame = function resetGameWithCircleDisplay() {
     circleDisplayProgress = 0;
+    panelCache.left.key = '';
+    panelCache.right.key = '';
     baseResetGameWithCircleDisplay();
   };
 
@@ -278,7 +374,7 @@
     tryEnterUnderpass = function tryEnterUnderpassWithDisplay() {
       const entered = baseTryEnterUnderpassWithDisplay();
       if (entered) {
-        flashDisplays('UNDERPASS', '5-WAY', 1400, 'magenta', 'cyan');
+        flashDisplays('UNDERPASS!', '5-WAY', 1400, 'magenta', 'cyan');
       }
       return entered;
     };
@@ -287,12 +383,7 @@
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
     instructions.append(document.createTextNode(
-      ' Each completed Ocean Drive pass lights three letters toward OCEAN DRIVE. Circle loop passes show 1/3, 2/3, then persistent 3X ACTIVE feedback until drain.'
+      ' Lower displays show event/bonus callouts on the left and live mode/progress status on the right. Each completed Ocean Drive pass lights three letters toward OCEAN DRIVE. Circle loop passes show 1/3, 2/3, then persistent 3X ACTIVE feedback until drain.'
     ));
-  }
-
-  const buildNumberDisplay = document.querySelector('.build-number');
-  if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260901-PERFDISPLAY';
   }
 })();
