@@ -66,11 +66,16 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260901-PERFDISPLAY2';
+  const CURRENT_BUILD = 'Build 20260902-DISPLAYCACHE';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
   };
+
+  // Stamp immediately, then again after late features load. The loader is the
+  // sole owner of the visible build label so older feature shims cannot roll it
+  // backward after a newer build arrives.
+  stampCurrentBuild();
 
   const circleTripleScript = document.createElement('script');
   circleTripleScript.src = 'circle3x.js?v=20260830-handoff';
@@ -81,20 +86,17 @@ window.addEventListener('load', () => {
     businessesScript.async = false;
     businessesScript.addEventListener('load', () => {
       const carsScript = document.createElement('script');
-      carsScript.src = 'cars.js?v=20260901-buildlock';
+      carsScript.src = 'cars.js?v=20260902-displaycache';
       carsScript.async = false;
       carsScript.addEventListener('load', () => {
         const displaysScript = document.createElement('script');
-        displaysScript.src = 'displays.js?v=20260901-perfdisplay';
+        displaysScript.src = 'displays.js?v=20260902-displaycache';
         displaysScript.async = false;
         displaysScript.addEventListener('load', () => {
           const reefFeedbackScript = document.createElement('script');
-          reefFeedbackScript.src = 'reef-feedback.js?v=20260901-perfdisplay';
+          reefFeedbackScript.src = 'reef-feedback.js?v=20260902-displaycache';
           reefFeedbackScript.async = false;
           reefFeedbackScript.addEventListener('load', () => {
-            // The loader owns the final visible version. Stamp immediately after
-            // the full late-load chain and once more after old delayed shims have
-            // had time to run, so a legacy feature cannot roll the label backward.
             stampCurrentBuild();
             window.setTimeout(stampCurrentBuild, 400);
           }, { once: true });
