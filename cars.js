@@ -11,31 +11,6 @@
   whiteFront.decoding = 'async';
   nightFront.decoding = 'async';
 
-  const ferrariSilhouette = [
-    [0.1423, 0.2724],
-    [0.1394, 0.3086],
-    [0.2048, 0.4086],
-    [0.2067, 0.8],
-    [0.2183, 0.8241],
-    [0.2442, 0.8121],
-    [0.3231, 0.9155],
-    [0.4346, 0.9086],
-    [0.4885, 0.9362],
-    [0.7048, 0.9155],
-    [0.8375, 0.8638],
-    [0.8538, 0.7724],
-    [0.9298, 0.7552],
-    [0.9423, 0.7155],
-    [0.926, 0.6086],
-    [0.851, 0.4793],
-    [0.7346, 0.3552],
-    [0.6279, 0.1483],
-    [0.549, 0.0672],
-    [0.3673, 0.0517],
-    [0.326, 0.0845],
-    [0.2212, 0.0966]
-  ];
-
   function drawCarArtwork(
     targetCtx,
     image,
@@ -53,52 +28,52 @@
       return;
     }
 
-    // Ferrari only: the source image contains a visible magenta/blue outer
-    // reflection that can remain even when its alpha is fairly strong. Clip the
-    // source to the actual car silhouette first, then soften only the remaining
-    // translucent fringe. This does not change the approved size or placement.
-    const sprite = document.createElement('canvas');
-    sprite.width = Math.ceil(width);
-    sprite.height = Math.ceil(height);
-    const spriteCtx = sprite.getContext('2d');
-    spriteCtx.imageSmoothingEnabled = true;
-    spriteCtx.imageSmoothingQuality = 'high';
+    // Ferrari only: sanitize the source at native resolution before scaling.
+    // The WebP contains colored RGB data in fully transparent pixels plus one
+    // detached opaque purple speck. Scaling/filtering the dirty source lets
+    // those hidden colors bleed into the visible edge. Zero them first, then
+    // resize normally so the real car silhouette and anti-aliasing stay intact.
+    const source = document.createElement('canvas');
+    source.width = image.naturalWidth;
+    source.height = image.naturalHeight;
+    const sourceCtx = source.getContext('2d');
+    sourceCtx.drawImage(image, 0, 0);
 
-    spriteCtx.save();
-    spriteCtx.beginPath();
-    ferrariSilhouette.forEach(([x, y], index) => {
-      const px = x * sprite.width;
-      const py = y * sprite.height;
-      if (index === 0) spriteCtx.moveTo(px, py);
-      else spriteCtx.lineTo(px, py);
-    });
-    spriteCtx.closePath();
-    spriteCtx.clip();
-    spriteCtx.filter = filter;
-    spriteCtx.drawImage(image, 0, 0, sprite.width, sprite.height);
-    spriteCtx.filter = 'none';
-    spriteCtx.restore();
-
-    const imageData = spriteCtx.getImageData(
+    const imageData = sourceCtx.getImageData(
       0,
       0,
-      sprite.width,
-      sprite.height
+      source.width,
+      source.height
     );
     const pixels = imageData.data;
+    const speckCutoffX = source.width * 0.10;
 
-    for (let offset = 3; offset < pixels.length; offset += 4) {
-      const alpha = pixels[offset];
-      if (alpha < 24) {
+    for (let offset = 0; offset < pixels.length; offset += 4) {
+      const pixelIndex = offset / 4;
+      const x = pixelIndex % source.width;
+      const alpha = pixels[offset + 3];
+
+      if (alpha <= 8 || x < speckCutoffX) {
         pixels[offset] = 0;
-      } else if (alpha < 128) {
-        const normalized = (alpha - 24) / 104;
-        pixels[offset] = Math.round(alpha * normalized * normalized);
+        pixels[offset + 1] = 0;
+        pixels[offset + 2] = 0;
+        pixels[offset + 3] = 0;
       }
     }
 
-    spriteCtx.putImageData(imageData, 0, 0);
-    targetCtx.drawImage(sprite, -width / 2, -height / 2);
+    sourceCtx.putImageData(imageData, 0, 0);
+
+    targetCtx.imageSmoothingEnabled = true;
+    targetCtx.imageSmoothingQuality = 'high';
+    targetCtx.filter = filter;
+    targetCtx.drawImage(
+      source,
+      -width / 2,
+      -height / 2,
+      width,
+      height
+    );
+    targetCtx.filter = 'none';
   }
 
   function buildCarCache(
@@ -182,10 +157,10 @@
   whiteFront.addEventListener('load', rebuildWhiteCache, { once: true });
   nightFront.addEventListener('load', rebuildNightCache, { once: true });
 
-  // Keep the approved car artwork; the Ferrari-only silhouette clip removes
-  // the baked outer reflection at render time.
+  // Keep the approved car artwork; Ferrari cleanup happens at native resolution
+  // before the cached resize so the real silhouette is preserved.
   whiteFront.src = 'assets/countach-front-white.svg?v=20260902-displaycache';
-  nightFront.src = 'assets/ferrari-front-clean-edgefix.webp?v=20260903-ferrarimask';
+  nightFront.src = 'assets/ferrari-front-clean-edgefix.webp?v=20260903-ferrarinative';
 
   if (whiteFront.complete && whiteFront.naturalWidth) rebuildWhiteCache();
   if (nightFront.complete && nightFront.naturalWidth) rebuildNightCache();
