@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260903-FERRARIMASK';
+  const CURRENT_BUILD = 'Build 20260903-FERRARINATIVE';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -86,7 +86,7 @@ window.addEventListener('load', () => {
     businessesScript.async = false;
     businessesScript.addEventListener('load', () => {
       const carsScript = document.createElement('script');
-      carsScript.src = 'cars.js?v=20260903-ferrarimask';
+      carsScript.src = 'cars.js?v=20260903-ferrarinative';
       carsScript.async = false;
       carsScript.addEventListener('load', () => {
         const displaysScript = document.createElement('script');
