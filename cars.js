@@ -84,20 +84,24 @@
     cacheCtx.translate(cache.width / 2, cache.height / 2);
     cacheCtx.rotate(rotation);
 
-    // Bake the approved contact shadow and tiny neon grounding into the static
-    // cache once instead of rebuilding ellipses and compositing every frame.
+    // Bake the approved contact shadow into the static cache once instead of
+    // rebuilding it every frame.
     cacheCtx.fillStyle = 'rgba(0, 0, 0, 0.42)';
     cacheCtx.beginPath();
     cacheCtx.ellipse(0, height * 0.25, width * 0.44, height * 0.20, 0, 0, Math.PI * 2);
     cacheCtx.fill();
 
-    cacheCtx.globalCompositeOperation = 'screen';
-    cacheCtx.fillStyle = cyanWeight
-      ? 'rgba(32, 225, 255, 0.075)'
-      : 'rgba(255, 39, 154, 0.065)';
-    cacheCtx.beginPath();
-    cacheCtx.ellipse(0, height * 0.22, width * 0.39, height * 0.14, 0, 0, Math.PI * 2);
-    cacheCtx.fill();
+    // Keep the approved tiny neon grounding on cars that use it. The Ferrari
+    // passes null here so no cyan/magenta ellipse can protrude beyond its edge.
+    if (cyanWeight !== null) {
+      cacheCtx.globalCompositeOperation = 'screen';
+      cacheCtx.fillStyle = cyanWeight
+        ? 'rgba(32, 225, 255, 0.075)'
+        : 'rgba(255, 39, 154, 0.065)';
+      cacheCtx.beginPath();
+      cacheCtx.ellipse(0, height * 0.22, width * 0.39, height * 0.14, 0, 0, Math.PI * 2);
+      cacheCtx.fill();
+    }
 
     cacheCtx.globalCompositeOperation = 'source-over';
     cacheCtx.globalAlpha = 0.97;
@@ -132,7 +136,7 @@
       58,
       0.015,
       'saturate(0.92) contrast(1.04) brightness(1.10)',
-      true,
+      null,
       true
     );
   }
@@ -141,9 +145,9 @@
   nightFront.addEventListener('load', rebuildNightCache, { once: true });
 
   // Restore the known-good white-car artwork and keep the cleaned Ferrari.
-  // The source assets are unchanged; this pass only tightens Ferrari compositing.
+  // The source assets are unchanged; this pass only removes Ferrari grounding glow.
   whiteFront.src = 'assets/countach-front-white.svg?v=20260902-displaycache';
-  nightFront.src = 'assets/ferrari-front-clean-edgefix.webp?v=20260902-displaycache';
+  nightFront.src = 'assets/ferrari-front-clean-edgefix.webp?v=20260903-ferrariedge2';
 
   if (whiteFront.complete && whiteFront.naturalWidth) rebuildWhiteCache();
   if (nightFront.complete && nightFront.naturalWidth) rebuildNightCache();
