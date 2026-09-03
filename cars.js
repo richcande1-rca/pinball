@@ -11,6 +11,31 @@
   whiteFront.decoding = 'async';
   nightFront.decoding = 'async';
 
+  const ferrariSilhouette = [
+    [0.1423, 0.2724],
+    [0.1394, 0.3086],
+    [0.2048, 0.4086],
+    [0.2067, 0.8],
+    [0.2183, 0.8241],
+    [0.2442, 0.8121],
+    [0.3231, 0.9155],
+    [0.4346, 0.9086],
+    [0.4885, 0.9362],
+    [0.7048, 0.9155],
+    [0.8375, 0.8638],
+    [0.8538, 0.7724],
+    [0.9298, 0.7552],
+    [0.9423, 0.7155],
+    [0.926, 0.6086],
+    [0.851, 0.4793],
+    [0.7346, 0.3552],
+    [0.6279, 0.1483],
+    [0.549, 0.0672],
+    [0.3673, 0.0517],
+    [0.326, 0.0845],
+    [0.2212, 0.0966]
+  ];
+
   function drawCarArtwork(
     targetCtx,
     image,
@@ -28,18 +53,31 @@
       return;
     }
 
-    // Ferrari only: suppress the very faint transparent fringe that reads as a
-    // large purple/black cloud at game scale. Solid body pixels and ordinary
-    // anti-aliased edges remain intact; the source asset itself is unchanged.
+    // Ferrari only: the source image contains a visible magenta/blue outer
+    // reflection that can remain even when its alpha is fairly strong. Clip the
+    // source to the actual car silhouette first, then soften only the remaining
+    // translucent fringe. This does not change the approved size or placement.
     const sprite = document.createElement('canvas');
     sprite.width = Math.ceil(width);
     sprite.height = Math.ceil(height);
     const spriteCtx = sprite.getContext('2d');
     spriteCtx.imageSmoothingEnabled = true;
     spriteCtx.imageSmoothingQuality = 'high';
+
+    spriteCtx.save();
+    spriteCtx.beginPath();
+    ferrariSilhouette.forEach(([x, y], index) => {
+      const px = x * sprite.width;
+      const py = y * sprite.height;
+      if (index === 0) spriteCtx.moveTo(px, py);
+      else spriteCtx.lineTo(px, py);
+    });
+    spriteCtx.closePath();
+    spriteCtx.clip();
     spriteCtx.filter = filter;
     spriteCtx.drawImage(image, 0, 0, sprite.width, sprite.height);
     spriteCtx.filter = 'none';
+    spriteCtx.restore();
 
     const imageData = spriteCtx.getImageData(
       0,
@@ -144,10 +182,10 @@
   whiteFront.addEventListener('load', rebuildWhiteCache, { once: true });
   nightFront.addEventListener('load', rebuildNightCache, { once: true });
 
-  // Restore the known-good white-car artwork and keep the cleaned Ferrari.
-  // The source assets are unchanged; this pass only removes Ferrari grounding glow.
+  // Keep the approved car artwork; the Ferrari-only silhouette clip removes
+  // the baked outer reflection at render time.
   whiteFront.src = 'assets/countach-front-white.svg?v=20260902-displaycache';
-  nightFront.src = 'assets/ferrari-front-clean-edgefix.webp?v=20260903-ferrariedge2';
+  nightFront.src = 'assets/ferrari-front-clean-edgefix.webp?v=20260903-ferrarimask';
 
   if (whiteFront.complete && whiteFront.naturalWidth) rebuildWhiteCache();
   if (nightFront.complete && nightFront.naturalWidth) rebuildNightCache();
