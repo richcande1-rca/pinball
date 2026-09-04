@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260904-FERRARITRANSPARENT';
+  const CURRENT_BUILD = 'Build 20260904-CENTERPOST';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -89,20 +89,26 @@ window.addEventListener('load', () => {
       carsScript.src = 'cars.js?v=20260904-ferraritransparent';
       carsScript.async = false;
       carsScript.addEventListener('load', () => {
-        const displaysScript = document.createElement('script');
-        displaysScript.src = 'displays.js?v=20260902-paneldisplays';
-        displaysScript.async = false;
-        displaysScript.addEventListener('load', () => {
-          const reefFeedbackScript = document.createElement('script');
-          reefFeedbackScript.src = 'reef-feedback.js?v=20260902-displaycache';
-          reefFeedbackScript.async = false;
-          reefFeedbackScript.addEventListener('load', () => {
-            stampCurrentBuild();
-            window.setTimeout(stampCurrentBuild, 400);
+        const centerPostScript = document.createElement('script');
+        centerPostScript.src = 'center-post.js?v=20260904-centerpost';
+        centerPostScript.async = false;
+        centerPostScript.addEventListener('load', () => {
+          const displaysScript = document.createElement('script');
+          displaysScript.src = 'displays.js?v=20260902-paneldisplays';
+          displaysScript.async = false;
+          displaysScript.addEventListener('load', () => {
+            const reefFeedbackScript = document.createElement('script');
+            reefFeedbackScript.src = 'reef-feedback.js?v=20260902-displaycache';
+            reefFeedbackScript.async = false;
+            reefFeedbackScript.addEventListener('load', () => {
+              stampCurrentBuild();
+              window.setTimeout(stampCurrentBuild, 400);
+            }, { once: true });
+            document.body.appendChild(reefFeedbackScript);
           }, { once: true });
-          document.body.appendChild(reefFeedbackScript);
+          document.body.appendChild(displaysScript);
         }, { once: true });
-        document.body.appendChild(displaysScript);
+        document.body.appendChild(centerPostScript);
       }, { once: true });
       document.body.appendChild(carsScript);
     }, { once: true });
