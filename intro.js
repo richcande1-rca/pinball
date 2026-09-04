@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260904-SHOOTERRETURN';
+  const CURRENT_BUILD = 'Build 20260904-POCKETTARGETS';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -109,8 +109,14 @@ window.addEventListener('load', () => {
                 shooterReturnScript.src = 'shooter-return-fix.js?v=20260904-shooterreturn';
                 shooterReturnScript.async = false;
                 shooterReturnScript.addEventListener('load', () => {
-                  stampCurrentBuild();
-                  window.setTimeout(stampCurrentBuild, 400);
+                  const pocketTargetsScript = document.createElement('script');
+                  pocketTargetsScript.src = 'pocket-targets.js?v=20260904-pockettargets';
+                  pocketTargetsScript.async = false;
+                  pocketTargetsScript.addEventListener('load', () => {
+                    stampCurrentBuild();
+                    window.setTimeout(stampCurrentBuild, 400);
+                  }, { once: true });
+                  document.body.appendChild(pocketTargetsScript);
                 }, { once: true });
                 document.body.appendChild(shooterReturnScript);
               }, { once: true });
