@@ -33,9 +33,8 @@
     const contact = targetDistance(target);
     const contactDistance = ball.radius + target.radius;
 
-    if (!target.armed) {
-      if (contact.distance > contactDistance + 12) target.armed = true;
-      return false;
+    if (!target.armed && contact.distance > contactDistance + 12) {
+      target.armed = true;
     }
 
     if (contact.distance >= contactDistance) return false;
@@ -53,7 +52,7 @@
       incomingNormalSpeed < 45 ? 0.38 : 0.82
     );
 
-    if (touching && incomingNormalSpeed >= 45) {
+    if (touching && target.armed && incomingNormalSpeed >= 45) {
       target.armed = false;
       target.flashStartedAt = performance.now();
       score += target.value;
