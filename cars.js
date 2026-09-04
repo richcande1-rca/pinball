@@ -28,11 +28,9 @@
       return;
     }
 
-    // Ferrari only: sanitize the source at native resolution before scaling.
-    // The WebP contains colored RGB data in fully transparent pixels plus one
-    // detached opaque purple speck. Scaling/filtering the dirty source lets
-    // those hidden colors bleed into the visible edge. Zero them first, then
-    // resize normally so the real car silhouette and anti-aliasing stay intact.
+    // Ferrari only: sanitize the transparent source at native resolution before
+    // scaling. This removes fully transparent RGB junk and the tiny detached
+    // left-side speck without altering the actual car silhouette.
     const source = document.createElement('canvas');
     source.width = image.naturalWidth;
     source.height = image.naturalHeight;
@@ -157,10 +155,10 @@
   whiteFront.addEventListener('load', rebuildWhiteCache, { once: true });
   nightFront.addEventListener('load', rebuildNightCache, { once: true });
 
-  // Keep the approved car artwork; Ferrari cleanup happens at native resolution
-  // before the cached resize so the real silhouette is preserved.
+  // Use the purpose-built transparent Ferrari instead of the later edgefix
+  // source that still contains the visible blue/purple outer reflection.
   whiteFront.src = 'assets/countach-front-white.svg?v=20260902-displaycache';
-  nightFront.src = 'assets/ferrari-front-clean-edgefix.webp?v=20260903-ferrarinative';
+  nightFront.src = 'assets/ferrari-front-clean-transparent.webp?v=20260904-ferraritransparent';
 
   if (whiteFront.complete && whiteFront.naturalWidth) rebuildWhiteCache();
   if (nightFront.complete && nightFront.naturalWidth) rebuildNightCache();
