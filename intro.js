@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260904-CENTERPOST';
+  const CURRENT_BUILD = 'Build 20260904-EXTRABALLFX';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -101,8 +101,14 @@ window.addEventListener('load', () => {
             reefFeedbackScript.src = 'reef-feedback.js?v=20260902-displaycache';
             reefFeedbackScript.async = false;
             reefFeedbackScript.addEventListener('load', () => {
-              stampCurrentBuild();
-              window.setTimeout(stampCurrentBuild, 400);
+              const extraBallFeedbackScript = document.createElement('script');
+              extraBallFeedbackScript.src = 'extra-ball-feedback.js?v=20260904-extraballfx';
+              extraBallFeedbackScript.async = false;
+              extraBallFeedbackScript.addEventListener('load', () => {
+                stampCurrentBuild();
+                window.setTimeout(stampCurrentBuild, 400);
+              }, { once: true });
+              document.body.appendChild(extraBallFeedbackScript);
             }, { once: true });
             document.body.appendChild(reefFeedbackScript);
           }, { once: true });
