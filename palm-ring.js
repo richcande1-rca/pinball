@@ -13,6 +13,14 @@
   const SOCKET_RADIUS = 5.7;
   const LAMP_RADIUS = 3.25;
 
+  const lampPositions = Array.from({ length: LAMP_COUNT }, (_, index) => {
+    const angle = -Math.PI / 2 + index * Math.PI * 2 / LAMP_COUNT;
+    return {
+      x: CENTER_X + Math.cos(angle) * RADIUS_X,
+      y: CENTER_Y + Math.sin(angle) * RADIUS_Y
+    };
+  });
+
   const palette = {
     cyan: MIAMI_COLORS.cyan,
     magenta: MIAMI_COLORS.magenta,
@@ -262,43 +270,51 @@
   function drawPalmRing() {
     const now = performance.now();
     const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const eventActive = now < override.until;
+
+    // Socket housings never animate, so draw all twelve in one fill/stroke pass.
+    ctx.save();
+    ctx.fillStyle = '#02050b';
+    ctx.strokeStyle = '#26364b';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    for (const point of lampPositions) {
+      ctx.moveTo(point.x + SOCKET_RADIUS, point.y);
+      ctx.arc(point.x, point.y, SOCKET_RADIUS, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
 
     for (let index = 0; index < LAMP_COUNT; index += 1) {
-      const angle = -Math.PI / 2 + index * Math.PI * 2 / LAMP_COUNT;
-      const x = CENTER_X + Math.cos(angle) * RADIUS_X;
-      const y = CENTER_Y + Math.sin(angle) * RADIUS_Y;
+      const point = lampPositions[index];
       const state = lampAppearance(index, now);
+      const strongEventGlow = !mobile && eventActive && state.intensity > 0.82;
 
       ctx.save();
-      ctx.translate(x, y);
-
-      // Black socket / chrome-like rim makes each light read as a recessed
-      // physical insert rather than a floating particle.
-      ctx.fillStyle = '#02050b';
-      ctx.strokeStyle = '#26364b';
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.arc(0, 0, SOCKET_RADIUS, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
       ctx.globalAlpha = 0.28 + state.intensity * 0.72;
       ctx.fillStyle = state.color;
       ctx.strokeStyle = state.intensity > 0.82 ? palette.white : state.color;
       ctx.lineWidth = 1.1;
-      ctx.shadowColor = state.color;
-      ctx.shadowBlur = mobile ? 0 : 2 + state.intensity * 8;
+
+      // Continuous shadow blur was the expensive part. Ordinary chase / pulse
+      // patterns use crisp bright inserts; only short event peaks get a glow.
+      if (strongEventGlow) {
+        ctx.shadowColor = state.color;
+        ctx.shadowBlur = 7;
+      }
+
       ctx.beginPath();
-      ctx.arc(0, 0, LAMP_RADIUS, 0, Math.PI * 2);
+      ctx.arc(point.x, point.y, LAMP_RADIUS, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
       if (state.intensity > 0.72) {
+        ctx.shadowBlur = 0;
         ctx.globalAlpha = (state.intensity - 0.72) / 0.28;
         ctx.fillStyle = palette.white;
-        ctx.shadowBlur = mobile ? 0 : 5;
         ctx.beginPath();
-        ctx.arc(-0.8, -0.8, 1.15, 0, Math.PI * 2);
+        ctx.arc(point.x - 0.8, point.y - 0.8, 1.15, 0, Math.PI * 2);
         ctx.fill();
       }
 
