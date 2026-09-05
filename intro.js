@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260905-PALMRING';
+  const CURRENT_BUILD = 'Build 20260905-PALMRINGOPT';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -114,7 +114,7 @@ window.addEventListener('load', () => {
                   pocketTargetsScript.async = false;
                   pocketTargetsScript.addEventListener('load', () => {
                     const palmRingScript = document.createElement('script');
-                    palmRingScript.src = 'palm-ring.js?v=20260905-palmring';
+                    palmRingScript.src = 'palm-ring.js?v=20260905-palmringopt';
                     palmRingScript.async = false;
                     palmRingScript.addEventListener('load', () => {
                       stampCurrentBuild();
