@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260905-REPEATEXTRABALL';
+  const CURRENT_BUILD = 'Build 20260905-SURGERY-A';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -102,7 +102,7 @@ window.addEventListener('load', () => {
             reefFeedbackScript.async = false;
             reefFeedbackScript.addEventListener('load', () => {
               const extraBallFeedbackScript = document.createElement('script');
-              extraBallFeedbackScript.src = 'extra-ball-feedback.js?v=20260904-extraballfx';
+              extraBallFeedbackScript.src = 'extra-ball-feedback.js?v=20260905-surgery-a';
               extraBallFeedbackScript.async = false;
               extraBallFeedbackScript.addEventListener('load', () => {
                 const shooterReturnScript = document.createElement('script');
