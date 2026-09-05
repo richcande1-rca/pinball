@@ -213,18 +213,3 @@
   // a game is already in progress.
   syncStatusDisplay();
 })();
-
-// Load the isolated shooter-return fix after all existing late features. This
-// keeps the recovery correction independent from the established table geometry.
-(() => {
-  const shooterReturnFixScript = document.createElement('script');
-  shooterReturnFixScript.src = 'shooter-return-fix.js?v=20260904-shooterreturn';
-  shooterReturnFixScript.async = false;
-  shooterReturnFixScript.addEventListener('load', () => {
-    const buildNumberDisplay = document.querySelector('.build-number');
-    if (buildNumberDisplay) {
-      buildNumberDisplay.textContent = 'Build 20260904-SHOOTERRETURN';
-    }
-  }, { once: true });
-  document.body.appendChild(shooterReturnFixScript);
-})();
