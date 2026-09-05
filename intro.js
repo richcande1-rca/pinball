@@ -63,98 +63,53 @@
   window.addEventListener('keyup', blockGameKeys);
 })();
 
-// Late-load small feature hooks after all core/table scripts have established
-// their globals. Keeping this separate avoids touching the stable physics core.
-window.addEventListener('load', () => {
+// Late feature hooks are intentionally ordered. Each script may wrap globals
+// established by the previous one, so load them one-at-a-time rather than as a
+// parallel bundle. This replaces the old callback staircase with the same
+// execution semantics in a form that is easy to audit before multiball work.
+window.addEventListener('load', async () => {
   const CURRENT_BUILD = 'Build 20260905-SURGERY-A';
+  const FEATURE_SCRIPTS = [
+    'circle3x.js?v=20260830-handoff',
+    'businesses.js?v=20260830-businesses',
+    'cars.js?v=20260904-ferraritransparent',
+    'center-post.js?v=20260904-centerpost',
+    'displays.js?v=20260902-paneldisplays',
+    'reef-feedback.js?v=20260902-displaycache',
+    'extra-ball-feedback.js?v=20260905-surgery-a',
+    'shooter-return-fix.js?v=20260904-shooterreturn',
+    'pocket-targets.js?v=20260905-pockettargets',
+    'sunset-field.js?v=20260905-ribopt',
+    'palm-ring.js?v=20260905-palmringopt',
+    'deflector-removal.js?v=20260905-nodeflectors',
+    'captive-repeat.js?v=20260905-repeat-extraball'
+  ];
+
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
   };
 
-  // Stamp immediately, then again after late features load. The loader is the
-  // sole owner of the visible build label so older feature shims cannot roll it
-  // backward after a newer build arrives.
+  const loadClassicScript = src => new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = false;
+    script.addEventListener('load', resolve, { once: true });
+    script.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
+    document.body.appendChild(script);
+  });
+
   stampCurrentBuild();
 
-  const circleTripleScript = document.createElement('script');
-  circleTripleScript.src = 'circle3x.js?v=20260830-handoff';
-  circleTripleScript.async = false;
-  circleTripleScript.addEventListener('load', () => {
-    const businessesScript = document.createElement('script');
-    businessesScript.src = 'businesses.js?v=20260830-businesses';
-    businessesScript.async = false;
-    businessesScript.addEventListener('load', () => {
-      const carsScript = document.createElement('script');
-      carsScript.src = 'cars.js?v=20260904-ferraritransparent';
-      carsScript.async = false;
-      carsScript.addEventListener('load', () => {
-        const centerPostScript = document.createElement('script');
-        centerPostScript.src = 'center-post.js?v=20260904-centerpost';
-        centerPostScript.async = false;
-        centerPostScript.addEventListener('load', () => {
-          const displaysScript = document.createElement('script');
-          displaysScript.src = 'displays.js?v=20260902-paneldisplays';
-          displaysScript.async = false;
-          displaysScript.addEventListener('load', () => {
-            const reefFeedbackScript = document.createElement('script');
-            reefFeedbackScript.src = 'reef-feedback.js?v=20260902-displaycache';
-            reefFeedbackScript.async = false;
-            reefFeedbackScript.addEventListener('load', () => {
-              const extraBallFeedbackScript = document.createElement('script');
-              extraBallFeedbackScript.src = 'extra-ball-feedback.js?v=20260905-surgery-a';
-              extraBallFeedbackScript.async = false;
-              extraBallFeedbackScript.addEventListener('load', () => {
-                const shooterReturnScript = document.createElement('script');
-                shooterReturnScript.src = 'shooter-return-fix.js?v=20260904-shooterreturn';
-                shooterReturnScript.async = false;
-                shooterReturnScript.addEventListener('load', () => {
-                  const pocketTargetsScript = document.createElement('script');
-                  pocketTargetsScript.src = 'pocket-targets.js?v=20260905-pockettargets';
-                  pocketTargetsScript.async = false;
-                  pocketTargetsScript.addEventListener('load', () => {
-                    const sunsetFieldScript = document.createElement('script');
-                    sunsetFieldScript.src = 'sunset-field.js?v=20260905-ribopt';
-                    sunsetFieldScript.async = false;
-                    sunsetFieldScript.addEventListener('load', () => {
-                      const palmRingScript = document.createElement('script');
-                      palmRingScript.src = 'palm-ring.js?v=20260905-palmringopt';
-                      palmRingScript.async = false;
-                      palmRingScript.addEventListener('load', () => {
-                        const deflectorRemovalScript = document.createElement('script');
-                        deflectorRemovalScript.src = 'deflector-removal.js?v=20260905-nodeflectors';
-                        deflectorRemovalScript.async = false;
-                        deflectorRemovalScript.addEventListener('load', () => {
-                          const captiveRepeatScript = document.createElement('script');
-                          captiveRepeatScript.src = 'captive-repeat.js?v=20260905-repeat-extraball';
-                          captiveRepeatScript.async = false;
-                          captiveRepeatScript.addEventListener('load', () => {
-                            stampCurrentBuild();
-                            window.setTimeout(stampCurrentBuild, 400);
-                          }, { once: true });
-                          document.body.appendChild(captiveRepeatScript);
-                        }, { once: true });
-                        document.body.appendChild(deflectorRemovalScript);
-                      }, { once: true });
-                      document.body.appendChild(palmRingScript);
-                    }, { once: true });
-                    document.body.appendChild(sunsetFieldScript);
-                  }, { once: true });
-                  document.body.appendChild(pocketTargetsScript);
-                }, { once: true });
-                document.body.appendChild(shooterReturnScript);
-              }, { once: true });
-              document.body.appendChild(extraBallFeedbackScript);
-            }, { once: true });
-            document.body.appendChild(reefFeedbackScript);
-          }, { once: true });
-          document.body.appendChild(displaysScript);
-        }, { once: true });
-        document.body.appendChild(centerPostScript);
-      }, { once: true });
-      document.body.appendChild(carsScript);
-    }, { once: true });
-    document.body.appendChild(businessesScript);
-  }, { once: true });
-  document.body.appendChild(circleTripleScript);
+  try {
+    for (const src of FEATURE_SCRIPTS) {
+      await loadClassicScript(src);
+    }
+  } catch (error) {
+    console.error('Miami Nights feature load failed:', error);
+    return;
+  }
+
+  stampCurrentBuild();
+  window.setTimeout(stampCurrentBuild, 400);
 }, { once: true });
