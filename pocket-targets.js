@@ -64,7 +64,7 @@
           strength: clamp(incomingNormalSpeed / 700, 0.16, 1),
           x: contact.closest.x,
           y: contact.closest.y,
-          index: 20 + index
+          index: 30 + index
         }
       }));
 
