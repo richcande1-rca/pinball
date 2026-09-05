@@ -1,13 +1,25 @@
 // Miami Nights: integrate the central palm/sunset art into the playfield.
-// Visual only: extend the purple horizon stripes across the table with a soft
-// fade, and feather away the old flag-shaped artwork edge. No physics changes.
+// Visual only: extend the purple horizon stripes across the full table with a
+// soft vertical + horizontal fade, and feather away the old flag-shaped edge.
+// No physics changes.
 
 (() => {
   if (window.miamiSunsetFieldInstalled) return;
   window.miamiSunsetFieldInstalled = true;
 
   const STRIPE_CENTER_Y = 350;
-  const stripeOffsets = [-60, -47, -34, -21, -8, 5, 18, 31, 44, 57];
+  const STRIPE_SPACING = 13;
+  const stripeOffsets = [];
+
+  // Preserve the exact spacing/phase of the original center ribs, then carry
+  // that same pattern through the entire playable table.
+  for (let offset = 5; STRIPE_CENTER_Y + offset <= TABLE.bottom; offset += STRIPE_SPACING) {
+    stripeOffsets.push(offset);
+  }
+  for (let offset = 5 - STRIPE_SPACING; STRIPE_CENTER_Y + offset >= TABLE.top; offset -= STRIPE_SPACING) {
+    stripeOffsets.push(offset);
+  }
+  stripeOffsets.sort((a, b) => a - b);
 
   // The stripe field is completely static. Paint it once, then use one cheap
   // drawImage call per frame instead of rebuilding gradients every render.
@@ -19,12 +31,21 @@
   function buildStripeLayer() {
     stripeCtx.clearRect(0, 0, stripeLayer.width, stripeLayer.height);
 
-    for (let index = 0; index < stripeOffsets.length; index += 1) {
-      const offset = stripeOffsets[index];
+    const verticalFadeDistance = Math.max(
+      STRIPE_CENTER_Y - TABLE.top,
+      TABLE.bottom - STRIPE_CENTER_Y
+    );
+
+    for (const offset of stripeOffsets) {
       const y = STRIPE_CENTER_Y + offset;
-      const centerStrength = 1 - Math.min(1, Math.abs(offset) / 72);
-      const bandAlpha = 0.34 + centerStrength * 0.24;
-      const bandHeight = index % 2 === 0 ? 4 : 3;
+      const normalizedDistance = Math.min(
+        1,
+        Math.abs(offset) / Math.max(1, verticalFadeDistance)
+      );
+      const centerStrength = Math.pow(1 - normalizedDistance, 1.35);
+      const bandAlpha = 0.035 + centerStrength * 0.545;
+      const phaseIndex = Math.round((offset + 60) / STRIPE_SPACING);
+      const bandHeight = Math.abs(phaseIndex) % 2 === 0 ? 4 : 3;
 
       const fade = stripeCtx.createLinearGradient(TABLE.left, 0, TABLE.right, 0);
       fade.addColorStop(0, 'rgba(126, 82, 207, 0)');
@@ -38,7 +59,12 @@
       fade.addColorStop(1, 'rgba(126, 82, 207, 0)');
 
       stripeCtx.fillStyle = fade;
-      stripeCtx.fillRect(TABLE.left, y - bandHeight / 2, TABLE.right - TABLE.left, bandHeight);
+      stripeCtx.fillRect(
+        TABLE.left,
+        y - bandHeight / 2,
+        TABLE.right - TABLE.left,
+        bandHeight
+      );
     }
   }
 
