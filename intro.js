@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260905-SUNSETFIELD';
+  const CURRENT_BUILD = 'Build 20260905-SUNSETRIBS';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -114,7 +114,7 @@ window.addEventListener('load', () => {
                   pocketTargetsScript.async = false;
                   pocketTargetsScript.addEventListener('load', () => {
                     const sunsetFieldScript = document.createElement('script');
-                    sunsetFieldScript.src = 'sunset-field.js?v=20260905-sunsetfield';
+                    sunsetFieldScript.src = 'sunset-field.js?v=20260905-sunsetribs';
                     sunsetFieldScript.async = false;
                     sunsetFieldScript.addEventListener('load', () => {
                       const palmRingScript = document.createElement('script');
