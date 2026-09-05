@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260905-PALMRINGOPT';
+  const CURRENT_BUILD = 'Build 20260905-SUNSETFIELD';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -113,14 +113,20 @@ window.addEventListener('load', () => {
                   pocketTargetsScript.src = 'pocket-targets.js?v=20260905-pockettargets';
                   pocketTargetsScript.async = false;
                   pocketTargetsScript.addEventListener('load', () => {
-                    const palmRingScript = document.createElement('script');
-                    palmRingScript.src = 'palm-ring.js?v=20260905-palmringopt';
-                    palmRingScript.async = false;
-                    palmRingScript.addEventListener('load', () => {
-                      stampCurrentBuild();
-                      window.setTimeout(stampCurrentBuild, 400);
+                    const sunsetFieldScript = document.createElement('script');
+                    sunsetFieldScript.src = 'sunset-field.js?v=20260905-sunsetfield';
+                    sunsetFieldScript.async = false;
+                    sunsetFieldScript.addEventListener('load', () => {
+                      const palmRingScript = document.createElement('script');
+                      palmRingScript.src = 'palm-ring.js?v=20260905-palmringopt';
+                      palmRingScript.async = false;
+                      palmRingScript.addEventListener('load', () => {
+                        stampCurrentBuild();
+                        window.setTimeout(stampCurrentBuild, 400);
+                      }, { once: true });
+                      document.body.appendChild(palmRingScript);
                     }, { once: true });
-                    document.body.appendChild(palmRingScript);
+                    document.body.appendChild(sunsetFieldScript);
                   }, { once: true });
                   document.body.appendChild(pocketTargetsScript);
                 }, { once: true });
