@@ -68,7 +68,7 @@
 // parallel bundle. This replaces the old callback staircase with the same
 // execution semantics in a form that is easy to audit before multiball work.
 window.addEventListener('load', async () => {
-  const CURRENT_BUILD = 'Build 20260905-SURGERY-A';
+  const CURRENT_BUILD = 'Build 20260905-SURGERY-B';
   const FEATURE_SCRIPTS = [
     'circle3x.js?v=20260830-handoff',
     'businesses.js?v=20260830-businesses',
@@ -78,7 +78,7 @@ window.addEventListener('load', async () => {
     'reef-feedback.js?v=20260902-displaycache',
     'extra-ball-feedback.js?v=20260905-surgery-a',
     'shooter-return-fix.js?v=20260904-shooterreturn',
-    'pocket-targets.js?v=20260905-pockettargets',
+    'pocket-targets.js?v=20260905-surgery-b',
     'sunset-field.js?v=20260905-ribopt',
     'palm-ring.js?v=20260905-palmringopt',
     'deflector-removal.js?v=20260905-nodeflectors',
