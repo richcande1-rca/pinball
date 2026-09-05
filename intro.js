@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260905-SUNSETRIBS';
+  const CURRENT_BUILD = 'Build 20260905-NODEFLECTORS';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -121,8 +121,14 @@ window.addEventListener('load', () => {
                       palmRingScript.src = 'palm-ring.js?v=20260905-palmringopt';
                       palmRingScript.async = false;
                       palmRingScript.addEventListener('load', () => {
-                        stampCurrentBuild();
-                        window.setTimeout(stampCurrentBuild, 400);
+                        const deflectorRemovalScript = document.createElement('script');
+                        deflectorRemovalScript.src = 'deflector-removal.js?v=20260905-nodeflectors';
+                        deflectorRemovalScript.async = false;
+                        deflectorRemovalScript.addEventListener('load', () => {
+                          stampCurrentBuild();
+                          window.setTimeout(stampCurrentBuild, 400);
+                        }, { once: true });
+                        document.body.appendChild(deflectorRemovalScript);
                       }, { once: true });
                       document.body.appendChild(palmRingScript);
                     }, { once: true });
