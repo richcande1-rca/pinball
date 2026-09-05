@@ -1,7 +1,8 @@
 // Miami Nights: integrate the central palm/sunset art into the playfield.
-// Visual only: extend the purple horizon stripes across the full table with a
+// Visual only: extend the purple horizon ribs across the full table with a
 // soft vertical + horizontal fade, and feather away the old flag-shaped edge.
-// No physics changes.
+// The static ribs are precomposed into one opaque playfield backing plate so
+// the renderer avoids a full-canvas transparent blend every frame.
 
 (() => {
   if (window.miamiSunsetFieldInstalled) return;
@@ -10,6 +11,8 @@
   const STRIPE_CENTER_Y = 350;
   const STRIPE_SPACING = 13;
   const stripeOffsets = [];
+  const playfieldWidth = TABLE.right - TABLE.left;
+  const playfieldHeight = TABLE.bottom - TABLE.top;
 
   // Preserve the exact spacing/phase of the original center ribs, then carry
   // that same pattern through the entire playable table.
@@ -21,15 +24,17 @@
   }
   stripeOffsets.sort((a, b) => a - b);
 
-  // The stripe field is completely static. Paint it once, then use one cheap
-  // drawImage call per frame instead of rebuilding gradients every render.
-  const stripeLayer = document.createElement('canvas');
-  stripeLayer.width = canvas.width;
-  stripeLayer.height = canvas.height;
-  const stripeCtx = stripeLayer.getContext('2d');
+  // Opaque playfield backing: base color + all static ribs are composited once.
+  // Runtime cost is one opaque drawImage rather than a base fill followed by a
+  // large transparent overlay blend.
+  const playfieldLayer = document.createElement('canvas');
+  playfieldLayer.width = playfieldWidth;
+  playfieldLayer.height = playfieldHeight;
+  const playfieldCtx = playfieldLayer.getContext('2d', { alpha: false });
 
-  function buildStripeLayer() {
-    stripeCtx.clearRect(0, 0, stripeLayer.width, stripeLayer.height);
+  function buildPlayfieldLayer() {
+    playfieldCtx.fillStyle = MIAMI_COLORS.playfield;
+    playfieldCtx.fillRect(0, 0, playfieldWidth, playfieldHeight);
 
     const verticalFadeDistance = Math.max(
       STRIPE_CENTER_Y - TABLE.top,
@@ -37,7 +42,8 @@
     );
 
     for (const offset of stripeOffsets) {
-      const y = STRIPE_CENTER_Y + offset;
+      const tableY = STRIPE_CENTER_Y + offset;
+      const localY = tableY - TABLE.top;
       const normalizedDistance = Math.min(
         1,
         Math.abs(offset) / Math.max(1, verticalFadeDistance)
@@ -47,7 +53,7 @@
       const phaseIndex = Math.round((offset + 60) / STRIPE_SPACING);
       const bandHeight = Math.abs(phaseIndex) % 2 === 0 ? 4 : 3;
 
-      const fade = stripeCtx.createLinearGradient(TABLE.left, 0, TABLE.right, 0);
+      const fade = playfieldCtx.createLinearGradient(0, 0, playfieldWidth, 0);
       fade.addColorStop(0, 'rgba(126, 82, 207, 0)');
       fade.addColorStop(0.08, `rgba(126, 82, 207, ${bandAlpha * 0.18})`);
       fade.addColorStop(0.24, `rgba(126, 82, 207, ${bandAlpha * 0.55})`);
@@ -58,17 +64,12 @@
       fade.addColorStop(0.92, `rgba(126, 82, 207, ${bandAlpha * 0.18})`);
       fade.addColorStop(1, 'rgba(126, 82, 207, 0)');
 
-      stripeCtx.fillStyle = fade;
-      stripeCtx.fillRect(
-        TABLE.left,
-        y - bandHeight / 2,
-        TABLE.right - TABLE.left,
-        bandHeight
-      );
+      playfieldCtx.fillStyle = fade;
+      playfieldCtx.fillRect(0, localY - bandHeight / 2, playfieldWidth, bandHeight);
     }
   }
 
-  buildStripeLayer();
+  buildPlayfieldLayer();
 
   let motifLayer = null;
   let motifNaturalWidth = 0;
@@ -136,10 +137,35 @@
     buildMotifLayer();
   }
 
-  const baseDrawTableWithSunsetField = drawTable;
-  drawTable = function drawTableWithSunsetField() {
-    baseDrawTableWithSunsetField();
-    ctx.drawImage(stripeLayer, 0, 0);
+  // Same table paint order as the core renderer, except the playfield base and
+  // ribs arrive as one opaque image. Shooter lane and border remain unchanged.
+  drawTable = function drawTableWithPrecomposedSunsetField() {
+    ctx.drawImage(playfieldLayer, TABLE.left, TABLE.top);
+
+    ctx.fillStyle = MIAMI_COLORS.shooterLane;
+    ctx.fillRect(
+      shooterDivider.x1 + shooterDivider.radius,
+      shooterDivider.y1,
+      TABLE.right - shooterDivider.x1 - shooterDivider.radius,
+      TABLE.bottom - shooterDivider.y1
+    );
+
+    ctx.strokeStyle = MIAMI_COLORS.structure;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(TABLE.left, TABLE.bottom);
+    ctx.lineTo(TABLE.left, TABLE.top);
+    ctx.lineTo(TABLE.right, TABLE.top);
+    ctx.lineTo(TABLE.right, TABLE.bottom);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.strokeStyle = MIAMI_COLORS.cyan;
+    ctx.lineWidth = 1;
+    ctx.shadowColor = MIAMI_COLORS.cyan;
+    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 3;
+    ctx.stroke();
+    ctx.restore();
   };
 
   // Replace only the artwork paint pass. All text, glow, lamp-ring logic and
