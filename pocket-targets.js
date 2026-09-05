@@ -55,7 +55,12 @@
     if (touching && target.armed && incomingNormalSpeed >= 45) {
       target.armed = false;
       target.flashStartedAt = performance.now();
-      score += target.value;
+
+      const doubled =
+        typeof centerDoubleScoreRemaining !== 'undefined' &&
+        centerDoubleScoreRemaining > 0;
+      const awardedPoints = target.value * (doubled ? 2 : 1);
+      score += awardedPoints;
       syncStatusDisplay();
 
       window.dispatchEvent(new CustomEvent('miami-impact', {
@@ -69,7 +74,7 @@
       }));
 
       window.dispatchEvent(new CustomEvent('miami-pocket-target', {
-        detail: { index, points: target.value, score }
+        detail: { index, points: awardedPoints, score }
       }));
     }
 
