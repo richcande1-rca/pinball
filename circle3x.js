@@ -303,11 +303,6 @@
     }, true);
   }
 
-  const buildNumberDisplay = document.querySelector('.build-number');
-  if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-HANDOFF';
-  }
-
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
     instructions.append(document.createTextNode(
