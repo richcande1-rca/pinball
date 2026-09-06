@@ -19,11 +19,12 @@
     { x1: 44, y1: 348, x2: 44, y2: 364, radius: 3.25, value: 300, accent: 'magenta', group: 'captive-side', groupIndex: 0, drop: false, armed: true, flashStartedAt: -Infinity },
     { x1: 44, y1: 386, x2: 44, y2: 402, radius: 3.25, value: 300, accent: 'cyan', group: 'captive-side', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity },
 
-    // Keep the upper-right pair out of the strong-launch chute. These sit on the
-    // playfield side of the Ocean Drive bend, above the hotel district, where a
-    // loose ball can find them without intercepting either launch route.
-    { x1: 355, y1: 150, x2: 355, y2: 166, radius: 3.25, value: 300, accent: 'cyan', group: 'upper-right', groupIndex: 0, drop: false, armed: true, flashStartedAt: -Infinity },
-    { x1: 355, y1: 180, x2: 355, y2: 196, radius: 3.25, value: 300, accent: 'magenta', group: 'upper-right', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity }
+    // The upper-right pair now lives all the way in the playable corner pocket.
+    // A loose playfield ball can get up here and hit them. The strong-launch ball
+    // is on the elevated orbit route, so these lower-playfield standups are made
+    // non-colliding only while shooterRoute === 'orbit'.
+    { x1: 432, y1: 58, x2: 432, y2: 74, radius: 3.25, value: 300, accent: 'cyan', group: 'upper-right', groupIndex: 0, drop: false, armed: true, flashStartedAt: -Infinity },
+    { x1: 432, y1: 88, x2: 432, y2: 104, radius: 3.25, value: 300, accent: 'magenta', group: 'upper-right', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity }
   ];
 
   const centerDropTargets = secondaryTargets.filter(target => target.group === 'center');
@@ -70,6 +71,11 @@
 
   function collideWithSecondaryTarget(target, index) {
     if (target.drop && target.dropped) return false;
+
+    // These two targets are beneath the elevated strong-launch route. The orbit
+    // ball passes over them; once it is back in ordinary loose play they become
+    // normal physical standups again.
+    if (target.group === 'upper-right' && shooterRoute === 'orbit') return false;
 
     const contact = targetContact(target);
     const contactDistance = ball.radius + target.radius;
