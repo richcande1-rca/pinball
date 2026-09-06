@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. The loader is the sole owner of the visible build label.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260906-STRATEGY1E';
+  const CURRENT_BUILD = 'Build 20260906-STRATEGY1F';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -94,72 +94,78 @@ window.addEventListener('load', () => {
           displaysScript.src = 'displays.js?v=20260906-polish1';
           displaysScript.async = false;
           displaysScript.addEventListener('load', () => {
-            const reefFeedbackScript = document.createElement('script');
-            reefFeedbackScript.src = 'reef-feedback.js?v=20260902-displaycache';
-            reefFeedbackScript.async = false;
-            reefFeedbackScript.addEventListener('load', () => {
-              const extraBallFeedbackScript = document.createElement('script');
-              extraBallFeedbackScript.src = 'extra-ball-feedback.js?v=20260906-buildowner';
-              extraBallFeedbackScript.async = false;
-              extraBallFeedbackScript.addEventListener('load', () => {
-                const shooterReturnScript = document.createElement('script');
-                shooterReturnScript.src = 'shooter-return-fix.js?v=20260904-shooterreturn';
-                shooterReturnScript.async = false;
-                shooterReturnScript.addEventListener('load', () => {
-                  const pocketTargetsScript = document.createElement('script');
-                  pocketTargetsScript.src = 'pocket-targets.js?v=20260905-pockettargets';
-                  pocketTargetsScript.async = false;
-                  pocketTargetsScript.addEventListener('load', () => {
-                    const secondaryTargetsScript = document.createElement('script');
-                    secondaryTargetsScript.src = 'secondary-targets.js?v=20260906-perf1';
-                    secondaryTargetsScript.async = false;
-                    secondaryTargetsScript.addEventListener('load', () => {
-                      const sunsetFieldScript = document.createElement('script');
-                      sunsetFieldScript.src = 'sunset-field.js?v=20260905-ribopt';
-                      sunsetFieldScript.async = false;
-                      sunsetFieldScript.addEventListener('load', () => {
-                        const palmRingScript = document.createElement('script');
-                        palmRingScript.src = 'palm-ring.js?v=20260905-palmringopt';
-                        palmRingScript.async = false;
-                        palmRingScript.addEventListener('load', () => {
-                          const deflectorRemovalScript = document.createElement('script');
-                          deflectorRemovalScript.src = 'deflector-removal.js?v=20260905-nodeflectors';
-                          deflectorRemovalScript.async = false;
-                          deflectorRemovalScript.addEventListener('load', () => {
-                            // Strategy must install before captive-repeat so a
-                            // side-target double-progress hit is visible to the
-                            // existing repeatable-extra-ball listener in the
-                            // same captive-ball impact event.
-                            const strategyRulesScript = document.createElement('script');
-                            strategyRulesScript.src = 'strategy-rules.js?v=20260906-perf1';
-                            strategyRulesScript.async = false;
-                            strategyRulesScript.addEventListener('load', () => {
-                              const captiveRepeatScript = document.createElement('script');
-                              captiveRepeatScript.src = 'captive-repeat.js?v=20260905-repeat-extraball';
-                              captiveRepeatScript.async = false;
-                              captiveRepeatScript.addEventListener('load', () => {
-                                stampCurrentBuild();
-                                window.setTimeout(stampCurrentBuild, 400);
+            const recoveryOutletScript = document.createElement('script');
+            recoveryOutletScript.src = 'recovery-outlet-polish.js?v=20260906-outlet1';
+            recoveryOutletScript.async = false;
+            recoveryOutletScript.addEventListener('load', () => {
+              const reefFeedbackScript = document.createElement('script');
+              reefFeedbackScript.src = 'reef-feedback.js?v=20260902-displaycache';
+              reefFeedbackScript.async = false;
+              reefFeedbackScript.addEventListener('load', () => {
+                const extraBallFeedbackScript = document.createElement('script');
+                extraBallFeedbackScript.src = 'extra-ball-feedback.js?v=20260906-buildowner';
+                extraBallFeedbackScript.async = false;
+                extraBallFeedbackScript.addEventListener('load', () => {
+                  const shooterReturnScript = document.createElement('script');
+                  shooterReturnScript.src = 'shooter-return-fix.js?v=20260904-shooterreturn';
+                  shooterReturnScript.async = false;
+                  shooterReturnScript.addEventListener('load', () => {
+                    const pocketTargetsScript = document.createElement('script');
+                    pocketTargetsScript.src = 'pocket-targets.js?v=20260905-pockettargets';
+                    pocketTargetsScript.async = false;
+                    pocketTargetsScript.addEventListener('load', () => {
+                      const secondaryTargetsScript = document.createElement('script');
+                      secondaryTargetsScript.src = 'secondary-targets.js?v=20260906-perf1';
+                      secondaryTargetsScript.async = false;
+                      secondaryTargetsScript.addEventListener('load', () => {
+                        const sunsetFieldScript = document.createElement('script');
+                        sunsetFieldScript.src = 'sunset-field.js?v=20260905-ribopt';
+                        sunsetFieldScript.async = false;
+                        sunsetFieldScript.addEventListener('load', () => {
+                          const palmRingScript = document.createElement('script');
+                          palmRingScript.src = 'palm-ring.js?v=20260905-palmringopt';
+                          palmRingScript.async = false;
+                          palmRingScript.addEventListener('load', () => {
+                            const deflectorRemovalScript = document.createElement('script');
+                            deflectorRemovalScript.src = 'deflector-removal.js?v=20260905-nodeflectors';
+                            deflectorRemovalScript.async = false;
+                            deflectorRemovalScript.addEventListener('load', () => {
+                              // Strategy must install before captive-repeat so a
+                              // side-target double-progress hit is visible to the
+                              // existing repeatable-extra-ball listener in the
+                              // same captive-ball impact event.
+                              const strategyRulesScript = document.createElement('script');
+                              strategyRulesScript.src = 'strategy-rules.js?v=20260906-perf1';
+                              strategyRulesScript.async = false;
+                              strategyRulesScript.addEventListener('load', () => {
+                                const captiveRepeatScript = document.createElement('script');
+                                captiveRepeatScript.src = 'captive-repeat.js?v=20260905-repeat-extraball';
+                                captiveRepeatScript.async = false;
+                                captiveRepeatScript.addEventListener('load', () => {
+                                  stampCurrentBuild();
+                                  window.setTimeout(stampCurrentBuild, 400);
+                                }, { once: true });
+                                document.body.appendChild(captiveRepeatScript);
                               }, { once: true });
-                              document.body.appendChild(captiveRepeatScript);
+                              document.body.appendChild(strategyRulesScript);
                             }, { once: true });
-                            document.body.appendChild(strategyRulesScript);
+                            document.body.appendChild(deflectorRemovalScript);
                           }, { once: true });
-                          document.body.appendChild(deflectorRemovalScript);
+                          document.body.appendChild(palmRingScript);
                         }, { once: true });
-                        document.body.appendChild(palmRingScript);
+                        document.body.appendChild(sunsetFieldScript);
                       }, { once: true });
-                      document.body.appendChild(sunsetFieldScript);
+                      document.body.appendChild(secondaryTargetsScript);
                     }, { once: true });
-                    document.body.appendChild(secondaryTargetsScript);
+                    document.body.appendChild(pocketTargetsScript);
                   }, { once: true });
-                  document.body.appendChild(pocketTargetsScript);
+                  document.body.appendChild(shooterReturnScript);
                 }, { once: true });
-                document.body.appendChild(shooterReturnScript);
+                document.body.appendChild(extraBallFeedbackScript);
               }, { once: true });
-              document.body.appendChild(extraBallFeedbackScript);
+              document.body.appendChild(reefFeedbackScript);
             }, { once: true });
-            document.body.appendChild(reefFeedbackScript);
+            document.body.appendChild(recoveryOutletScript);
           }, { once: true });
           document.body.appendChild(displaysScript);
         }, { once: true });
