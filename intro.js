@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. The loader is the sole owner of the visible build label.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260906-STRATEGY1B';
+  const CURRENT_BUILD = 'Build 20260906-STRATEGY1C';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -111,7 +111,7 @@ window.addEventListener('load', () => {
                   pocketTargetsScript.async = false;
                   pocketTargetsScript.addEventListener('load', () => {
                     const secondaryTargetsScript = document.createElement('script');
-                    secondaryTargetsScript.src = 'secondary-targets.js?v=20260906-upper-clear-v5';
+                    secondaryTargetsScript.src = 'secondary-targets.js?v=20260906-upper-corner-v6';
                     secondaryTargetsScript.async = false;
                     secondaryTargetsScript.addEventListener('load', () => {
                       const sunsetFieldScript = document.createElement('script');
