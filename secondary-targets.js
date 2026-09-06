@@ -27,10 +27,36 @@
     { x1: 432, y1: 88, x2: 432, y2: 104, radius: 3.25, value: 300, accent: 'magenta', group: 'upper-right', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity }
   ];
 
+  // Precompute cheap AABBs once. Most physics ticks now reject a target with a
+  // few comparisons instead of running closest-point geometry and Math.hypot.
+  for (const target of secondaryTargets) {
+    const contactPad = ball.radius + target.radius + 2;
+    const rearmPad = contactPad + 12;
+    target.broadPhase = {
+      minX: Math.min(target.x1, target.x2) - contactPad,
+      maxX: Math.max(target.x1, target.x2) + contactPad,
+      minY: Math.min(target.y1, target.y2) - contactPad,
+      maxY: Math.max(target.y1, target.y2) + contactPad
+    };
+    target.rearmPhase = {
+      minX: Math.min(target.x1, target.x2) - rearmPad,
+      maxX: Math.max(target.x1, target.x2) + rearmPad,
+      minY: Math.min(target.y1, target.y2) - rearmPad,
+      maxY: Math.max(target.y1, target.y2) + rearmPad
+    };
+  }
+
   const centerDropTargets = secondaryTargets.filter(target => target.group === 'center');
   const CENTER_BANK_RESET_DELAY = 1.0;
   let centerBankResetRemaining = 0;
   let centerBankCompleteFlashStartedAt = -Infinity;
+
+  function pointInside(bounds) {
+    return ball.x >= bounds.minX &&
+      ball.x <= bounds.maxX &&
+      ball.y >= bounds.minY &&
+      ball.y <= bounds.maxY;
+  }
 
   function targetContact(target) {
     const closest = closestPointOnSegment(
@@ -77,13 +103,13 @@
     // normal physical standups again.
     if (target.group === 'upper-right' && shooterRoute === 'orbit') return false;
 
-    const contact = targetContact(target);
-    const contactDistance = ball.radius + target.radius;
-
-    if (!target.drop && !target.armed && contact.distance > contactDistance + 12) {
+    if (!target.drop && !target.armed && !pointInside(target.rearmPhase)) {
       target.armed = true;
     }
+    if (!pointInside(target.broadPhase)) return false;
 
+    const contact = targetContact(target);
+    const contactDistance = ball.radius + target.radius;
     if (contact.distance >= contactDistance) return false;
 
     let incomingNormalSpeed = 0;
