@@ -537,8 +537,3 @@ drawCaptiveBallAssembly = function drawCaptiveBallAssemblyWithRoofLight() {
   }
   ctx.restore();
 };
-
-const buildNumberDisplay = document.querySelector('.build-number');
-if (buildNumberDisplay) {
-  buildNumberDisplay.textContent = 'Build 20260830-CAPTIVEFLASH';
-}
