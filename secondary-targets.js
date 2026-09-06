@@ -19,10 +19,11 @@
     { x1: 44, y1: 348, x2: 44, y2: 364, radius: 3.25, value: 300, accent: 'magenta', group: 'captive-side', groupIndex: 0, drop: false, armed: true, flashStartedAt: -Infinity },
     { x1: 44, y1: 386, x2: 44, y2: 402, radius: 3.25, value: 300, accent: 'cyan', group: 'captive-side', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity },
 
-    // Two-target mini-bank in the far upper-right pocket below the entry ramp.
-    // Keep them shallow against the wall so launch/Ocean Drive paths stay open.
-    { x1: 410, y1: 208, x2: 424, y2: 208, radius: 3.25, value: 300, accent: 'cyan', group: 'upper-right', groupIndex: 0, drop: false, armed: true, flashStartedAt: -Infinity },
-    { x1: 414, y1: 238, x2: 428, y2: 238, radius: 3.25, value: 300, accent: 'magenta', group: 'upper-right', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity }
+    // Two wall standups in the true far upper-right dead strip. They are moved
+    // completely above the hotel district so they cannot interfere with hotel
+    // shots, and sit vertically against the outer wall beside Ocean Drive.
+    { x1: 444, y1: 58, x2: 444, y2: 74, radius: 3.25, value: 300, accent: 'cyan', group: 'upper-right', groupIndex: 0, drop: false, armed: true, flashStartedAt: -Infinity },
+    { x1: 444, y1: 94, x2: 444, y2: 110, radius: 3.25, value: 300, accent: 'magenta', group: 'upper-right', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity }
   ];
 
   const centerDropTargets = secondaryTargets.filter(target => target.group === 'center');
