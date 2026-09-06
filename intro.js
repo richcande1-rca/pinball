@@ -64,25 +64,22 @@
 })();
 
 // Late-load small feature hooks after all core/table scripts have established
-// their globals. Keeping this separate avoids touching the stable physics core.
+// their globals. The loader is the sole owner of the visible build label.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260905-STRATEGY1';
+  const CURRENT_BUILD = 'Build 20260906-STRATEGY1B';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
   };
 
-  // Stamp immediately, then again after late features load. The loader is the
-  // sole owner of the visible build label so older feature shims cannot roll it
-  // backward after a newer build arrives.
   stampCurrentBuild();
 
   const circleTripleScript = document.createElement('script');
-  circleTripleScript.src = 'circle3x.js?v=20260830-handoff';
+  circleTripleScript.src = 'circle3x.js?v=20260906-buildowner';
   circleTripleScript.async = false;
   circleTripleScript.addEventListener('load', () => {
     const businessesScript = document.createElement('script');
-    businessesScript.src = 'businesses.js?v=20260830-businesses';
+    businessesScript.src = 'businesses.js?v=20260906-buildowner';
     businessesScript.async = false;
     businessesScript.addEventListener('load', () => {
       const carsScript = document.createElement('script');
@@ -102,7 +99,7 @@ window.addEventListener('load', () => {
             reefFeedbackScript.async = false;
             reefFeedbackScript.addEventListener('load', () => {
               const extraBallFeedbackScript = document.createElement('script');
-              extraBallFeedbackScript.src = 'extra-ball-feedback.js?v=20260904-extraballfx';
+              extraBallFeedbackScript.src = 'extra-ball-feedback.js?v=20260906-buildowner';
               extraBallFeedbackScript.async = false;
               extraBallFeedbackScript.addEventListener('load', () => {
                 const shooterReturnScript = document.createElement('script');
@@ -114,7 +111,7 @@ window.addEventListener('load', () => {
                   pocketTargetsScript.async = false;
                   pocketTargetsScript.addEventListener('load', () => {
                     const secondaryTargetsScript = document.createElement('script');
-                    secondaryTargetsScript.src = 'secondary-targets.js?v=20260905-upper-target-move-v4';
+                    secondaryTargetsScript.src = 'secondary-targets.js?v=20260906-upper-clear-v5';
                     secondaryTargetsScript.async = false;
                     secondaryTargetsScript.addEventListener('load', () => {
                       const sunsetFieldScript = document.createElement('script');
