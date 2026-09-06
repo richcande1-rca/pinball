@@ -19,11 +19,11 @@
     { x1: 44, y1: 348, x2: 44, y2: 364, radius: 3.25, value: 300, accent: 'magenta', group: 'captive-side', groupIndex: 0, drop: false, armed: true, flashStartedAt: -Infinity },
     { x1: 44, y1: 386, x2: 44, y2: 402, radius: 3.25, value: 300, accent: 'cyan', group: 'captive-side', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity },
 
-    // Two wall standups in the true far upper-right dead strip. They are moved
-    // completely above the hotel district so they cannot interfere with hotel
-    // shots, and sit vertically against the outer wall beside Ocean Drive.
-    { x1: 444, y1: 58, x2: 444, y2: 74, radius: 3.25, value: 300, accent: 'cyan', group: 'upper-right', groupIndex: 0, drop: false, armed: true, flashStartedAt: -Infinity },
-    { x1: 444, y1: 94, x2: 444, y2: 110, radius: 3.25, value: 300, accent: 'magenta', group: 'upper-right', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity }
+    // Keep the upper-right pair out of the strong-launch chute. These sit on the
+    // playfield side of the Ocean Drive bend, above the hotel district, where a
+    // loose ball can find them without intercepting either launch route.
+    { x1: 355, y1: 150, x2: 355, y2: 166, radius: 3.25, value: 300, accent: 'cyan', group: 'upper-right', groupIndex: 0, drop: false, armed: true, flashStartedAt: -Infinity },
+    { x1: 355, y1: 180, x2: 355, y2: 196, radius: 3.25, value: 300, accent: 'magenta', group: 'upper-right', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity }
   ];
 
   const centerDropTargets = secondaryTargets.filter(target => target.group === 'center');
