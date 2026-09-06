@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260905-REPEATEXTRABALL';
+  const CURRENT_BUILD = 'Build 20260905-SECONDARYTARGETS';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -113,32 +113,38 @@ window.addEventListener('load', () => {
                   pocketTargetsScript.src = 'pocket-targets.js?v=20260905-pockettargets';
                   pocketTargetsScript.async = false;
                   pocketTargetsScript.addEventListener('load', () => {
-                    const sunsetFieldScript = document.createElement('script');
-                    sunsetFieldScript.src = 'sunset-field.js?v=20260905-ribopt';
-                    sunsetFieldScript.async = false;
-                    sunsetFieldScript.addEventListener('load', () => {
-                      const palmRingScript = document.createElement('script');
-                      palmRingScript.src = 'palm-ring.js?v=20260905-palmringopt';
-                      palmRingScript.async = false;
-                      palmRingScript.addEventListener('load', () => {
-                        const deflectorRemovalScript = document.createElement('script');
-                        deflectorRemovalScript.src = 'deflector-removal.js?v=20260905-nodeflectors';
-                        deflectorRemovalScript.async = false;
-                        deflectorRemovalScript.addEventListener('load', () => {
-                          const captiveRepeatScript = document.createElement('script');
-                          captiveRepeatScript.src = 'captive-repeat.js?v=20260905-repeat-extraball';
-                          captiveRepeatScript.async = false;
-                          captiveRepeatScript.addEventListener('load', () => {
-                            stampCurrentBuild();
-                            window.setTimeout(stampCurrentBuild, 400);
+                    const secondaryTargetsScript = document.createElement('script');
+                    secondaryTargetsScript.src = 'secondary-targets.js?v=20260905-secondary-targets-v2';
+                    secondaryTargetsScript.async = false;
+                    secondaryTargetsScript.addEventListener('load', () => {
+                      const sunsetFieldScript = document.createElement('script');
+                      sunsetFieldScript.src = 'sunset-field.js?v=20260905-ribopt';
+                      sunsetFieldScript.async = false;
+                      sunsetFieldScript.addEventListener('load', () => {
+                        const palmRingScript = document.createElement('script');
+                        palmRingScript.src = 'palm-ring.js?v=20260905-palmringopt';
+                        palmRingScript.async = false;
+                        palmRingScript.addEventListener('load', () => {
+                          const deflectorRemovalScript = document.createElement('script');
+                          deflectorRemovalScript.src = 'deflector-removal.js?v=20260905-nodeflectors';
+                          deflectorRemovalScript.async = false;
+                          deflectorRemovalScript.addEventListener('load', () => {
+                            const captiveRepeatScript = document.createElement('script');
+                            captiveRepeatScript.src = 'captive-repeat.js?v=20260905-repeat-extraball';
+                            captiveRepeatScript.async = false;
+                            captiveRepeatScript.addEventListener('load', () => {
+                              stampCurrentBuild();
+                              window.setTimeout(stampCurrentBuild, 400);
+                            }, { once: true });
+                            document.body.appendChild(captiveRepeatScript);
                           }, { once: true });
-                          document.body.appendChild(captiveRepeatScript);
+                          document.body.appendChild(deflectorRemovalScript);
                         }, { once: true });
-                        document.body.appendChild(deflectorRemovalScript);
+                        document.body.appendChild(palmRingScript);
                       }, { once: true });
-                      document.body.appendChild(palmRingScript);
+                      document.body.appendChild(sunsetFieldScript);
                     }, { once: true });
-                    document.body.appendChild(sunsetFieldScript);
+                    document.body.appendChild(secondaryTargetsScript);
                   }, { once: true });
                   document.body.appendChild(pocketTargetsScript);
                 }, { once: true });
