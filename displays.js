@@ -6,7 +6,10 @@
   if (window.miamiDisplaysInstalled) return;
   window.miamiDisplaysInstalled = true;
 
-  const DISPLAY_HOLD_MS = 1500;
+  const DISPLAY_HOLD_MS = 2800;
+  const MIN_EVENT_HOLD_MS = 2500;
+  const STARTUP_FLASH_MS = 720;
+  const STARTUP_FLASH_INTERVAL_MS = 90;
   const displayEvent = {
     left: 'READY',
     right: 'BALL 1',
@@ -18,13 +21,14 @@
   };
   let circleDisplayProgress = 0;
 
-  // Each inset is rendered into a tiny offscreen canvas only when its text or
-  // visual state changes. Normal frames remain two small drawImage calls.
-  const PANEL_WIDTH = 160;
-  const PANEL_HEIGHT = 22;
+  // The apron panels are still cached offscreen. They are slightly taller and
+  // wider now, and only re-render during the brief event strobe or when text
+  // changes; steady frames remain two cheap drawImage calls.
+  const PANEL_WIDTH = 166;
+  const PANEL_HEIGHT = 30;
   const panelCache = {
-    left: makePanelCache('left', 30, 673, 76),
-    right: makePanelCache('right', 230, 673, 86)
+    left: makePanelCache('left', 24, 665, 78),
+    right: makePanelCache('right', 230, 665, 88)
   };
 
   function makePanelCache(side, x, y, centerX) {
@@ -54,7 +58,7 @@
     displayEvent.left = left;
     displayEvent.right = right;
     displayEvent.startedAt = now;
-    displayEvent.until = now + duration;
+    displayEvent.until = now + Math.max(duration, MIN_EVENT_HOLD_MS);
     displayEvent.blinkInterval = blinkInterval;
     displayEvent.leftAccent = leftAccent;
     displayEvent.rightAccent = rightAccent;
@@ -101,32 +105,32 @@
     return `BALL ${ballNumber}`;
   }
 
-  // These are inset versions of the existing apron polygons. They deliberately
-  // leave the original cabinet edges visible so the displays read as built into
-  // the MIAMI / NIGHTS panels rather than floating on top of the playfield.
+  // These enlarged insets now use nearly the full lower-apron polygons while
+  // still leaving a thin cabinet edge around them.
   function traceCachedPanel(targetCtx, side) {
     targetCtx.beginPath();
     if (side === 'left') {
-      targetCtx.moveTo(2, 1);
-      targetCtx.lineTo(131, 1);
-      targetCtx.lineTo(150, 20);
-      targetCtx.lineTo(2, 20);
+      targetCtx.moveTo(1, 1);
+      targetCtx.lineTo(140, 1);
+      targetCtx.lineTo(165, 29);
+      targetCtx.lineTo(1, 29);
     } else {
-      targetCtx.moveTo(158, 1);
-      targetCtx.lineTo(29, 1);
-      targetCtx.lineTo(10, 20);
-      targetCtx.lineTo(158, 20);
+      targetCtx.moveTo(165, 1);
+      targetCtx.lineTo(26, 1);
+      targetCtx.lineTo(1, 29);
+      targetCtx.lineTo(165, 29);
     }
     targetCtx.closePath();
   }
 
-  function renderPanel(cache, text, accentName, eventActive) {
+  function renderPanel(cache, text, accentName, eventActive, flashLevel = 0) {
     const accent = MIAMI_COLORS[accentName] || MIAMI_COLORS.lavender;
     const mobile = Boolean(window.miamiMobilePerformanceMode);
     const nextKey = [
       text,
       accentName,
       eventActive ? 'event' : 'idle',
+      flashLevel,
       mobile ? 'mobile' : 'desktop'
     ].join('|');
     if (cache.key === nextKey) return;
@@ -137,33 +141,42 @@
     panelCtx.save();
 
     const face = panelCtx.createLinearGradient(0, 0, 0, PANEL_HEIGHT);
-    face.addColorStop(0, 'rgba(5, 16, 34, 0.98)');
-    face.addColorStop(1, 'rgba(1, 4, 10, 0.98)');
+    face.addColorStop(0, flashLevel > 1
+      ? 'rgba(16, 34, 58, 0.99)'
+      : 'rgba(5, 16, 34, 0.99)');
+    face.addColorStop(1, 'rgba(1, 4, 10, 0.99)');
     traceCachedPanel(panelCtx, cache.side);
     panelCtx.fillStyle = face;
     panelCtx.fill();
 
-    panelCtx.globalAlpha = eventActive ? 1 : 0.8;
-    panelCtx.strokeStyle = accent;
-    panelCtx.lineWidth = eventActive ? 1.5 : 1.1;
+    if (eventActive && flashLevel > 0) {
+      panelCtx.globalAlpha = flashLevel > 1 ? 0.2 : 0.09;
+      panelCtx.fillStyle = accent;
+      traceCachedPanel(panelCtx, cache.side);
+      panelCtx.fill();
+    }
+
+    panelCtx.globalAlpha = eventActive ? 1 : 0.82;
+    panelCtx.strokeStyle = flashLevel > 1 ? '#ffffff' : accent;
+    panelCtx.lineWidth = eventActive ? (flashLevel > 1 ? 2.35 : 1.8) : 1.2;
     panelCtx.shadowColor = accent;
-    panelCtx.shadowBlur = mobile ? 0 : (eventActive ? 4 : 2);
+    panelCtx.shadowBlur = mobile ? 0 :
+      (eventActive ? (flashLevel > 1 ? 12 : 6) : 3);
     traceCachedPanel(panelCtx, cache.side);
     panelCtx.stroke();
 
-    // A restrained glass highlight gives these the same dark-neon-display feel
-    // as the top score strip without adding another animated effect.
-    panelCtx.globalAlpha = 0.12;
+    // Brighter glass streak during the event strobe; steady states remain calm.
+    panelCtx.globalAlpha = eventActive ? (flashLevel > 1 ? 0.34 : 0.18) : 0.1;
     panelCtx.strokeStyle = '#f4ffff';
-    panelCtx.lineWidth = 1;
+    panelCtx.lineWidth = flashLevel > 1 ? 1.5 : 1;
     panelCtx.shadowBlur = 0;
     panelCtx.beginPath();
     if (cache.side === 'left') {
-      panelCtx.moveTo(8, 5);
-      panelCtx.lineTo(128, 5);
+      panelCtx.moveTo(8, 6);
+      panelCtx.lineTo(135, 6);
     } else {
-      panelCtx.moveTo(32, 5);
-      panelCtx.lineTo(152, 5);
+      panelCtx.moveTo(31, 6);
+      panelCtx.lineTo(158, 6);
     }
     panelCtx.stroke();
 
@@ -171,43 +184,51 @@
     panelCtx.textAlign = 'center';
     panelCtx.textBaseline = 'middle';
     panelCtx.font = eventActive
-      ? '800 10px ui-monospace, monospace'
-      : '700 10px ui-monospace, monospace';
-    panelCtx.fillStyle = eventActive ? '#f7fbff' : accent;
+      ? `${flashLevel > 1 ? '900 13px' : '900 12.5px'} ui-monospace, monospace`
+      : '800 12px ui-monospace, monospace';
+    panelCtx.fillStyle = eventActive ? '#ffffff' : accent;
     panelCtx.shadowColor = accent;
-    panelCtx.shadowBlur = mobile ? 0 : (eventActive ? 5 : 3);
-    panelCtx.fillText(String(text).toUpperCase(), cache.centerX, 12, 116);
+    panelCtx.shadowBlur = mobile ? 0 :
+      (eventActive ? (flashLevel > 1 ? 12 : 7) : 4);
+    panelCtx.fillText(String(text).toUpperCase(), cache.centerX, 16, 132);
     panelCtx.restore();
   }
 
-  function drawCachedPanel(side, text, accentName, eventActive) {
+  function drawCachedPanel(side, text, accentName, eventActive, flashLevel) {
     const cache = panelCache[side];
-    renderPanel(cache, text, accentName, eventActive);
+    renderPanel(cache, text, accentName, eventActive, flashLevel);
     ctx.drawImage(cache.canvas, cache.x, cache.y);
   }
 
   function drawLowerDisplays() {
     const now = performance.now();
     const showingEvent = now < displayEvent.until;
-    const blinkShowsEvent =
-      showingEvent &&
-      (!displayEvent.blinkInterval ||
-        Math.floor((now - displayEvent.startedAt) / displayEvent.blinkInterval) % 2 === 0);
+    const eventAge = now - displayEvent.startedAt;
+    let flashLevel = 0;
 
-    // Left answers "what just happened?"; right answers "what mode am I in?".
-    // During an event the right panel can briefly show award/detail information,
-    // then it automatically returns to the persistent live mode/progress state.
+    // Event text now remains readable for the full hold. The "flash" is a short
+    // bright strobe/inversion rather than swapping back to idle text.
+    if (showingEvent && eventAge < STARTUP_FLASH_MS) {
+      flashLevel =
+        Math.floor(eventAge / STARTUP_FLASH_INTERVAL_MS) % 2 === 0 ? 2 : 1;
+    } else if (showingEvent && displayEvent.blinkInterval) {
+      flashLevel =
+        Math.floor(eventAge / displayEvent.blinkInterval) % 2 === 0 ? 2 : 1;
+    }
+
     drawCachedPanel(
       'left',
-      blinkShowsEvent ? displayEvent.left : idleLeftText(),
-      blinkShowsEvent ? displayEvent.leftAccent : 'cyan',
-      blinkShowsEvent
+      showingEvent ? displayEvent.left : idleLeftText(),
+      showingEvent ? displayEvent.leftAccent : 'cyan',
+      showingEvent,
+      flashLevel
     );
     drawCachedPanel(
       'right',
-      blinkShowsEvent ? displayEvent.right : idleRightText(),
-      blinkShowsEvent ? displayEvent.rightAccent : 'magenta',
-      blinkShowsEvent
+      showingEvent ? displayEvent.right : idleRightText(),
+      showingEvent ? displayEvent.rightAccent : 'magenta',
+      showingEvent,
+      flashLevel
     );
   }
 
@@ -218,6 +239,82 @@
     baseDrawLowerApronWithDisplays();
     drawLowerDisplays();
   };
+
+  // Clean up the crowded lower-right return area without changing its physics.
+  // The recovery rail is only a visual guide in core, so this tighter sweep keeps
+  // the same feed logic while removing the broad floating hook from the apron.
+  if (
+    typeof shooterRecoveryGuidePoints !== 'undefined' &&
+    Array.isArray(shooterRecoveryGuidePoints)
+  ) {
+    shooterRecoveryGuidePoints.splice(
+      0,
+      shooterRecoveryGuidePoints.length,
+      { x: 447, y: 516 },
+      { x: 439, y: 520 },
+      { x: 427, y: 525 },
+      { x: 414, y: 530 },
+      { x: 401, y: 533 },
+      { x: 386, y: 538 }
+    );
+  }
+
+  if (typeof drawShooterRecoveryGate === 'function') {
+    drawShooterRecoveryGate = function drawShooterRecoveryGatePolished() {
+      const active = shooterRoute === 'recovery';
+      ctx.save();
+      ctx.globalAlpha = active ? 1 : 0.2;
+      drawSmoothNeonRail(
+        shooterRecoveryGuidePoints,
+        active ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan
+      );
+      ctx.restore();
+    };
+  }
+
+  function drawIntegratedRecoveryExit(mouth) {
+    ctx.save();
+    ctx.translate(mouth.x, mouth.y);
+
+    // A small recessed slot replaces the large sideways D-shaped tunnel mouth.
+    // It stays centered on the real underpass exit and reads as part of the
+    // shooter divider rather than as another bumper in the flipper area.
+    ctx.fillStyle = '#01030a';
+    ctx.strokeStyle = '#4a3b66';
+    ctx.lineWidth = 5;
+    ctx.fillRect(-5, -12, 10, 24);
+    ctx.strokeRect(-5, -12, 10, 24);
+
+    ctx.strokeStyle = MIAMI_COLORS.magenta;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = MIAMI_COLORS.magenta;
+    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 6;
+    ctx.strokeRect(-4, -11, 8, 22);
+
+    ctx.globalAlpha = 0.85;
+    ctx.strokeStyle = MIAMI_COLORS.cyan;
+    ctx.lineWidth = 1;
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.moveTo(-2, -8);
+    ctx.lineTo(-2, 8);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  if (
+    typeof drawProminentUnderpassMouth === 'function' &&
+    typeof drawCompactSideExit === 'function'
+  ) {
+    drawUnderpassMouths = function drawUnderpassMouthsPolished() {
+      drawProminentUnderpassMouth(underpass.entry, MIAMI_COLORS.magenta);
+      drawTunnelMouth(underpass.outlets[0], MIAMI_COLORS.lavender);
+      drawTunnelMouth(underpass.outlets[1], MIAMI_COLORS.cyan, Math.PI / 2);
+      drawTunnelMouth(underpass.outlets[2], MIAMI_COLORS.cyan);
+      drawIntegratedRecoveryExit(underpass.outlets[3]);
+      drawCompactSideExit(underpass.outlets[4], MIAMI_COLORS.cyan);
+    };
+  }
 
   // The existing Ocean Drive listener lights one letter per completed pass.
   // Add two more here so the progression becomes 3, 6, 9, 10 letters across
