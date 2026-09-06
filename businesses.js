@@ -406,11 +406,6 @@
     baseDrawOceanRampWithBusinesses();
   };
 
-  const buildNumberDisplay = document.querySelector('.build-number');
-  if (buildNumberDisplay) {
-    buildNumberDisplay.textContent = 'Build 20260830-BUSINESSES';
-  }
-
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
     instructions.append(document.createTextNode(
