@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. Keeping this separate avoids touching the stable physics core.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260905-UPPERTARGETMOVE';
+  const CURRENT_BUILD = 'Build 20260905-STRATEGY1';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -129,14 +129,24 @@ window.addEventListener('load', () => {
                           deflectorRemovalScript.src = 'deflector-removal.js?v=20260905-nodeflectors';
                           deflectorRemovalScript.async = false;
                           deflectorRemovalScript.addEventListener('load', () => {
-                            const captiveRepeatScript = document.createElement('script');
-                            captiveRepeatScript.src = 'captive-repeat.js?v=20260905-repeat-extraball';
-                            captiveRepeatScript.async = false;
-                            captiveRepeatScript.addEventListener('load', () => {
-                              stampCurrentBuild();
-                              window.setTimeout(stampCurrentBuild, 400);
+                            // Strategy must install before captive-repeat so a
+                            // side-target double-progress hit is visible to the
+                            // existing repeatable-extra-ball listener in the
+                            // same captive-ball impact event.
+                            const strategyRulesScript = document.createElement('script');
+                            strategyRulesScript.src = 'strategy-rules.js?v=20260905-strategy1';
+                            strategyRulesScript.async = false;
+                            strategyRulesScript.addEventListener('load', () => {
+                              const captiveRepeatScript = document.createElement('script');
+                              captiveRepeatScript.src = 'captive-repeat.js?v=20260905-repeat-extraball';
+                              captiveRepeatScript.async = false;
+                              captiveRepeatScript.addEventListener('load', () => {
+                                stampCurrentBuild();
+                                window.setTimeout(stampCurrentBuild, 400);
+                              }, { once: true });
+                              document.body.appendChild(captiveRepeatScript);
                             }, { once: true });
-                            document.body.appendChild(captiveRepeatScript);
+                            document.body.appendChild(strategyRulesScript);
                           }, { once: true });
                           document.body.appendChild(deflectorRemovalScript);
                         }, { once: true });
