@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. The loader is the sole owner of the visible build label.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260906-STRATEGY1C';
+  const CURRENT_BUILD = 'Build 20260906-STRATEGY1D';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -79,7 +79,7 @@ window.addEventListener('load', () => {
   circleTripleScript.async = false;
   circleTripleScript.addEventListener('load', () => {
     const businessesScript = document.createElement('script');
-    businessesScript.src = 'businesses.js?v=20260906-buildowner';
+    businessesScript.src = 'businesses.js?v=20260906-perf1';
     businessesScript.async = false;
     businessesScript.addEventListener('load', () => {
       const carsScript = document.createElement('script');
@@ -111,7 +111,7 @@ window.addEventListener('load', () => {
                   pocketTargetsScript.async = false;
                   pocketTargetsScript.addEventListener('load', () => {
                     const secondaryTargetsScript = document.createElement('script');
-                    secondaryTargetsScript.src = 'secondary-targets.js?v=20260906-upper-corner-v6';
+                    secondaryTargetsScript.src = 'secondary-targets.js?v=20260906-perf1';
                     secondaryTargetsScript.async = false;
                     secondaryTargetsScript.addEventListener('load', () => {
                       const sunsetFieldScript = document.createElement('script');
@@ -131,7 +131,7 @@ window.addEventListener('load', () => {
                             // existing repeatable-extra-ball listener in the
                             // same captive-ball impact event.
                             const strategyRulesScript = document.createElement('script');
-                            strategyRulesScript.src = 'strategy-rules.js?v=20260905-strategy1';
+                            strategyRulesScript.src = 'strategy-rules.js?v=20260906-perf1';
                             strategyRulesScript.async = false;
                             strategyRulesScript.addEventListener('load', () => {
                               const captiveRepeatScript = document.createElement('script');
