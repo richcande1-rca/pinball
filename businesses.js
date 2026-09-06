@@ -163,6 +163,12 @@
     );
     neonPalms.lastTriggerAt = now;
     neonPalms.flashStartedAt = now;
+
+    // Strategy observes this event instead of re-checking the spinner crossing
+    // independently on every 240 Hz physics tick.
+    window.dispatchEvent(new CustomEvent('miami-neon-palms-hit', {
+      detail: { speed, direction }
+    }));
   }
 
   function updateNeonPalms(dt) {
@@ -187,7 +193,12 @@
   function tryCaptureCafeOcho() {
     if (cafeOcho.active) return false;
 
-    const distance = Math.hypot(ball.x - cafeOcho.x, ball.y - cafeOcho.y);
+    const dx = ball.x - cafeOcho.x;
+    const dy = ball.y - cafeOcho.y;
+    // Cheap square rejection avoids two hypot calls for nearly every physics tick.
+    if (Math.abs(dx) > cafeOcho.radius || Math.abs(dy) > cafeOcho.radius) return false;
+
+    const distance = Math.hypot(dx, dy);
     const speed = Math.hypot(ball.vx, ball.vy);
     if (distance > cafeOcho.radius || speed < 110) return false;
 
@@ -198,7 +209,11 @@
     ball.y = cafeOcho.y;
     ball.vx = 0;
     ball.vy = 0;
-    awardBusinessPoints(cafeOcho.value);
+    const awarded = awardBusinessPoints(cafeOcho.value);
+
+    window.dispatchEvent(new CustomEvent('miami-cafe-ocho-capture', {
+      detail: { points: awarded }
+    }));
     return true;
   }
 
@@ -256,12 +271,28 @@
       magneticTarget.state === 'holding'
     ) return;
 
-    for (const [index, target] of reefHotel.targets.entries()) {
-      collideWithReefHotelTarget(target, index);
+    // Only do the more expensive closest-point/hypot target checks when the ball
+    // is actually near the narrow hotel strip.
+    if (ball.x >= 392 && ball.x <= 426 && ball.y >= 264 && ball.y <= 368) {
+      for (const [index, target] of reefHotel.targets.entries()) {
+        collideWithReefHotelTarget(target, index);
+      }
     }
 
-    triggerNeonPalms(previousX, previousY);
-    tryCaptureCafeOcho();
+    // The crossing function itself handles the exact spinner geometry, but skip
+    // calling it unless this step could plausibly cross the spinner line.
+    if (
+      ((previousY > neonPalms.y && ball.y <= neonPalms.y) ||
+       (previousY < neonPalms.y && ball.y >= neonPalms.y)) &&
+      Math.max(previousX, ball.x) >= neonPalms.x1 - 12 &&
+      Math.min(previousX, ball.x) <= neonPalms.x2 + 12
+    ) {
+      triggerNeonPalms(previousX, previousY);
+    }
+
+    if (ball.x >= 379 && ball.x <= 427 && ball.y >= 442 && ball.y <= 490) {
+      tryCaptureCafeOcho();
+    }
   };
 
   function drawBusinessFacade(x, y, width, height, accent) {
