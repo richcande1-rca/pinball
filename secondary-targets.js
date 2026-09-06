@@ -1,28 +1,34 @@
 // Miami Nights: small secondary targets in previously dead playfield space.
-// These are simple scoring standups for now. Group metadata/events are exposed
-// so strategy rules can be attached later without moving the approved geometry.
+// The three center targets are a compact drop bank: each folds away when hit
+// and the bank resets shortly after all three are down. Side-wall targets stay
+// fixed. Group metadata/events remain available for later strategy rules.
 
 (() => {
   if (window.miamiSecondaryTargetsInstalled) return;
   window.miamiSecondaryTargetsInstalled = true;
 
   const secondaryTargets = [
-    // Three compact center-field targets around the palm/cars. These sit outside
-    // the palm ring and logo, leaving the main flipper lanes open.
-    { x1: 112, y1: 430, x2: 126, y2: 430, radius: 3.25, value: 300, accent: 'cyan', group: 'center', groupIndex: 0, armed: true, flashStartedAt: -Infinity },
-    { x1: 294, y1: 430, x2: 308, y2: 430, radius: 3.25, value: 300, accent: 'magenta', group: 'center', groupIndex: 1, armed: true, flashStartedAt: -Infinity },
-    { x1: 203, y1: 505, x2: 217, y2: 505, radius: 3.25, value: 300, accent: 'lavender', group: 'center', groupIndex: 2, armed: true, flashStartedAt: -Infinity },
+    // Three compact drop targets around the palm/cars. They disappear after a
+    // solid hit so the lower center opens back up during play.
+    { x1: 112, y1: 430, x2: 126, y2: 430, radius: 3.25, value: 300, accent: 'cyan', group: 'center', groupIndex: 0, drop: true, dropped: false, armed: true, flashStartedAt: -Infinity },
+    { x1: 294, y1: 430, x2: 308, y2: 430, radius: 3.25, value: 300, accent: 'magenta', group: 'center', groupIndex: 1, drop: true, dropped: false, armed: true, flashStartedAt: -Infinity },
+    { x1: 203, y1: 505, x2: 217, y2: 505, radius: 3.25, value: 300, accent: 'lavender', group: 'center', groupIndex: 2, drop: true, dropped: false, armed: true, flashStartedAt: -Infinity },
 
     // Two flush standups beneath the captive-ball cage. They live on the side
     // wall so the captive-ball shot itself remains completely unobstructed.
-    { x1: 44, y1: 348, x2: 44, y2: 364, radius: 3.25, value: 300, accent: 'magenta', group: 'captive-side', groupIndex: 0, armed: true, flashStartedAt: -Infinity },
-    { x1: 44, y1: 386, x2: 44, y2: 402, radius: 3.25, value: 300, accent: 'cyan', group: 'captive-side', groupIndex: 1, armed: true, flashStartedAt: -Infinity },
+    { x1: 44, y1: 348, x2: 44, y2: 364, radius: 3.25, value: 300, accent: 'magenta', group: 'captive-side', groupIndex: 0, drop: false, armed: true, flashStartedAt: -Infinity },
+    { x1: 44, y1: 386, x2: 44, y2: 402, radius: 3.25, value: 300, accent: 'cyan', group: 'captive-side', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity },
 
     // Two-target mini-bank in the far upper-right pocket below the entry ramp.
     // Keep them shallow against the wall so launch/Ocean Drive paths stay open.
-    { x1: 410, y1: 208, x2: 424, y2: 208, radius: 3.25, value: 300, accent: 'cyan', group: 'upper-right', groupIndex: 0, armed: true, flashStartedAt: -Infinity },
-    { x1: 414, y1: 238, x2: 428, y2: 238, radius: 3.25, value: 300, accent: 'magenta', group: 'upper-right', groupIndex: 1, armed: true, flashStartedAt: -Infinity }
+    { x1: 410, y1: 208, x2: 424, y2: 208, radius: 3.25, value: 300, accent: 'cyan', group: 'upper-right', groupIndex: 0, drop: false, armed: true, flashStartedAt: -Infinity },
+    { x1: 414, y1: 238, x2: 428, y2: 238, radius: 3.25, value: 300, accent: 'magenta', group: 'upper-right', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity }
   ];
+
+  const centerDropTargets = secondaryTargets.filter(target => target.group === 'center');
+  const CENTER_BANK_RESET_DELAY = 1.0;
+  let centerBankResetRemaining = 0;
+  let centerBankCompleteFlashStartedAt = -Infinity;
 
   function targetContact(target) {
     const closest = closestPointOnSegment(
@@ -46,11 +52,28 @@
     ) ? 2 : 1;
   }
 
+  function resetCenterDropBank() {
+    centerBankResetRemaining = 0;
+    for (const target of centerDropTargets) {
+      target.dropped = false;
+      target.armed = true;
+    }
+  }
+
+  const baseResetPlayfieldForSecondaryTargets = resetPlayfieldForBall;
+  resetPlayfieldForBall = function resetPlayfieldWithSecondaryTargets() {
+    baseResetPlayfieldForSecondaryTargets();
+    resetCenterDropBank();
+    centerBankCompleteFlashStartedAt = -Infinity;
+  };
+
   function collideWithSecondaryTarget(target, index) {
+    if (target.drop && target.dropped) return false;
+
     const contact = targetContact(target);
     const contactDistance = ball.radius + target.radius;
 
-    if (!target.armed && contact.distance > contactDistance + 12) {
+    if (!target.drop && !target.armed && contact.distance > contactDistance + 12) {
       target.armed = true;
     }
 
@@ -72,6 +95,8 @@
     if (touching && target.armed && incomingNormalSpeed >= 45) {
       target.armed = false;
       target.flashStartedAt = performance.now();
+      if (target.drop) target.dropped = true;
+
       const awardedPoints = target.value * currentScoreMultiplier();
       score += awardedPoints;
       syncStatusDisplay();
@@ -91,10 +116,23 @@
           index,
           group: target.group,
           groupIndex: target.groupIndex,
+          dropped: Boolean(target.dropped),
           points: awardedPoints,
           score
         }
       }));
+
+      if (
+        target.drop &&
+        centerBankResetRemaining <= 0 &&
+        centerDropTargets.every(candidate => candidate.dropped)
+      ) {
+        centerBankCompleteFlashStartedAt = performance.now();
+        centerBankResetRemaining = CENTER_BANK_RESET_DELAY;
+        window.dispatchEvent(new CustomEvent('miami-secondary-bank-complete', {
+          detail: { group: 'center', score }
+        }));
+      }
     }
 
     return touching;
@@ -103,6 +141,11 @@
   const baseUpdateWithSecondaryTargets = update;
   update = function updateWithSecondaryTargets(dt) {
     baseUpdateWithSecondaryTargets(dt);
+
+    if (centerBankResetRemaining > 0) {
+      centerBankResetRemaining = Math.max(0, centerBankResetRemaining - dt);
+      if (centerBankResetRemaining === 0) resetCenterDropBank();
+    }
 
     if (
       gameOver ||
@@ -127,6 +170,26 @@
     const age = performance.now() - target.flashStartedAt;
     const flash = age >= 0 && age < 260 ? 1 - age / 260 : 0;
 
+    // A dropped target leaves only a momentary floor-level glint, then clears
+    // completely out of the playfield until the three-target bank resets.
+    if (target.drop && target.dropped) {
+      if (flash <= 0) return;
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(angle);
+      ctx.globalAlpha = flash * 0.8;
+      ctx.strokeStyle = '#ffffff';
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 10;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-width / 2, 2.5);
+      ctx.lineTo(width / 2, 2.5);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.rotate(angle);
@@ -149,6 +212,24 @@
 
   function drawSecondaryTargets() {
     for (const target of secondaryTargets) drawSecondaryTarget(target);
+
+    const completionFlash = clamp(
+      1 - (performance.now() - centerBankCompleteFlashStartedAt) / 420,
+      0,
+      1
+    );
+    if (completionFlash <= 0) return;
+
+    ctx.save();
+    ctx.globalAlpha = completionFlash * 0.7;
+    ctx.strokeStyle = '#ffffff';
+    ctx.shadowColor = MIAMI_COLORS.lavender;
+    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 14;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(PLAYFIELD_CENTER, 468, 24 + (1 - completionFlash) * 8, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   const baseDrawPassivePlayfieldGeometryWithSecondaryTargets = drawPassivePlayfieldGeometry;
