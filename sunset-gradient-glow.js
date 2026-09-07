@@ -1,6 +1,6 @@
-// Miami Nights: animate only the striped sunset disk behind the palm silhouettes.
-// Presentation only. No outside halo/frame: the sun itself moves through deep
-// midnight-to-sunset gradients in step with the twelve insert lamps around it.
+// Miami Nights: animate only the horizontal sunset bands inside the palm motif.
+// Presentation only. The circle and palm silhouettes stay fixed; the existing
+// horizontal stripes slowly cycle through midnight and sunset colors.
 
 (() => {
   if (window.miamiSunsetGradientGlowInstalled) return;
@@ -11,20 +11,21 @@
   const SUN_RX = 45;
   const SUN_RY = 43;
   const PAD = 3;
-  const LAMP_COUNT = 12;
-  const palette = {
-    black: '#010207',
-    midnight: '#050817',
-    navy: '#08152c',
-    violet: '#40105f',
-    lavender: MIAMI_COLORS.lavender,
-    magenta: MIAMI_COLORS.magenta,
-    cyan: MIAMI_COLORS.cyan,
-    hotPink: '#ff2f9f',
-    orange: '#ff8a32',
-    yellow: '#ffd96a',
-    white: '#f4ffff'
-  };
+
+  const cyclePalette = [
+    '#010207',
+    '#050817',
+    '#08152c',
+    '#40105f',
+    MIAMI_COLORS.magenta,
+    '#ff2f9f',
+    '#ff7244',
+    '#ffad42',
+    '#ffd96a',
+    MIAMI_COLORS.cyan,
+    '#16315a',
+    '#050817'
+  ];
 
   let sunMask = null;
   let sunPaint = null;
@@ -37,8 +38,7 @@
     origin: 0
   };
 
-  // The old theme layer painted a large magenta/purple radial bloom around the
-  // motif. Keep all animation confined to the striped sun disk.
+  // Keep the old broad halo disabled. All motion belongs inside the motif.
   if (typeof drawSunsetGlow === 'function') {
     drawSunsetGlow = function drawSunsetGlowDisabled() {};
   }
@@ -47,8 +47,8 @@
     return Math.max(0, Math.min(1, value));
   }
 
-  function wrapIndex(index) {
-    return ((index % LAMP_COUNT) + LAMP_COUNT) % LAMP_COUNT;
+  function wrap01(value) {
+    return ((value % 1) + 1) % 1;
   }
 
   function trigger(kind, duration, origin = 0) {
@@ -57,7 +57,7 @@
       kind,
       startedAt: now,
       until: now + duration,
-      origin: wrapIndex(origin)
+      origin
     };
   }
 
@@ -66,6 +66,33 @@
       typeof centerDoubleScoreRemaining !== 'undefined' &&
       centerDoubleScoreRemaining > 0
     );
+  }
+
+  function hexToRgb(hex) {
+    const value = hex.replace('#', '');
+    return {
+      r: parseInt(value.slice(0, 2), 16),
+      g: parseInt(value.slice(2, 4), 16),
+      b: parseInt(value.slice(4, 6), 16)
+    };
+  }
+
+  function mixHex(a, b, amount) {
+    const ca = hexToRgb(a);
+    const cb = hexToRgb(b);
+    const t = clamp01(amount);
+    const r = Math.round(ca.r + (cb.r - ca.r) * t);
+    const g = Math.round(ca.g + (cb.g - ca.g) * t);
+    const bl = Math.round(ca.b + (cb.b - ca.b) * t);
+    return `rgb(${r}, ${g}, ${bl})`;
+  }
+
+  function sampleCycle(position) {
+    const wrapped = wrap01(position);
+    const scaled = wrapped * cyclePalette.length;
+    const index = Math.floor(scaled) % cyclePalette.length;
+    const next = (index + 1) % cyclePalette.length;
+    return mixHex(cyclePalette[index], cyclePalette[next], scaled - Math.floor(scaled));
   }
 
   function buildSunMask() {
@@ -102,9 +129,8 @@
     const centerX = width / 2;
     const centerY = height / 2;
 
-    // Retain only the colored sunset stripes. The palm silhouettes and dark gaps
-    // stay untouched, so the gradient reads as the sun changing rather than a
-    // glowing panel placed behind the artwork.
+    // Keep only the existing colored horizontal stripes. Dark palm silhouettes
+    // and the dark gaps between stripes remain transparent in this mask.
     for (let y = 0; y < height; y += 1) {
       for (let x = 0; x < width; x += 1) {
         const index = (y * width + x) * 4;
@@ -150,82 +176,63 @@
     buildSunMask();
   }
 
-  function syncState(now) {
-    let head = (now / 125) % LAMP_COUNT;
-    let energy = 0.88;
-    let primary = palette.cyan;
-    let secondary = palette.magenta;
+  function getCycleState(now) {
+    // Normal motion is deliberately slow. The bands never rotate or move; only
+    // the colors flowing through their fixed horizontal positions change.
+    let phase = wrap01(now / 8500);
+    let energy = 0.82;
     let flash = 0;
 
     if (now < override.until) {
       const age = now - override.startedAt;
-      const step = Math.floor(age / 75);
-      const fastStep = Math.floor(age / 55);
       flash = 1;
 
       switch (override.kind) {
         case 'pocket':
-          head = wrapIndex(override.origin + step);
-          energy = 0.95;
+          phase += age / 1500 + override.origin / 12;
+          energy = 0.96;
           break;
         case 'pop':
-          head = wrapIndex(step * 3);
+          phase += age / 650;
           energy = 1;
           break;
         case 'drop':
-          head = wrapIndex(step * 2);
+          phase += age / 900;
           energy = 0.98;
           break;
         case 'bank':
-          head = Math.floor(age / 90) % 2 === 0 ? 0 : 6;
-          primary = palette.white;
-          secondary = palette.magenta;
+          phase += age / 500;
           energy = 1;
           break;
         case 'loop':
-          head = wrapIndex(-fastStep);
-          primary = palette.cyan;
-          secondary = palette.lavender;
+          phase -= age / 850;
           energy = 1;
           break;
         case 'ramp':
-          head = wrapIndex(fastStep);
-          energy = 1;
-          break;
         case 'spinner':
-          head = wrapIndex(fastStep);
+          phase += age / 700;
           energy = 1;
           break;
         case 'magnet':
-          head = Math.floor(age / 115) % 2 === 0 ? 3 : 9;
-          primary = palette.magenta;
-          secondary = palette.white;
+          phase += 0.42 + Math.sin(age / 110) * 0.06;
           energy = 1;
           break;
         case 'reef':
-          head = Math.floor(age / 110) % 2 === 0 ? 0 : 6;
-          primary = palette.cyan;
-          secondary = palette.magenta;
+          phase += age / 760;
           energy = 1;
           break;
         case 'extra':
-          head = Math.floor(age / 70) % 2 === 0 ? 0 : 6;
-          primary = palette.white;
-          secondary = palette.cyan;
+          phase += age / 420;
           energy = 1;
           break;
         case 'two-x':
-          head = Math.floor(age / 100) % 2 === 0 ? 0 : 6;
-          primary = palette.cyan;
-          secondary = palette.magenta;
+          phase += age / 520;
           energy = 1;
           break;
         case 'drain':
-          head = 6;
-          primary = palette.magenta;
-          secondary = palette.violet;
+          phase += 0.08;
           energy = Math.max(
-            0.28,
+            0.30,
             1 - age / Math.max(1, override.until - override.startedAt)
           );
           break;
@@ -233,122 +240,69 @@
           break;
       }
     } else if (gameOver) {
-      head = ((now / 220) % LAMP_COUNT);
-      primary = palette.lavender;
-      secondary = palette.magenta;
-      energy = 0.72;
+      phase = wrap01(now / 12000);
+      energy = 0.62;
     } else if (ball.ready) {
-      head = ((now / 360) % LAMP_COUNT);
-      primary = palette.cyan;
-      secondary = palette.magenta;
-      energy = 0.70 + (0.5 + 0.5 * Math.sin(now / 520)) * 0.16;
+      phase = wrap01(now / 10500);
+      energy = 0.72 + (0.5 + 0.5 * Math.sin(now / 850)) * 0.10;
     } else if (mode2xActive()) {
-      head = ((now / 145) % LAMP_COUNT);
+      phase = wrap01(now / 2400);
       energy = 1;
-    } else {
-      // Normal play follows the same clockwise lamp chase, but continuously so
-      // the gradient travels instead of hopping between flat color states.
-      primary = Math.floor(head) % 2 ? palette.magenta : palette.cyan;
-      secondary = Math.floor(head + 6) % 2 ? palette.magenta : palette.cyan;
     }
 
-    return { head, primary, secondary, energy, flash };
+    return { phase: wrap01(phase), energy, flash };
   }
 
-  function drawSyncedSunGradient() {
+  function drawSyncedSunBands() {
     if (!buildSunMask()) return;
 
     const now = performance.now();
-    const state = syncState(now);
-    const angle =
-      -Math.PI / 2 +
-      state.head * Math.PI * 2 / LAMP_COUNT +
-      Math.sin(now / 2400) * 0.18;
+    const state = getCycleState(now);
     const width = sunPaint.width;
     const height = sunPaint.height;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const reach = Math.max(width, height) * 0.72;
-    const dx = Math.cos(angle) * reach;
-    const dy = Math.sin(angle) * reach;
     const paintCtx = sunPaint.getContext('2d');
 
     paintCtx.clearRect(0, 0, width, height);
 
-    // A real moving dusk-to-sunset gradient: black and midnight tones are part
-    // of the color field itself, not an outside shadow or halo. Rotating the
-    // gradient makes the dark region migrate through the disk while the hot
-    // sunset colors follow the lamp chase.
-    const gradient = paintCtx.createLinearGradient(
-      centerX - dx,
-      centerY - dy,
-      centerX + dx,
-      centerY + dy
-    );
-    gradient.addColorStop(0, palette.black);
-    gradient.addColorStop(0.14, palette.midnight);
-    gradient.addColorStop(0.27, palette.navy);
-    gradient.addColorStop(0.40, palette.violet);
-    gradient.addColorStop(0.53, state.secondary);
-    gradient.addColorStop(0.64, palette.hotPink);
-    gradient.addColorStop(0.75, palette.orange);
-    gradient.addColorStop(0.84, palette.yellow);
-    gradient.addColorStop(0.92, state.primary);
-    gradient.addColorStop(1, palette.midnight);
+    // Fixed top-to-bottom gradient = horizontal color bands. Only the palette
+    // phase changes, so the motif never spins and the stripe geometry never moves.
+    const gradient = paintCtx.createLinearGradient(0, 0, 0, height);
+    const stopCount = 9;
+    for (let index = 0; index < stopCount; index += 1) {
+      const position = index / (stopCount - 1);
+      const palettePosition = state.phase + position * 0.42;
+      gradient.addColorStop(position, sampleCycle(palettePosition));
+    }
 
     paintCtx.globalCompositeOperation = 'source-over';
     paintCtx.globalAlpha = 1;
     paintCtx.fillStyle = gradient;
     paintCtx.fillRect(0, 0, width, height);
 
-    // A broad, soft warm transition travels independently through the disk. It
-    // keeps the gradient alive without restoring the fizzy white hotspot look.
-    const warmY = centerY + Math.sin(now / 900 + angle) * SUN_RY * 0.42;
-    const warmBand = paintCtx.createLinearGradient(0, warmY - 18, 0, warmY + 18);
-    warmBand.addColorStop(0, 'rgba(255,120,54,0)');
-    warmBand.addColorStop(
-      0.5,
-      `rgba(255,145,62,${0.10 + state.energy * 0.10 + state.flash * 0.08})`
-    );
-    warmBand.addColorStop(1, 'rgba(255,220,120,0)');
-    paintCtx.fillStyle = warmBand;
-    paintCtx.fillRect(0, warmY - 18, width, 36);
-
     paintCtx.globalCompositeOperation = 'destination-in';
-    paintCtx.globalAlpha = 1;
     paintCtx.drawImage(sunMask, 0, 0);
     paintCtx.globalCompositeOperation = 'source-over';
 
     const left = SUN_X - SUN_RX - PAD;
     const top = SUN_Y - SUN_RY - PAD;
 
-    // Normal blend does the color work. Keep the screen pass tiny so the result
-    // reads as a transitioning sunset, not a glowing beverage label.
     ctx.save();
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = window.miamiMobilePerformanceMode
-      ? 0.76 + state.energy * 0.08 + state.flash * 0.04
-      : 0.84 + state.energy * 0.08 + state.flash * 0.05;
-    ctx.drawImage(sunPaint, left, top);
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = window.miamiMobilePerformanceMode
-      ? 0.025 + state.flash * 0.02
-      : 0.045 + state.flash * 0.025;
+      ? 0.76 + state.energy * 0.08 + state.flash * 0.03
+      : 0.84 + state.energy * 0.08 + state.flash * 0.04;
     ctx.drawImage(sunPaint, left, top);
     ctx.restore();
   }
 
   const baseDrawMiamiArtworkWithSunsetGradientGlow = drawMiamiArtwork;
-  drawMiamiArtwork = function drawMiamiArtworkWithSunsetGradientGlow() {
+  drawMiamiArtwork = function drawMiamiArtworkWithSunsetBands() {
     baseDrawMiamiArtworkWithSunsetGradientGlow();
-    drawSyncedSunGradient();
+    drawSyncedSunBands();
   };
 
-  // Mirror palm-ring.js event timing so the sun and its twelve lamps continue to
-  // behave as one lighting feature.
+  // Use the same playfield events as the surrounding palm-ring lamps so their
+  // color energy remains coordinated without imposing a rotating direction.
   window.addEventListener('miami-pocket-target', event => {
     const detail = event.detail || {};
     trigger('pocket', 850, 3 + Number(detail.index || 0));
@@ -388,5 +342,5 @@
     }
   });
 
-  window.addEventListener('miami-drain', () => trigger('drain', 850, 6));
+  window.addEventListener('miami-drain', () => trigger('drain', 850));
 })();
