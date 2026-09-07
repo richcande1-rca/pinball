@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. The loader is the sole owner of the visible build label.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260906-STRATEGY1G';
+  const CURRENT_BUILD = 'Build 20260906-STRATEGY1H';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -122,10 +122,10 @@ window.addEventListener('load', () => {
                         sunsetFieldScript.src = 'sunset-field.js?v=20260905-ribopt';
                         sunsetFieldScript.async = false;
                         sunsetFieldScript.addEventListener('load', () => {
-                          const palmNeonScript = document.createElement('script');
-                          palmNeonScript.src = 'palm-neon.js?v=20260906-palmneon1';
-                          palmNeonScript.async = false;
-                          palmNeonScript.addEventListener('load', () => {
+                          const sunsetGlowScript = document.createElement('script');
+                          sunsetGlowScript.src = 'sunset-gradient-glow.js?v=20260906-gradient1';
+                          sunsetGlowScript.async = false;
+                          sunsetGlowScript.addEventListener('load', () => {
                             const palmRingScript = document.createElement('script');
                             palmRingScript.src = 'palm-ring.js?v=20260905-palmringopt';
                             palmRingScript.async = false;
@@ -157,7 +157,7 @@ window.addEventListener('load', () => {
                             }, { once: true });
                             document.body.appendChild(palmRingScript);
                           }, { once: true });
-                          document.body.appendChild(palmNeonScript);
+                          document.body.appendChild(sunsetGlowScript);
                         }, { once: true });
                         document.body.appendChild(sunsetFieldScript);
                       }, { once: true });
