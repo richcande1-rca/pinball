@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. The loader is the sole owner of the visible build label.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260906-STRATEGY1K';
+  const CURRENT_BUILD = 'Build 20260906-STRATEGY1L';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -127,7 +127,7 @@ window.addEventListener('load', () => {
                           sunsetMotifCleanScript.async = false;
                           sunsetMotifCleanScript.addEventListener('load', () => {
                             const sunsetGlowScript = document.createElement('script');
-                            sunsetGlowScript.src = 'sunset-gradient-glow.js?v=20260906-gradient3';
+                            sunsetGlowScript.src = 'sunset-gradient-glow.js?v=20260906-gradient4';
                             sunsetGlowScript.async = false;
                             sunsetGlowScript.addEventListener('load', () => {
                               const palmRingScript = document.createElement('script');
