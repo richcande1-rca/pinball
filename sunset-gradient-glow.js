@@ -32,6 +32,8 @@
     const width = Math.max(1, Math.round(bounds.width));
     const height = Math.max(1, Math.round(bounds.height));
 
+    // Precompute a more saturated version once. Because it is later drawn with
+    // screen blending, the black palm silhouettes contribute no brightness.
     colorLayer = document.createElement('canvas');
     colorLayer.width = width;
     colorLayer.height = height;
@@ -42,6 +44,7 @@
     colorCtx.drawImage(miamiArtwork, 0, 0, width, height);
     colorCtx.filter = 'none';
 
+    // One-time blurred bloom for desktop. Runtime animation is only alpha.
     haloLayer = document.createElement('canvas');
     haloLayer.width = width + PADDING * 2;
     haloLayer.height = height + PADDING * 2;
@@ -63,40 +66,35 @@
     buildLayers();
   }
 
-  function drawSunsetGradientGlow() {
-    if (!buildLayers()) return;
-
-    const bounds = getArtworkBounds();
-    const now = performance.now();
+  function currentLevels(now) {
     const slowPulse = 0.5 + 0.5 * Math.sin(now / 1800);
     const age = now - burstStartedAt;
     const burst = burstDuration > 0 && age >= 0 && age < burstDuration
       ? 1 - age / burstDuration
       : 0;
-    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    return { slowPulse, burst };
+  }
 
-    // Cached bloom behind the original art. Desktop gets the soft halo; mobile
-    // keeps the effect to the inexpensive color-boost pass below.
-    if (!mobile) {
-      ctx.save();
-      ctx.globalAlpha = 0.12 + slowPulse * 0.07 + burst * 0.22;
-      ctx.globalCompositeOperation = 'screen';
-      ctx.drawImage(
-        haloLayer,
-        bounds.x - PADDING,
-        bounds.y - PADDING,
-        bounds.width + PADDING * 2,
-        bounds.height + PADDING * 2
-      );
-      ctx.restore();
-    }
+  function drawHaloBehind(bounds, slowPulse, burst) {
+    if (window.miamiMobilePerformanceMode) return;
 
-    // Screen-blend the saturated copy over the original art. Black source pixels
-    // do not brighten under screen blending, so the palm silhouettes stay dark
-    // while the pink/orange/purple sunset itself visibly lights up.
+    ctx.save();
+    ctx.globalAlpha = 0.12 + slowPulse * 0.07 + burst * 0.22;
+    ctx.globalCompositeOperation = 'screen';
+    ctx.drawImage(
+      haloLayer,
+      bounds.x - PADDING,
+      bounds.y - PADDING,
+      bounds.width + PADDING * 2,
+      bounds.height + PADDING * 2
+    );
+    ctx.restore();
+  }
+
+  function drawColorBoost(bounds, slowPulse, burst) {
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = mobile
+    ctx.globalAlpha = window.miamiMobilePerformanceMode
       ? 0.07 + slowPulse * 0.05 + burst * 0.16
       : 0.10 + slowPulse * 0.08 + burst * 0.30;
     ctx.drawImage(colorLayer, bounds.x, bounds.y, bounds.width, bounds.height);
@@ -105,31 +103,19 @@
 
   const baseDrawMiamiArtworkWithSunsetGradientGlow = drawMiamiArtwork;
   drawMiamiArtwork = function drawMiamiArtworkWithSunsetGradientGlow() {
-    // Halo first, then the untouched original silhouettes, then the screen color
-    // boost. This keeps the palms crisp and black rather than turning them neon.
-    if (buildLayers() && !window.miamiMobilePerformanceMode) {
-      const bounds = getArtworkBounds();
-      const now = performance.now();
-      const slowPulse = 0.5 + 0.5 * Math.sin(now / 1800);
-      const age = now - burstStartedAt;
-      const burst = burstDuration > 0 && age >= 0 && age < burstDuration
-        ? 1 - age / burstDuration
-        : 0;
-      ctx.save();
-      ctx.globalAlpha = 0.12 + slowPulse * 0.07 + burst * 0.22;
-      ctx.globalCompositeOperation = 'screen';
-      ctx.drawImage(
-        haloLayer,
-        bounds.x - PADDING,
-        bounds.y - PADDING,
-        bounds.width + PADDING * 2,
-        bounds.height + PADDING * 2
-      );
-      ctx.restore();
+    if (!buildLayers()) {
+      baseDrawMiamiArtworkWithSunsetGradientGlow();
+      return;
     }
 
+    const bounds = getArtworkBounds();
+    const { slowPulse, burst } = currentLevels(performance.now());
+
+    // Bloom first, untouched original art second, color boost last. The original
+    // palm silhouettes stay crisp and black while the gradient behind them glows.
+    drawHaloBehind(bounds, slowPulse, burst);
     baseDrawMiamiArtworkWithSunsetGradientGlow();
-    drawSunsetGradientGlow();
+    drawColorBoost(bounds, slowPulse, burst);
   };
 
   const ordinaryEvents = [
