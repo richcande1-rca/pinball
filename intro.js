@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. The loader is the sole owner of the visible build label.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260906-STRATEGY1M';
+  const CURRENT_BUILD = 'Build 20260906-STRATEGY1N';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -150,8 +150,14 @@ window.addEventListener('load', () => {
                                     captiveRepeatScript.src = 'captive-repeat.js?v=20260905-repeat-extraball';
                                     captiveRepeatScript.async = false;
                                     captiveRepeatScript.addEventListener('load', () => {
-                                      stampCurrentBuild();
-                                      window.setTimeout(stampCurrentBuild, 400);
+                                      const highScoresScript = document.createElement('script');
+                                      highScoresScript.src = 'high-scores.js?v=20260906-world1';
+                                      highScoresScript.async = false;
+                                      highScoresScript.addEventListener('load', () => {
+                                        stampCurrentBuild();
+                                        window.setTimeout(stampCurrentBuild, 400);
+                                      }, { once: true });
+                                      document.body.appendChild(highScoresScript);
                                     }, { once: true });
                                     document.body.appendChild(captiveRepeatScript);
                                   }, { once: true });
