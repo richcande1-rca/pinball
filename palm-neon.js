@@ -97,6 +97,7 @@
   }
 
   function drawPalm(bounds, palm, index, now, burst) {
+    const mobile = Boolean(window.miamiMobilePerformanceMode);
     const pulse = 0.5 + 0.5 * Math.sin(now / 620 + index * 1.6);
     const idle = palm.strength * (0.28 + pulse * 0.22);
     const energy = clamp(idle + burst * palm.strength * 0.9, 0, 1.35);
@@ -106,21 +107,44 @@
       : MIAMI_COLORS.cyan;
     const crown = point(bounds, palm.trunk[6], palm.trunk[7]);
 
-    if (!window.miamiMobilePerformanceMode) {
-      const halo = ctx.createRadialGradient(
-        crown.x, crown.y, 1,
-        crown.x, crown.y, 23 + burst * 9
+    // Mobile keeps just the hero palm and one crisp pass per curve. This is
+    // intentionally much cheaper than the desktop glow stack.
+    if (mobile) {
+      drawCurve(
+        bounds,
+        palm.trunk,
+        burst > 0.72 ? '#ffffff' : accent,
+        1.3 + burst * 0.55,
+        0.55 + energy * 0.28,
+        0
       );
-      halo.addColorStop(0, `rgba(255,255,255,${0.025 + burst * 0.08})`);
-      halo.addColorStop(0.28, palm.accent === 'cyan'
-        ? `rgba(34,223,243,${0.035 + energy * 0.055})`
-        : `rgba(255,60,172,${0.035 + energy * 0.055})`);
-      halo.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.save();
-      ctx.fillStyle = halo;
-      ctx.fillRect(crown.x - 36, crown.y - 36, 72, 72);
-      ctx.restore();
+      for (let frondIndex = 0; frondIndex < palm.fronds.length; frondIndex += 1) {
+        const color = frondIndex % 2 === 0 ? accent : alternate;
+        drawCurve(
+          bounds,
+          palm.fronds[frondIndex],
+          burst > 0.82 && frondIndex % 2 === 0 ? '#ffffff' : color,
+          1.05 + burst * 0.45,
+          0.5 + energy * 0.26,
+          0
+        );
+      }
+      return;
     }
+
+    const halo = ctx.createRadialGradient(
+      crown.x, crown.y, 1,
+      crown.x, crown.y, 23 + burst * 9
+    );
+    halo.addColorStop(0, `rgba(255,255,255,${0.025 + burst * 0.08})`);
+    halo.addColorStop(0.28, palm.accent === 'cyan'
+      ? `rgba(34,223,243,${0.035 + energy * 0.055})`
+      : `rgba(255,60,172,${0.035 + energy * 0.055})`);
+    halo.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.save();
+    ctx.fillStyle = halo;
+    ctx.fillRect(crown.x - 36, crown.y - 36, 72, 72);
+    ctx.restore();
 
     // Soft tube underneath, then a narrow bright neon core.
     drawCurve(
@@ -162,7 +186,7 @@
     }
 
     // A moving electrical highlight keeps the tree alive without animating the
-    // underlying artwork. On mobile it becomes a crisp dashed line with no blur.
+    // underlying artwork.
     const dashOffset = -now / 26 - index * 6;
     drawCurve(
       bounds,
@@ -180,7 +204,7 @@
       ctx.globalAlpha = clamp((energy - 0.55) * 1.2, 0, 0.9);
       ctx.fillStyle = burst > 0.55 ? '#ffffff' : accent;
       ctx.shadowColor = accent;
-      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 8 + burst * 9;
+      ctx.shadowBlur = 8 + burst * 9;
       ctx.beginPath();
       ctx.arc(crown.x, crown.y, 1.5 + burst * 1.4, 0, Math.PI * 2);
       ctx.fill();
@@ -197,8 +221,10 @@
     const burst = burstDuration > 0 && age >= 0 && age < burstDuration
       ? 1 - age / burstDuration
       : 0;
+    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const firstPalm = mobile ? palms.length - 1 : 0;
 
-    for (let index = 0; index < palms.length; index += 1) {
+    for (let index = firstPalm; index < palms.length; index += 1) {
       drawPalm(bounds, palms[index], index, now, burst);
     }
   }
