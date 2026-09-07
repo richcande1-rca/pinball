@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. The loader is the sole owner of the visible build label.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260906-STRATEGY1F';
+  const CURRENT_BUILD = 'Build 20260906-STRATEGY1G';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -122,36 +122,42 @@ window.addEventListener('load', () => {
                         sunsetFieldScript.src = 'sunset-field.js?v=20260905-ribopt';
                         sunsetFieldScript.async = false;
                         sunsetFieldScript.addEventListener('load', () => {
-                          const palmRingScript = document.createElement('script');
-                          palmRingScript.src = 'palm-ring.js?v=20260905-palmringopt';
-                          palmRingScript.async = false;
-                          palmRingScript.addEventListener('load', () => {
-                            const deflectorRemovalScript = document.createElement('script');
-                            deflectorRemovalScript.src = 'deflector-removal.js?v=20260905-nodeflectors';
-                            deflectorRemovalScript.async = false;
-                            deflectorRemovalScript.addEventListener('load', () => {
-                              // Strategy must install before captive-repeat so a
-                              // side-target double-progress hit is visible to the
-                              // existing repeatable-extra-ball listener in the
-                              // same captive-ball impact event.
-                              const strategyRulesScript = document.createElement('script');
-                              strategyRulesScript.src = 'strategy-rules.js?v=20260906-perf1';
-                              strategyRulesScript.async = false;
-                              strategyRulesScript.addEventListener('load', () => {
-                                const captiveRepeatScript = document.createElement('script');
-                                captiveRepeatScript.src = 'captive-repeat.js?v=20260905-repeat-extraball';
-                                captiveRepeatScript.async = false;
-                                captiveRepeatScript.addEventListener('load', () => {
-                                  stampCurrentBuild();
-                                  window.setTimeout(stampCurrentBuild, 400);
+                          const palmNeonScript = document.createElement('script');
+                          palmNeonScript.src = 'palm-neon.js?v=20260906-palmneon1';
+                          palmNeonScript.async = false;
+                          palmNeonScript.addEventListener('load', () => {
+                            const palmRingScript = document.createElement('script');
+                            palmRingScript.src = 'palm-ring.js?v=20260905-palmringopt';
+                            palmRingScript.async = false;
+                            palmRingScript.addEventListener('load', () => {
+                              const deflectorRemovalScript = document.createElement('script');
+                              deflectorRemovalScript.src = 'deflector-removal.js?v=20260905-nodeflectors';
+                              deflectorRemovalScript.async = false;
+                              deflectorRemovalScript.addEventListener('load', () => {
+                                // Strategy must install before captive-repeat so a
+                                // side-target double-progress hit is visible to the
+                                // existing repeatable-extra-ball listener in the
+                                // same captive-ball impact event.
+                                const strategyRulesScript = document.createElement('script');
+                                strategyRulesScript.src = 'strategy-rules.js?v=20260906-perf1';
+                                strategyRulesScript.async = false;
+                                strategyRulesScript.addEventListener('load', () => {
+                                  const captiveRepeatScript = document.createElement('script');
+                                  captiveRepeatScript.src = 'captive-repeat.js?v=20260905-repeat-extraball';
+                                  captiveRepeatScript.async = false;
+                                  captiveRepeatScript.addEventListener('load', () => {
+                                    stampCurrentBuild();
+                                    window.setTimeout(stampCurrentBuild, 400);
+                                  }, { once: true });
+                                  document.body.appendChild(captiveRepeatScript);
                                 }, { once: true });
-                                document.body.appendChild(captiveRepeatScript);
+                                document.body.appendChild(strategyRulesScript);
                               }, { once: true });
-                              document.body.appendChild(strategyRulesScript);
+                              document.body.appendChild(deflectorRemovalScript);
                             }, { once: true });
-                            document.body.appendChild(deflectorRemovalScript);
+                            document.body.appendChild(palmRingScript);
                           }, { once: true });
-                          document.body.appendChild(palmRingScript);
+                          document.body.appendChild(palmNeonScript);
                         }, { once: true });
                         document.body.appendChild(sunsetFieldScript);
                       }, { once: true });
