@@ -1,0 +1,292 @@
+.miami-world-scores-button {
+  width: 100%;
+  margin: 0.45rem 0 0;
+  min-height: 2.1rem;
+  border: 1px solid rgba(255, 60, 172, 0.55);
+  border-radius: 4px;
+  background: rgba(5, 10, 25, 0.82);
+  color: #f1efff;
+  font: 700 0.7rem ui-monospace, monospace;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 18px rgba(255, 60, 172, 0.06),
+    0 0 12px rgba(34, 223, 243, 0.08);
+}
+
+.miami-world-scores-button::before {
+  content: '★';
+  margin-right: 0.55rem;
+  color: #22dff3;
+  text-shadow: 0 0 8px rgba(34, 223, 243, 0.85);
+}
+
+.miami-world-scores-button:hover,
+.miami-world-scores-button:focus-visible {
+  border-color: #22dff3;
+  outline: none;
+  box-shadow:
+    inset 0 0 18px rgba(34, 223, 243, 0.1),
+    0 0 16px rgba(255, 60, 172, 0.2);
+}
+
+.miami-world-scores {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background: rgba(2, 4, 12, 0.88);
+  backdrop-filter: blur(4px);
+}
+
+.miami-world-scores.is-hidden {
+  display: none;
+}
+
+.miami-world-scores-card {
+  width: min(92vw, 470px);
+  max-height: min(86vh, 700px);
+  overflow: auto;
+  padding: 18px;
+  box-sizing: border-box;
+  border: 1px solid rgba(34, 223, 243, 0.62);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(13, 15, 38, 0.98), rgba(4, 7, 17, 0.98));
+  box-shadow:
+    inset 0 0 28px rgba(255, 60, 172, 0.055),
+    0 0 28px rgba(34, 223, 243, 0.2),
+    0 0 54px rgba(255, 60, 172, 0.12);
+}
+
+.miami-world-scores-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.miami-world-scores-kicker {
+  margin: 0 0 0.15rem;
+  color: #ff3cac;
+  font: 800 0.6rem ui-monospace, monospace;
+  letter-spacing: 0.28em;
+}
+
+.miami-world-scores h2 {
+  margin: 0;
+  color: #22dff3;
+  font: 800 clamp(1.1rem, 5vw, 1.55rem) ui-monospace, monospace;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 10px rgba(34, 223, 243, 0.65);
+}
+
+.miami-world-scores-note {
+  margin: 0.35rem 0 0;
+  color: #c9b8ff;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.miami-world-scores-close {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 60, 172, 0.6);
+  border-radius: 50%;
+  background: #060a17;
+  color: #f4ffff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.miami-world-score-form {
+  margin: 0 0 1rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(255, 60, 172, 0.58);
+  border-radius: 6px;
+  background: rgba(255, 60, 172, 0.055);
+  box-shadow: inset 0 0 18px rgba(255, 60, 172, 0.07);
+}
+
+.miami-world-score-callout {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.miami-world-score-callout span,
+.miami-world-score-form label {
+  color: #8ef7ff;
+  font: 800 0.65rem ui-monospace, monospace;
+  letter-spacing: 0.13em;
+}
+
+.miami-world-score-callout strong {
+  color: #ff71c3;
+  font: 900 1.15rem ui-monospace, monospace;
+  text-shadow: 0 0 9px rgba(255, 60, 172, 0.78);
+}
+
+.miami-world-score-entry-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 0.55fr) minmax(130px, 1fr);
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+
+.miami-world-score-entry-row input,
+.miami-world-score-entry-row button,
+.miami-world-scores-refresh {
+  min-height: 42px;
+  box-sizing: border-box;
+  border: 1px solid rgba(34, 223, 243, 0.62);
+  border-radius: 4px;
+  background: rgba(5, 16, 34, 0.9);
+  color: #f4ffff;
+  font: 800 0.75rem ui-monospace, monospace;
+  letter-spacing: 0.09em;
+}
+
+.miami-world-score-entry-row input {
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
+  text-align: center;
+  color: #ff8bd0;
+  font-size: 1rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.miami-world-score-entry-row button,
+.miami-world-scores-refresh {
+  cursor: pointer;
+}
+
+.miami-world-score-entry-row button:disabled,
+.miami-world-scores-refresh:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.miami-world-score-entry-row input:focus-visible,
+.miami-world-score-entry-row button:focus-visible,
+.miami-world-scores-refresh:focus-visible,
+.miami-world-scores-close:focus-visible {
+  outline: 2px solid #ff3cac;
+  outline-offset: 2px;
+}
+
+.miami-world-score-status {
+  min-height: 1.1em;
+  margin: 0.5rem 0 0;
+  color: #c9b8ff;
+  font-size: 0.7rem;
+}
+
+.miami-world-scores-list {
+  overflow: hidden;
+  border: 1px solid rgba(114, 91, 158, 0.42);
+  border-radius: 5px;
+  background: rgba(2, 5, 14, 0.74);
+}
+
+.miami-world-score-row {
+  display: grid;
+  grid-template-columns: 2.3rem 4rem 1fr;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2rem;
+  padding: 0.22rem 0.55rem;
+  box-sizing: border-box;
+  border-bottom: 1px solid rgba(114, 91, 158, 0.18);
+  font: 700 0.76rem ui-monospace, monospace;
+}
+
+.miami-world-score-row:last-child {
+  border-bottom: 0;
+}
+
+.miami-world-score-row:nth-child(odd) {
+  background: rgba(34, 223, 243, 0.025);
+}
+
+.miami-world-score-row.is-first {
+  background: linear-gradient(90deg, rgba(255, 60, 172, 0.11), rgba(34, 223, 243, 0.06));
+}
+
+.miami-world-score-rank {
+  color: #7f8eae;
+}
+
+.miami-world-score-name {
+  color: #22dff3;
+  letter-spacing: 0.12em;
+}
+
+.miami-world-score-row:nth-child(even) .miami-world-score-name {
+  color: #ff63bd;
+}
+
+.miami-world-score-row.is-first .miami-world-score-name {
+  color: #f4ffff;
+  text-shadow:
+    0 0 7px #ff3cac,
+    0 0 10px #22dff3;
+}
+
+.miami-world-score-points {
+  justify-self: end;
+  color: #f1efff;
+  font-weight: 900;
+}
+
+.miami-world-scores-message {
+  padding: 1.1rem 0.8rem;
+  color: #a8b4d4;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.miami-world-scores-message.is-error {
+  color: #ff9bd2;
+}
+
+.miami-world-scores-refresh {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 430px) {
+  .miami-world-scores {
+    padding: 8px;
+  }
+
+  .miami-world-scores-card {
+    width: min(96vw, 470px);
+    padding: 14px;
+  }
+
+  .miami-world-score-row {
+    grid-template-columns: 2rem 3.6rem 1fr;
+    padding-inline: 0.4rem;
+    font-size: 0.7rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .miami-world-scores,
+  .miami-world-scores * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
