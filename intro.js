@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. The loader is the sole owner of the visible build label.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260908-PERF1-LOWER1';
+  const CURRENT_BUILD = 'Build 20260908-PERF1-CLOCK1';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -162,8 +162,14 @@ window.addEventListener('load', () => {
                                           pauseControlsScript.src = 'pause-controls.js?v=20260908-perf1';
                                           pauseControlsScript.async = false;
                                           pauseControlsScript.addEventListener('load', () => {
-                                            stampCurrentBuild();
-                                            window.setTimeout(stampCurrentBuild, 400);
+                                            const clockEventScript = document.createElement('script');
+                                            clockEventScript.src = 'clock-event.js?v=20260908-clock1';
+                                            clockEventScript.async = false;
+                                            clockEventScript.addEventListener('load', () => {
+                                              stampCurrentBuild();
+                                              window.setTimeout(stampCurrentBuild, 400);
+                                            }, { once: true });
+                                            document.body.appendChild(clockEventScript);
                                           }, { once: true });
                                           document.body.appendChild(pauseControlsScript);
                                         }, { once: true });
