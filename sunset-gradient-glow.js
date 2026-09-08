@@ -229,6 +229,10 @@
           phase += age / 520;
           energy = 1;
           break;
+        case 'orbit':
+          phase += age / 240 + Math.sin(age / 72) * 0.09;
+          energy = 1;
+          break;
         case 'drain':
           phase += 0.08;
           energy = Math.max(
@@ -317,6 +321,7 @@
   window.addEventListener('miami-spinner-exit', () => trigger('spinner', 1100));
   window.addEventListener('miami-magnet-capture', () => trigger('magnet', 900));
   window.addEventListener('miami-reef-complete', () => trigger('reef', 1500));
+  window.addEventListener('miami-sunset-orbit-complete', () => trigger('orbit', 1800));
 
   window.addEventListener('miami-impact', event => {
     const detail = event.detail || {};
