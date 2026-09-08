@@ -5,7 +5,7 @@
   if (window.miamiWorldHighScoresInstalled) return;
   window.miamiWorldHighScoresInstalled = true;
 
-  const API_URL = 'https://miami-nights-board-api.rich-gothic.workers.dev/api/board';
+  const API_URL = 'https://pinball.rich-gothic.workers.dev/api/board';
   const BOARD_LIMIT = 20;
   const INITIALS_KEY = 'miami-nights-world-initials-v1';
 
