@@ -66,7 +66,7 @@
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. The loader is the sole owner of the visible build label.
 window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260907-STRATEGY1P';
+  const CURRENT_BUILD = 'Build 20260907-STRATEGY1Q';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -154,8 +154,20 @@ window.addEventListener('load', () => {
                                       highScoresScript.src = 'high-scores.js?v=20260907-world3';
                                       highScoresScript.async = false;
                                       highScoresScript.addEventListener('load', () => {
-                                        stampCurrentBuild();
-                                        window.setTimeout(stampCurrentBuild, 400);
+                                        const reverseLoopScript = document.createElement('script');
+                                        reverseLoopScript.src = 'reverse-loop.js?v=20260907-reverse1';
+                                        reverseLoopScript.async = false;
+                                        reverseLoopScript.addEventListener('load', () => {
+                                          const pauseControlsScript = document.createElement('script');
+                                          pauseControlsScript.src = 'pause-controls.js?v=20260907-pause1';
+                                          pauseControlsScript.async = false;
+                                          pauseControlsScript.addEventListener('load', () => {
+                                            stampCurrentBuild();
+                                            window.setTimeout(stampCurrentBuild, 400);
+                                          }, { once: true });
+                                          document.body.appendChild(pauseControlsScript);
+                                        }, { once: true });
+                                        document.body.appendChild(reverseLoopScript);
                                       }, { once: true });
                                       document.body.appendChild(highScoresScript);
                                     }, { once: true });
