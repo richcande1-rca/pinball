@@ -17,7 +17,7 @@
   const INNER_RX = 57;
   const INNER_RY = 44;
   const OUTER_RX = 86;
-  const OUTER_RY = 68;
+  const OUTER_RY = 72;
   const RAIL_STEPS = 40;
   const LAMP_VALUE = 100;
   const COMPLETE_VALUE = 5000;
@@ -34,7 +34,7 @@
     return delta;
   }
 
-  const sharedOpenings = [
+  const entryOpenings = [
     { angle: 0, halfWidth: 0.30 },
     { angle: Math.PI, halfWidth: 0.30 },
     { angle: Math.PI / 2, halfWidth: 0.24 }
@@ -43,7 +43,7 @@
   // The outer top stays open beneath the three center standups so the new
   // feature does not collide with or visually crowd that existing target bank.
   const outerOpenings = [
-    ...sharedOpenings,
+    ...entryOpenings,
     { angle: -Math.PI / 2, halfWidth: 0.50 }
   ];
 
@@ -72,7 +72,9 @@
     return rails;
   }
 
-  const innerRails = buildEllipseRails(INNER_RX, INNER_RY, sharedOpenings);
+  // Keep the inner wall continuous so entries feed the annular channel instead
+  // of letting a straight shot cut across the palm artwork itself.
+  const innerRails = buildEllipseRails(INNER_RX, INNER_RY, []);
   const outerRails = buildEllipseRails(OUTER_RX, OUTER_RY, outerOpenings);
   const allRails = [...innerRails, ...outerRails];
 
