@@ -1,7 +1,8 @@
 // Miami Nights: center clock event.
 // Clear the three upper and three lower field barriers in one ball to open
-// the clock. Six alternating clock lamps then rise into live bumper pegs for
-// the rest of that ball. The clock closes again on the next ball/new game.
+// the clock. Six alternating clock lamps then rise into high-bounce pegs.
+// Knock down all six pegs to complete the clock event; everything resets on
+// the next ball/new game.
 
 (() => {
   if (window.miamiClockEventInstalled) return;
@@ -13,14 +14,16 @@
   const RADIUS_Y = 55;
   const PEG_LAMP_INDICES = [0, 2, 4, 6, 8, 10];
   const PEG_RADIUS = 5.4;
-  const PEG_KICK = 150;
-  const PEG_RESTITUTION = 0.88;
+  const PEG_KICK = 420;
+  const PEG_RESTITUTION = 0.94;
   const OPEN_REVEAL_MS = 760;
 
   const upperBarrierHits = new Set();
   const lowerBarrierHits = new Set();
   const state = {
     open: false,
+    completed: false,
+    remaining: 6,
     openedAt: -Infinity
   };
   window.miamiClockEventState = state;
@@ -34,7 +37,7 @@
       radius: PEG_RADIUS,
       kick: PEG_KICK,
       accent: pegIndex % 2 === 0 ? 'cyan' : 'magenta',
-      armed: true,
+      dropped: false,
       flashStartedAt: -Infinity
     };
   });
@@ -42,12 +45,14 @@
   function resetClockEvent() {
     const wasOpen = state.open;
     state.open = false;
+    state.completed = false;
+    state.remaining = pegs.length;
     state.openedAt = -Infinity;
     upperBarrierHits.clear();
     lowerBarrierHits.clear();
 
     for (const peg of pegs) {
-      peg.armed = true;
+      peg.dropped = false;
       peg.flashStartedAt = -Infinity;
     }
 
@@ -61,14 +66,17 @@
     if (upperBarrierHits.size < 3 || lowerBarrierHits.size < 3) return;
 
     state.open = true;
+    state.completed = false;
+    state.remaining = pegs.length;
     state.openedAt = performance.now();
-    for (const peg of pegs) peg.armed = true;
+    for (const peg of pegs) peg.dropped = false;
 
     window.dispatchEvent(new CustomEvent('miami-clock-open', {
       detail: {
         upperBarriers: upperBarrierHits.size,
         lowerBarriers: lowerBarrierHits.size,
-        totalBarriers: 6
+        totalBarriers: 6,
+        clockPegs: pegs.length
       }
     }));
   }
@@ -113,6 +121,8 @@
   }
 
   function collideWithClockPeg(peg, pegIndex, now) {
+    if (peg.dropped) return false;
+
     const rise = pegRise(pegIndex, now);
     if (rise < 0.92) return false;
 
@@ -120,10 +130,6 @@
     let dy = ball.y - peg.y;
     let distance = Math.hypot(dx, dy);
     const contactDistance = ball.radius + peg.radius;
-
-    if (!peg.armed && distance > contactDistance + 10) {
-      peg.armed = true;
-    }
     if (distance >= contactDistance) return false;
 
     if (distance < 0.0001) {
@@ -146,7 +152,7 @@
       ball.vy += impulse * ny;
     }
 
-    if (peg.armed && incomingNormalSpeed >= 35) {
+    if (incomingNormalSpeed >= 35) {
       const jitter = (Math.random() - 0.5) * 0.18;
       const cos = Math.cos(jitter);
       const sin = Math.sin(jitter);
@@ -155,13 +161,17 @@
 
       ball.vx += kickX * peg.kick;
       ball.vy += kickY * peg.kick;
-      peg.armed = false;
+      peg.dropped = true;
       peg.flashStartedAt = now;
+      state.remaining = pegs.reduce(
+        (remaining, candidate) => remaining + (candidate.dropped ? 0 : 1),
+        0
+      );
 
       window.dispatchEvent(new CustomEvent('miami-impact', {
         detail: {
           type: 'post',
-          strength: clamp(incomingNormalSpeed / 650, 0.14, 1),
+          strength: clamp((incomingNormalSpeed + peg.kick * 0.45) / 650, 0.2, 1),
           x: peg.x,
           y: peg.y,
           index: 60 + pegIndex
@@ -173,9 +183,17 @@
           pegIndex,
           lampIndex: peg.lampIndex,
           x: peg.x,
-          y: peg.y
+          y: peg.y,
+          remaining: state.remaining
         }
       }));
+
+      if (state.remaining === 0 && !state.completed) {
+        state.completed = true;
+        window.dispatchEvent(new CustomEvent('miami-clock-complete', {
+          detail: { pegsKnockedDown: pegs.length }
+        }));
+      }
     }
 
     return true;
@@ -184,7 +202,7 @@
   const baseUpdateWithClockEvent = update;
   update = function updateWithClockEvent(dt) {
     baseUpdateWithClockEvent(dt);
-    if (!state.open || !liveBallOnMainPlayfield()) return;
+    if (!state.open || state.completed || !liveBallOnMainPlayfield()) return;
 
     const now = performance.now();
     for (let index = 0; index < pegs.length; index += 1) {
@@ -235,6 +253,24 @@
         ? 1 - hitAge / 220
         : 0;
       const radius = peg.radius * (0.52 + rise * 0.48);
+
+      // A successful clock hit knocks the post out of play. Leave only a brief
+      // floor-level glint so the player can see which post just fell.
+      if (peg.dropped) {
+        if (hitFlash <= 0) continue;
+        ctx.save();
+        ctx.translate(peg.x, peg.y);
+        ctx.globalAlpha = hitFlash * 0.85;
+        ctx.strokeStyle = '#ffffff';
+        ctx.shadowColor = accent;
+        ctx.shadowBlur = mobile ? 0 : 12;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * (0.75 + (1 - hitFlash) * 0.45), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        continue;
+      }
 
       ctx.save();
       ctx.translate(peg.x, peg.y);
