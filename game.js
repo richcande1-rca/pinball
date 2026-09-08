@@ -2408,17 +2408,21 @@ function draw() {
 const fixedStep = 1 / 240;
 let accumulator = 0;
 let previousTime = performance.now();
+let frameWasIdle = false;
 
 function frame(now) {
   let frameTime = (now - previousTime) / 1000;
   previousTime = now;
 
-  if (window.miamiGameStarted === false) {
+  if (window.miamiGameStarted === false || window.miamiGamePaused === true) {
     accumulator = 0;
-    draw();
+    if (!frameWasIdle) draw();
+    frameWasIdle = true;
     requestAnimationFrame(frame);
     return;
   }
+
+  frameWasIdle = false;
 
   // Avoid giant physics jumps after the tab has been inactive.
   // Mobile browsers can occasionally render below 20 FPS. Allow the fixed-step
