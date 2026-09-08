@@ -1,7 +1,7 @@
 // Miami Nights: small secondary targets in previously dead playfield space.
 // The three center targets are a compact drop bank: each folds away when hit
-// and the bank resets shortly after all three are down. Side-wall targets stay
-// fixed. Group metadata/events remain available for later strategy rules.
+// and stays down for the rest of the current ball. Side-wall targets stay fixed.
+// Group metadata/events remain available for later strategy rules.
 
 (() => {
   if (window.miamiSecondaryTargetsInstalled) return;
@@ -9,7 +9,7 @@
 
   const secondaryTargets = [
     // Three compact drop targets around the palm/cars. They disappear after a
-    // solid hit so the lower center opens back up during play.
+    // solid hit and return only when the next ball is set up.
     { x1: 112, y1: 430, x2: 126, y2: 430, radius: 3.25, value: 300, accent: 'cyan', group: 'center', groupIndex: 0, drop: true, dropped: false, armed: true, flashStartedAt: -Infinity },
     { x1: 294, y1: 430, x2: 308, y2: 430, radius: 3.25, value: 300, accent: 'magenta', group: 'center', groupIndex: 1, drop: true, dropped: false, armed: true, flashStartedAt: -Infinity },
     { x1: 203, y1: 505, x2: 217, y2: 505, radius: 3.25, value: 300, accent: 'lavender', group: 'center', groupIndex: 2, drop: true, dropped: false, armed: true, flashStartedAt: -Infinity },
@@ -47,8 +47,7 @@
   }
 
   const centerDropTargets = secondaryTargets.filter(target => target.group === 'center');
-  const CENTER_BANK_RESET_DELAY = 1.0;
-  let centerBankResetRemaining = 0;
+  let centerBankCompletedThisBall = false;
   let centerBankCompleteFlashStartedAt = -Infinity;
 
   function pointInside(bounds) {
@@ -81,7 +80,7 @@
   }
 
   function resetCenterDropBank() {
-    centerBankResetRemaining = 0;
+    centerBankCompletedThisBall = false;
     for (const target of centerDropTargets) {
       target.dropped = false;
       target.armed = true;
@@ -157,11 +156,11 @@
 
       if (
         target.drop &&
-        centerBankResetRemaining <= 0 &&
+        !centerBankCompletedThisBall &&
         centerDropTargets.every(candidate => candidate.dropped)
       ) {
+        centerBankCompletedThisBall = true;
         centerBankCompleteFlashStartedAt = performance.now();
-        centerBankResetRemaining = CENTER_BANK_RESET_DELAY;
         window.dispatchEvent(new CustomEvent('miami-secondary-bank-complete', {
           detail: { group: 'center', score }
         }));
@@ -174,11 +173,6 @@
   const baseUpdateWithSecondaryTargets = update;
   update = function updateWithSecondaryTargets(dt) {
     baseUpdateWithSecondaryTargets(dt);
-
-    if (centerBankResetRemaining > 0) {
-      centerBankResetRemaining = Math.max(0, centerBankResetRemaining - dt);
-      if (centerBankResetRemaining === 0) resetCenterDropBank();
-    }
 
     if (
       gameOver ||
@@ -204,7 +198,7 @@
     const flash = age >= 0 && age < 260 ? 1 - age / 260 : 0;
 
     // A dropped target leaves only a momentary floor-level glint, then clears
-    // completely out of the playfield until the three-target bank resets.
+    // completely out of the playfield until the next ball is set up.
     if (target.drop && target.dropped) {
       if (flash <= 0) return;
       ctx.save();
