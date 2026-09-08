@@ -6,6 +6,7 @@
   window.miamiPauseControlsInstalled = true;
 
   let paused = false;
+  window.miamiGamePaused = false;
 
   const controlStrip = document.querySelector('.control-strip');
   if (!controlStrip) return;
@@ -148,6 +149,7 @@
     }
 
     paused = Boolean(nextPaused);
+    window.miamiGamePaused = paused;
     if (paused && typeof releaseAllControls === 'function') {
       releaseAllControls();
     }
