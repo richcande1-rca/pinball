@@ -127,7 +127,7 @@ window.addEventListener('load', () => {
                           sunsetMotifCleanScript.async = false;
                           sunsetMotifCleanScript.addEventListener('load', () => {
                             const sunsetGlowScript = document.createElement('script');
-                            sunsetGlowScript.src = 'sunset-gradient-glow.js?v=20260906-gradient5';
+                            sunsetGlowScript.src = 'sunset-gradient-glow.js?v=20260908-orbit1';
                             sunsetGlowScript.async = false;
                             sunsetGlowScript.addEventListener('load', () => {
                               const palmRingScript = document.createElement('script');
