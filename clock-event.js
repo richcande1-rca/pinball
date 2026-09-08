@@ -14,8 +14,8 @@
   const RADIUS_Y = 55;
   const PEG_LAMP_INDICES = [0, 2, 4, 6, 8, 10];
   const PEG_RADIUS = 5.4;
-  const PEG_KICK = 420;
-  const PEG_RESTITUTION = 0.94;
+  const PEG_KICK = 300;
+  const PEG_RESTITUTION = 0.90;
   const OPEN_REVEAL_MS = 760;
 
   const upperBarrierHits = new Set();
