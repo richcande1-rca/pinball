@@ -7,28 +7,68 @@
 
   let paused = false;
 
-  const helpBar = document.querySelector('.help-bar');
-  if (!helpBar) return;
+  const controlStrip = document.querySelector('.control-strip');
+  if (!controlStrip) return;
 
+  // Keep the two utility controls in the top cabinet strip so phones do not
+  // spend vertical space on full-width buttons below the playfield. High scores
+  // mirrors the score at upper left; pause mirrors the music controls at right.
   const worldScoresButton = document.getElementById('miami-world-scores-button');
+  if (worldScoresButton) {
+    worldScoresButton.textContent = 'HIGH SCORES';
+    worldScoresButton.setAttribute('aria-label', 'World high scores');
+    controlStrip.appendChild(worldScoresButton);
+  }
+
   const pauseButton = document.createElement('button');
   pauseButton.id = 'miami-pause-button';
   pauseButton.className = 'miami-world-scores-button';
   pauseButton.type = 'button';
-  pauseButton.textContent = 'PAUSE (P)';
+  pauseButton.textContent = 'PAUSE · P';
+  pauseButton.setAttribute('aria-label', 'Pause game');
   pauseButton.setAttribute('aria-pressed', 'false');
   pauseButton.disabled = !window.miamiGameStarted;
-
-  if (worldScoresButton) {
-    worldScoresButton.insertAdjacentElement('beforebegin', pauseButton);
-  } else {
-    helpBar.insertAdjacentElement('beforebegin', pauseButton);
-  }
+  controlStrip.appendChild(pauseButton);
 
   const style = document.createElement('style');
   style.textContent = `
+    .control-strip {
+      row-gap: 0.18rem;
+    }
+
+    .control-strip #miami-world-scores-button,
+    .control-strip #miami-pause-button {
+      width: auto;
+      min-width: 0;
+      min-height: 1.45rem;
+      margin: 0;
+      padding: 0.18rem 0.42rem;
+      white-space: nowrap;
+      font-size: 0.5rem;
+      letter-spacing: 0.08em;
+      line-height: 1;
+      align-self: center;
+    }
+
+    .control-strip #miami-world-scores-button {
+      grid-column: 1;
+      grid-row: 2;
+      justify-self: start;
+    }
+
+    .control-strip #miami-world-scores-button::before {
+      margin-right: 0.3rem;
+    }
+
+    .control-strip #miami-pause-button {
+      grid-column: 3;
+      grid-row: 2;
+      justify-self: end;
+    }
+
     #miami-pause-button::before {
       content: 'Ⅱ';
+      margin-right: 0.3rem;
     }
 
     #miami-pause-button[aria-pressed="true"] {
@@ -37,6 +77,11 @@
       box-shadow:
         inset 0 0 18px rgba(34, 223, 243, 0.12),
         0 0 16px rgba(255, 60, 172, 0.16);
+    }
+
+    #miami-pause-button:disabled {
+      opacity: 0.46;
+      cursor: default;
     }
 
     .miami-pause-overlay {
@@ -67,6 +112,21 @@
         0 0 14px rgba(255, 60, 172, 0.45);
       box-shadow: 0 0 28px rgba(34, 223, 243, 0.18);
     }
+
+    @media (max-width: 430px) {
+      .control-strip #miami-world-scores-button,
+      .control-strip #miami-pause-button {
+        min-height: 1.3rem;
+        padding: 0.14rem 0.28rem;
+        font-size: 0.42rem;
+        letter-spacing: 0.045em;
+      }
+
+      .control-strip #miami-world-scores-button::before,
+      #miami-pause-button::before {
+        margin-right: 0.2rem;
+      }
+    }
   `;
   document.head.appendChild(style);
 
@@ -92,7 +152,8 @@
       releaseAllControls();
     }
 
-    pauseButton.textContent = paused ? 'RESUME (P)' : 'PAUSE (P)';
+    pauseButton.textContent = paused ? 'RESUME · P' : 'PAUSE · P';
+    pauseButton.setAttribute('aria-label', paused ? 'Resume game' : 'Pause game');
     pauseButton.setAttribute('aria-pressed', String(paused));
     overlay.hidden = !paused;
     overlay.setAttribute('aria-hidden', String(!paused));
