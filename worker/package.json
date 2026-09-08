@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "db:init:local": "wrangler d1 execute orbit_board --local --file=./schema.sql",
-    "db:init:remote": "wrangler d1 execute orbit_board --remote --file=./schema.sql"
+    "db:init:local": "wrangler d1 execute miami_nights_board --local --file=./schema.sql",
+    "db:init:remote": "wrangler d1 execute miami_nights_board --remote --file=./schema.sql"
   },
   "devDependencies": {
     "wrangler": "latest"
