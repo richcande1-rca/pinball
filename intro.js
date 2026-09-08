@@ -63,10 +63,48 @@
   window.addEventListener('keyup', blockGameKeys);
 })();
 
+// Prewarm the late feature files in parallel. Their execution order below stays
+// exactly the same, but a cold load no longer waits on one network request
+// before the browser can even begin fetching the next file.
+(() => {
+  const featurePreloads = [
+    'circle3x.js?v=20260906-buildowner',
+    'businesses.js?v=20260906-perf1',
+    'cars.js?v=20260904-ferraritransparent',
+    'center-post.js?v=20260904-centerpost',
+    'displays.js?v=20260906-polish1',
+    'recovery-outlet-polish.js?v=20260906-outlet1',
+    'reef-feedback.js?v=20260902-displaycache',
+    'extra-ball-feedback.js?v=20260906-buildowner',
+    'shooter-return-fix.js?v=20260904-shooterreturn',
+    'pocket-targets.js?v=20260905-pockettargets',
+    'secondary-targets.js?v=20260908-lower1',
+    'sunset-field.js?v=20260905-ribopt',
+    'sunset-motif-clean.js?v=20260906-clean1',
+    'sunset-gradient-glow.js?v=20260906-gradient5',
+    'palm-ring.js?v=20260905-palmringopt',
+    'deflector-removal.js?v=20260905-nodeflectors',
+    'strategy-rules.js?v=20260906-perf1',
+    'captive-repeat.js?v=20260905-repeat-extraball',
+    'high-scores.js?v=20260907-world3',
+    'reverse-loop.js?v=20260907-reverse1',
+    'pause-controls.js?v=20260908-perf1',
+    'clock-event.js?v=20260908-clock3'
+  ];
+
+  for (const href of featurePreloads) {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'script';
+    link.href = href;
+    document.head.appendChild(link);
+  }
+})();
+
 // Late-load small feature hooks after all core/table scripts have established
 // their globals. The loader is the sole owner of the visible build label.
-window.addEventListener('load', () => {
-  const CURRENT_BUILD = 'Build 20260908-PERF1-CLOCK2';
+document.addEventListener('DOMContentLoaded', () => {
+  const CURRENT_BUILD = 'Build 20260908-PERF1-CLOCK3';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -163,7 +201,7 @@ window.addEventListener('load', () => {
                                           pauseControlsScript.async = false;
                                           pauseControlsScript.addEventListener('load', () => {
                                             const clockEventScript = document.createElement('script');
-                                            clockEventScript.src = 'clock-event.js?v=20260908-clock2';
+                                            clockEventScript.src = 'clock-event.js?v=20260908-clock3';
                                             clockEventScript.async = false;
                                             clockEventScript.addEventListener('load', () => {
                                               stampCurrentBuild();
