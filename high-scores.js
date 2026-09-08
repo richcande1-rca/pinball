@@ -299,6 +299,14 @@
   overlay.addEventListener('pointerdown', event => {
     if (event.target === overlay) closeBoard();
   });
+  // Keep score-entry typing from reaching the game's global keyboard controls.
+  // This prevents initials such as R or Z from resetting the game or firing a flipper.
+  overlay.addEventListener('keydown', event => {
+    event.stopPropagation();
+  });
+  overlay.addEventListener('keyup', event => {
+    event.stopPropagation();
+  });
   window.addEventListener('keydown', event => {
     if (!boardOpen || event.code !== 'Escape') return;
     event.preventDefault();
