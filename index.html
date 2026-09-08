@@ -87,6 +87,7 @@
         Magnetic target: 500 points. Complete the upper-left loop: 2500 points.
         Loop bumpers score escalating 100, 200, and 300-point volleys.
         Captive ball: 500 points per solid hit; reach its top switch for 2500 more; five solid hits light all five lamps and award one extra ball. Hit the captive cage roof from above for 1000 points.
+        Knock down the three upper gates above the sunset to start 18 seconds of 2X scoring.
         Loose balls ricocheting behind Ocean Drive flare the upper-wall neon.
         Knock down 3-0-5 for 500 each and a 3000-point bank bonus; completing the bank blocks the left outlane until that ball drains.
         Take the elevated OCEAN DRIVE ramp for 100 points per spinner rotation.
@@ -97,7 +98,7 @@
     </details>
   </main>
 
-  <script src="intro.js?v=20260908-perf1-clean1"></script>
+  <script src="intro.js?v=20260908-perf1"></script>
   <script src="game.js?v=20260908-perf1"></script>
   <script>
     // Tuck the scoop immediately beneath Ocean Drive and keep its playfield
@@ -222,7 +223,11 @@
       y2: 466
     });
 
-    const centerStandupTargets = [];
+    const centerStandupTargets = [
+      { x1: 122, y1: 278, x2: 166, y2: 278, radius: 4.5, value: 300, accent: 'cyan', hit: false, flashStartedAt: -Infinity },
+      { x1: 188, y1: 264, x2: 232, y2: 264, radius: 4.5, value: 300, accent: 'lavender', hit: false, flashStartedAt: -Infinity },
+      { x1: 254, y1: 278, x2: 298, y2: 278, radius: 4.5, value: 300, accent: 'magenta', hit: false, flashStartedAt: -Infinity }
+    ];
     const centerStandupBank = {
       completeFlashStartedAt: -Infinity
     };
@@ -306,8 +311,6 @@
     }
 
     function drawCenterStandupTargets() {
-      if (centerStandupTargets.length === 0) return;
-
       const now = performance.now();
       const completionAge = now - centerStandupBank.completeFlashStartedAt;
       const completionFlash = completionAge >= 0 && completionAge < 700
