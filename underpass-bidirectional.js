@@ -11,6 +11,14 @@
   const mouthCooldownUntil = [];
   let tripSerial = 0;
 
+  // The original upper scoop remains intentionally forgiving. Secondary mouths
+  // are exits first and optional skill-shot entrances second, so they use a much
+  // tighter capture area and require a more direct inward approach.
+  const SECONDARY_ENTRY_RADIUS_SCALE = 0.56;
+  const SECONDARY_MIN_SPEED = 240;
+  const SECONDARY_MIN_INWARD_SPEED = 150;
+  const SECONDARY_MIN_ALIGNMENT = 0.72;
+
   function outwardAngle(mouth) {
     if (mouth.edge === 'top') return -Math.PI / 2;
     if (mouth.edge === 'bottom') return Math.PI / 2;
@@ -39,19 +47,32 @@
     }
   }
 
-  function ballApproachesMouth(mouth) {
+  function ballApproachesMouth(mouth, primary = false) {
     const dx = ball.x - mouth.x;
     const dy = ball.y - mouth.y;
-    if (Math.hypot(dx, dy) > mouth.radius) return false;
+    const speed = Math.hypot(ball.vx, ball.vy);
+    const effectiveRadius = primary
+      ? mouth.radius
+      : Math.max(ball.radius + 2, mouth.radius * SECONDARY_ENTRY_RADIUS_SCALE);
+
+    if (Math.hypot(dx, dy) > effectiveRadius) return false;
 
     const angle = outwardAngle(mouth);
     const outwardX = Math.cos(angle);
     const outwardY = Math.sin(angle);
     const outwardSpeed = ball.vx * outwardX + ball.vy * outwardY;
+    const inwardSpeed = -outwardSpeed;
 
-    // Entering means moving against the mouth's outward direction. Keep the
-    // old scoop's minimum approach/speed requirements for every mouth.
-    return outwardSpeed < -70 && Math.hypot(ball.vx, ball.vy) >= 180;
+    if (primary) {
+      // Preserve the original scoop's established entry feel.
+      return inwardSpeed > 70 && speed >= 180;
+    }
+
+    // Secondary mouths should accept deliberate-looking shots, not nearby
+    // ricochets. Require both enough inward speed and a mostly head-on vector.
+    return speed >= SECONDARY_MIN_SPEED &&
+      inwardSpeed >= SECONDARY_MIN_INWARD_SPEED &&
+      inwardSpeed / speed >= SECONDARY_MIN_ALIGNMENT;
   }
 
   tryEnterUnderpass = function tryEnterBidirectionalUnderpass() {
@@ -61,7 +82,7 @@
     const mouths = currentMouths();
     const sourceIndex = mouths.findIndex((mouth, index) =>
       now >= (mouthCooldownUntil[index] || -Infinity) &&
-      ballApproachesMouth(mouth)
+      ballApproachesMouth(mouth, index === 0)
     );
     if (sourceIndex < 0) return false;
 
@@ -139,7 +160,7 @@
   const stampBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) {
-      buildNumberDisplay.textContent = 'Build 20260910-PERF1-MB2-UP2';
+      buildNumberDisplay.textContent = 'Build 20260910-PERF1-MB2-UP2A';
     }
   };
   stampBuild();
