@@ -103,12 +103,12 @@
   };
 })();
 
-// LOWER1: install the first lower-third makeover after the safety post. The
-// post remains untouched and active for this test pass.
+// LOWER2: install the physical lower-third rearchitecture after the temporary
+// safety post. The post remains untouched and active for this test pass.
 (() => {
   if (window.miamiLowerPlayfieldInstalled) return;
   const script = document.createElement('script');
-  script.src = 'lower-playfield.js?v=20260910-lower1';
+  script.src = 'lower-playfield.js?v=20260910-lower2';
   script.async = false;
   document.body.appendChild(script);
 })();
