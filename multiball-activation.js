@@ -51,3 +51,14 @@
   stampBuild();
   window.setTimeout(stampBuild, 400);
 })();
+
+// Underpass upgrade: every existing tunnel mouth is now bidirectional while
+// retaining blind random routing. Load this after MB2 so the peer engine also
+// uses the same final underpass functions through its saved route context.
+(() => {
+  if (window.miamiBidirectionalUnderpassInstalled) return;
+  const script = document.createElement('script');
+  script.src = 'underpass-bidirectional.js?v=20260910-up2';
+  script.async = false;
+  document.body.appendChild(script);
+})();
