@@ -1,4 +1,4 @@
-// Miami Nights: lower-third physical rearchitecture, pass 2.
+// Miami Nights: lower-third physical rearchitecture, pass 2A.
 // This pass changes the actual playable lower geometry: flipper placement,
 // sling placement, inlane/outlane rails, shooter-recovery junction, and the
 // lower-right underpass mouth. Core flipper physics and ball size stay intact.
@@ -7,7 +7,7 @@
   if (window.miamiLowerPlayfieldInstalled) return;
   window.miamiLowerPlayfieldInstalled = true;
 
-  const BUILD = 'Build 20260910-PERF1-LOWER2';
+  const BUILD = 'Build 20260910-PERF1-MB2-UP2A-LOWER2A';
 
   // --- Flipper geometry ----------------------------------------------------
   // Preserve the established rotating-segment physics, cradle logic and stored
@@ -130,17 +130,36 @@
     }
   );
 
+  // LOWER2 originally exposed the first recovery-rail endpoint at x=447,
+  // inside the 456 px cabinet wall. With an 8 px ball and 4 px rail that made
+  // the endpoint's collision envelope overlap the wall and form a tiny catch.
+  // Start the physical rail safely beyond the wall instead, so the returning
+  // ball meets one continuous diagonal surface with no reachable corner.
   shooterRecoveryGuidePoints.splice(
     0,
     shooterRecoveryGuidePoints.length,
-    { x: 447, y: 508 },
-    { x: 443, y: 522 },
-    { x: 434, y: 536 },
-    { x: 421, y: 548 },
-    { x: 405, y: 558 },
-    { x: 386, y: 566 },
-    { x: 360, y: 570 }
+    { x: 470, y: 498 },
+    { x: 448, y: 518 },
+    { x: 438, y: 533 },
+    { x: 425, y: 546 },
+    { x: 409, y: 557 },
+    { x: 390, y: 566 },
+    { x: 370, y: 570 },
+    { x: 350, y: 574 }
   );
+
+  // Keep the visible guide clipped to the inside edge of the cabinet. Physics
+  // gets the off-table lead-in above; the player only sees the usable rail.
+  const recoveryVisualGuidePoints = [
+    { x: TABLE.right, y: 511 },
+    { x: 448, y: 518 },
+    { x: 438, y: 533 },
+    { x: 425, y: 546 },
+    { x: 409, y: 557 },
+    { x: 390, y: 566 },
+    { x: 370, y: 570 },
+    { x: 350, y: 574 }
+  ];
 
   const lowerRecoveryRails = makeRailSegments(shooterRecoveryGuidePoints, 4);
   const baseUpdateWithLowerGeometry = update;
@@ -285,6 +304,15 @@
     }
   };
 
+  // Draw the recovery guide with the on-table visual path, while the collision
+  // rail keeps its safe lead-in beyond the cabinet wall.
+  drawShooterRecoveryGate = function drawLowerRecoveryGate() {
+    ctx.save();
+    ctx.globalAlpha = shooterRoute === 'recovery' ? 1 : 0.38;
+    drawSmoothNeonRail(recoveryVisualGuidePoints, MIAMI_COLORS.magenta);
+    ctx.restore();
+  };
+
   // A higher, deeper apron makes the committed outlanes and the central drain
   // read as deliberate hardware rather than empty canvas. It remains below the
   // live collision surface; the lane rails and flippers above own the physics.
@@ -335,10 +363,16 @@
   };
 
   stampBuild();
-  // The late multiball/underpass chain stamps after this early lower-table
-  // module. Reassert LOWER2 after the title sequence so the visible build label
-  // identifies the geometry currently under test.
-  window.setTimeout(stampBuild, 600);
-  window.setTimeout(stampBuild, 1800);
-  window.setTimeout(stampBuild, 3600);
+
+  // The multiball/underpass scripts load later and normally stamp last. Wait
+  // until that final gameplay layer is installed, then identify this combined
+  // build without permanently fighting future build owners.
+  let buildPolls = 0;
+  const buildPoll = window.setInterval(() => {
+    buildPolls += 1;
+    if (window.miamiBidirectionalUnderpassInstalled || buildPolls >= 100) {
+      window.clearInterval(buildPoll);
+      stampBuild();
+    }
+  }, 100);
 })();
