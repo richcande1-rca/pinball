@@ -122,7 +122,7 @@
       magneticTarget.state === 'holding';
   }
 
-  function resolvePeerBallCollision() {
+  function resolvePeerBallCollision(dt = 1 / 240) {
     if (
       !companion.active ||
       ball.ready ||
@@ -135,23 +135,56 @@
     let dy = peer.y - ball.y;
     let distance = Math.hypot(dx, dy);
     const minimum = peer.radius + ball.radius;
-    if (distance >= minimum) return;
+    let nx;
+    let ny;
+    let overlap = 0;
 
-    if (distance < 0.0001) {
-      dx = 1;
-      dy = 0;
-      distance = 1;
+    if (distance < minimum) {
+      if (distance < 0.0001) {
+        dx = 1;
+        dy = 0;
+        distance = 1;
+      }
+      nx = dx / distance;
+      ny = dy / distance;
+      overlap = minimum - distance;
+    } else {
+      // Predict a contact within the next fixed step so fast peer balls cannot
+      // tunnel through each other between 240 Hz samples.
+      const relativeVx = peer.vx - ball.vx;
+      const relativeVy = peer.vy - ball.vy;
+      const a = relativeVx * relativeVx + relativeVy * relativeVy;
+      if (a < 0.000001) return;
+
+      const b = 2 * (dx * relativeVx + dy * relativeVy);
+      if (b >= 0) return;
+
+      const c = distance * distance - minimum * minimum;
+      const discriminant = b * b - 4 * a * c;
+      if (discriminant < 0) return;
+
+      const timeToContact = (-b - Math.sqrt(discriminant)) / (2 * a);
+      if (timeToContact < 0 || timeToContact > dt) return;
+
+      const contactDx = dx + relativeVx * timeToContact;
+      const contactDy = dy + relativeVy * timeToContact;
+      const contactDistance = Math.hypot(contactDx, contactDy);
+      if (contactDistance < 0.0001) {
+        nx = dx / distance;
+        ny = dy / distance;
+      } else {
+        nx = contactDx / contactDistance;
+        ny = contactDy / contactDistance;
+      }
     }
 
-    const nx = dx / distance;
-    const ny = dy / distance;
-    const overlap = minimum - distance;
-
-    // Equal-mass balls share the positional correction equally.
-    ball.x -= nx * overlap * 0.5;
-    ball.y -= ny * overlap * 0.5;
-    peer.x += nx * overlap * 0.5;
-    peer.y += ny * overlap * 0.5;
+    if (overlap > 0) {
+      // Equal-mass balls share the positional correction equally.
+      ball.x -= nx * overlap * 0.5;
+      ball.y -= ny * overlap * 0.5;
+      peer.x += nx * overlap * 0.5;
+      peer.y += ny * overlap * 0.5;
+    }
 
     const relativeNormalSpeed =
       (peer.vx - ball.vx) * nx +
@@ -288,6 +321,22 @@
         shooterRoute = 'released';
         ballHasEnteredPlayfield = true;
       }
+    }
+
+    // Match the normal live-ball recovery feed: a peer returning down the
+    // shooter lane is diverted back above the right flipper instead of draining.
+    if (
+      shooterRoute === 'recovery' &&
+      ball.vy > 0 &&
+      ballIsInShooterLane() &&
+      ball.y >= SHOOTER.recoveryFeedY
+    ) {
+      ball.x = SHOOTER.dividerX - ball.radius - 4;
+      ball.y = SHOOTER.recoveryFeedY;
+      ball.vx = -155;
+      ball.vy = 80;
+      shooterRoute = 'released';
+      ballHasEnteredPlayfield = true;
     }
 
     for (const bumper of sideBumpers) {
@@ -459,7 +508,7 @@
     baseUpdateWithPeerEngine(dt);
     if (!companion.active || gameOver) return;
     stepCompanion(dt);
-    resolvePeerBallCollision();
+    resolvePeerBallCollision(dt);
   };
 
   function companionVisible() {
@@ -507,7 +556,7 @@
   const stampBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) {
-      buildNumberDisplay.textContent = 'Build 20260910-PERF1-MB1';
+      buildNumberDisplay.textContent = 'Build 20260910-PERF1-MB1A';
     }
   };
   stampBuild();
