@@ -174,12 +174,20 @@
   window.setTimeout(stampBuild, 400);
 })();
 
-// MB1 installs the dormant physical peer engine after the lifecycle contract.
-// It is intentionally not connected to CAPTIVE READY yet.
+// MB1 installs the physical peer engine after the lifecycle contract.
 (() => {
   if (window.miamiMultiballEngineInstalled) return;
   const script = document.createElement('script');
   script.src = 'multiball-engine.js?v=20260910-mb1a';
+  script.async = false;
+  document.body.appendChild(script);
+})();
+
+// MB2 connects CAPTIVE READY to the proven MB1A peer engine.
+(() => {
+  if (window.miamiMultiballActivationInstalled) return;
+  const script = document.createElement('script');
+  script.src = 'multiball-activation.js?v=20260910-mb2';
   script.async = false;
   document.body.appendChild(script);
 })();
