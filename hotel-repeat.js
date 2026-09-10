@@ -254,3 +254,13 @@
     baseResetGameWithHotelRepeat();
   };
 })();
+
+// MB0 begins the real multiball work without pretending a second ball exists.
+// Load the lifecycle/peer contract after every current gameplay wrapper is live.
+(() => {
+  if (window.miamiMultiballFoundationInstalled) return;
+  const script = document.createElement('script');
+  script.src = 'multiball-foundation.js?v=20260910-mb0';
+  script.async = false;
+  document.body.appendChild(script);
+})();
