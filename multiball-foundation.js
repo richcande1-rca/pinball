@@ -179,7 +179,7 @@
 (() => {
   if (window.miamiMultiballEngineInstalled) return;
   const script = document.createElement('script');
-  script.src = 'multiball-engine.js?v=20260910-mb1';
+  script.src = 'multiball-engine.js?v=20260910-mb1a';
   script.async = false;
   document.body.appendChild(script);
 })();
