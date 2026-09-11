@@ -45,8 +45,6 @@
     return true;
   }
 
-  // A qualifying captive hit requests multiball, but does not consume O/C/H.
-  // The engine must first prove that a real second peer ball was created.
   function requestTwoBallMultiball(source = 'captive') {
     if (
       state.phase !== 'single' ||
@@ -69,8 +67,6 @@
     return true;
   }
 
-  // The future two-ball engine calls this only after the companion really
-  // exists. This is intentionally the only place that spends CAPTIVE READY.
   function confirmTwoBallMultiballStarted(companionId = 'companion-ball') {
     if (state.phase !== 'starting') return false;
 
@@ -96,9 +92,6 @@
     return true;
   }
 
-  // Peer semantics: during two-ball play there is no primary/disposable ball.
-  // Whichever peer drains first is removed and the survivor simply becomes the
-  // continuing single ball. That first drain consumes no normal ball/life.
   function reportPeerDrain(peerId) {
     if (state.phase !== 'multiball') {
       return { handled: false, consumesNormalBall: true };
@@ -144,9 +137,6 @@
   window.miamiReportMultiballPeerDrain = reportPeerDrain;
   window.miamiCancelMultiballStart = cancelPendingStart;
 
-  // Captive-ball solid hits already arrive as post index 8. For MB0 we only
-  // raise the start request; the next engine layer will satisfy it by creating
-  // the actual second physical ball and then call the confirmation hook above.
   window.addEventListener('miami-impact', event => {
     const detail = event.detail || {};
     if (detail.type !== 'post' || Number(detail.index) !== 8) return;
@@ -174,7 +164,6 @@
   window.setTimeout(stampBuild, 400);
 })();
 
-// MB1 installs the physical peer engine after the lifecycle contract.
 (() => {
   if (window.miamiMultiballEngineInstalled) return;
   const script = document.createElement('script');
@@ -183,11 +172,10 @@
   document.body.appendChild(script);
 })();
 
-// MB2 connects CAPTIVE READY to the proven MB1A peer engine.
 (() => {
   if (window.miamiMultiballActivationInstalled) return;
   const script = document.createElement('script');
-  script.src = 'multiball-activation.js?v=20260911-mb2-lower2a';
+  script.src = 'multiball-activation.js?v=20260911-mb2-lowerbase1';
   script.async = false;
   document.body.appendChild(script);
 })();
