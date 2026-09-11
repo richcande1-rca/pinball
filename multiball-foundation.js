@@ -175,7 +175,7 @@
 (() => {
   if (window.miamiMultiballActivationInstalled) return;
   const script = document.createElement('script');
-  script.src = 'multiball-activation.js?v=20260911-mb2-lowerbase1';
+  script.src = 'multiball-activation.js?v=20260911-mb2-lowerbase1-r1';
   script.async = false;
   document.body.appendChild(script);
 })();
