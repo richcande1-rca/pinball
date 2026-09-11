@@ -53,12 +53,25 @@
 })();
 
 // Underpass upgrade: every existing tunnel mouth is now bidirectional while
-// retaining blind random routing. Load this after MB2 so the peer engine also
-// uses the same final underpass functions through its saved route context.
+// retaining blind random routing. LOWER2B loads only after that final route
+// layer so it can replace the shared lowerGuides array seen by both balls.
 (() => {
-  if (window.miamiBidirectionalUnderpassInstalled) return;
+  const loadLowerCleanup = () => {
+    if (window.miamiLowerRightCleanupInstalled) return;
+    const cleanup = document.createElement('script');
+    cleanup.src = 'lower-right-cleanup.js?v=20260911-lower2b';
+    cleanup.async = false;
+    document.body.appendChild(cleanup);
+  };
+
+  if (window.miamiBidirectionalUnderpassInstalled) {
+    loadLowerCleanup();
+    return;
+  }
+
   const script = document.createElement('script');
   script.src = 'underpass-bidirectional.js?v=20260911-up2a-lower2a';
   script.async = false;
+  script.addEventListener('load', loadLowerCleanup, { once: true });
   document.body.appendChild(script);
 })();
