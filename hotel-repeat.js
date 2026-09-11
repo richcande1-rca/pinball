@@ -260,7 +260,7 @@
 (() => {
   if (window.miamiMultiballFoundationInstalled) return;
   const script = document.createElement('script');
-  script.src = 'multiball-foundation.js?v=20260910-mb0';
+  script.src = 'multiball-foundation.js?v=20260911-mb0-lower2a';
   script.async = false;
   document.body.appendChild(script);
 })();
