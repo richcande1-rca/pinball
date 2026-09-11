@@ -53,13 +53,13 @@
 })();
 
 // Underpass upgrade: every existing tunnel mouth is now bidirectional while
-// retaining blind random routing. LOWER2B loads only after that final route
-// layer so it can replace the shared lowerGuides array seen by both balls.
+// retaining blind random routing. The final lower baseline restore loads after
+// that route layer so both physical balls see the same proven lower geometry.
 (() => {
   const loadLowerCleanup = () => {
     if (window.miamiLowerRightCleanupInstalled) return;
     const cleanup = document.createElement('script');
-    cleanup.src = 'lower-right-cleanup.js?v=20260911-lower2b';
+    cleanup.src = 'lower-right-cleanup.js?v=20260911-lowerbase1';
     cleanup.async = false;
     document.body.appendChild(cleanup);
   };
