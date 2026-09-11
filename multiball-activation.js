@@ -58,7 +58,7 @@
 (() => {
   if (window.miamiBidirectionalUnderpassInstalled) return;
   const script = document.createElement('script');
-  script.src = 'underpass-bidirectional.js?v=20260910-up2a';
+  script.src = 'underpass-bidirectional.js?v=20260911-up2a-lower2a';
   script.async = false;
   document.body.appendChild(script);
 })();
