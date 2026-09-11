@@ -23,13 +23,10 @@
     if (mouth.edge === 'top') return -Math.PI / 2;
     if (mouth.edge === 'bottom') return Math.PI / 2;
     if (mouth.edge === 'left') return Math.PI;
-    return 0; // right
+    return 0;
   }
 
   function currentMouths() {
-    // The original upper pocket is approached from below, so as an exit it
-    // points back down into the playfield. The five existing outlets retain
-    // their established outward directions.
     return [
       {
         x: underpass.entry.x,
@@ -64,12 +61,9 @@
     const inwardSpeed = -outwardSpeed;
 
     if (primary) {
-      // Preserve the original scoop's established entry feel.
       return inwardSpeed > 70 && speed >= 180;
     }
 
-    // Secondary mouths should accept deliberate-looking shots, not nearby
-    // ricochets. Require both enough inward speed and a mostly head-on vector.
     return speed >= SECONDARY_MIN_SPEED &&
       inwardSpeed >= SECONDARY_MIN_INWARD_SPEED &&
       inwardSpeed / speed >= SECONDARY_MIN_ALIGNMENT;
@@ -89,9 +83,7 @@
     const destinations = mouths
       .map((_, index) => index)
       .filter(index => index !== sourceIndex);
-    const exitIndex = destinations[
-      Math.floor(Math.random() * destinations.length)
-    ];
+    const exitIndex = destinations[Math.floor(Math.random() * destinations.length)];
 
     pruneStaleTrips(now);
     tripSerial += 1;
@@ -116,7 +108,6 @@
     const tripKey = underpass.enteredAt;
     const trip = trips.get(tripKey);
     if (!trip) {
-      // Fail safe: never strand a ball invisibly if route bookkeeping is lost.
       underpass.active = false;
       underpass.enteredAt = -Infinity;
       return false;
@@ -160,7 +151,7 @@
   const stampBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) {
-      buildNumberDisplay.textContent = 'Build 20260910-PERF1-MB2-UP2A';
+      buildNumberDisplay.textContent = 'Build 20260911-PERF1-MB2-UP2A-LOWER2A';
     }
   };
   stampBuild();
