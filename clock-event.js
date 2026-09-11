@@ -81,8 +81,6 @@
     }));
   }
 
-  // The established upper barrier bank reports its three hits as post impacts
-  // 11, 12, and 13. Each one already stays down for the rest of the ball.
   window.addEventListener('miami-impact', event => {
     const detail = event.detail || {};
     if (detail.type !== 'post') return;
@@ -94,7 +92,6 @@
     }
   });
 
-  // The lower-center barrier bank exposes stable group/groupIndex metadata.
   window.addEventListener('miami-secondary-target', event => {
     const detail = event.detail || {};
     if (detail.group !== 'center') return;
@@ -218,7 +215,6 @@
     const openAge = now - state.openedAt;
     const reveal = clamp(openAge / OPEN_REVEAL_MS, 0, 1);
 
-    // A brief twelve-hour white chase announces that all six barriers are down.
     if (reveal < 1) {
       for (let lampIndex = 0; lampIndex < 12; lampIndex += 1) {
         const angle = -Math.PI / 2 + lampIndex * Math.PI * 2 / 12;
@@ -254,8 +250,6 @@
         : 0;
       const radius = peg.radius * (0.52 + rise * 0.48);
 
-      // A successful clock hit knocks the post out of play. Leave only a brief
-      // floor-level glint so the player can see which post just fell.
       if (peg.dropped) {
         if (hitFlash <= 0) continue;
         ctx.save();
@@ -337,7 +331,7 @@
   }
 
   const hotelRepeatScript = document.createElement('script');
-  hotelRepeatScript.src = 'hotel-repeat.js?v=20260910-hotel1';
+  hotelRepeatScript.src = 'hotel-repeat.js?v=20260911-hotel1-lower2a';
   hotelRepeatScript.async = false;
   hotelRepeatScript.addEventListener('load', () => {
     stampHotelBuild();
