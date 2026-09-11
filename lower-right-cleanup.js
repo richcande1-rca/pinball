@@ -1,46 +1,69 @@
-// Miami Nights: LOWER2B lower-playfield cleanup.
-// Remove the LOWER2 catcher-mitt lane assemblies and replace the lower-right
-// dead zone with one simple physical guard. This intentionally leaves flipper
-// physics, slings, shooter recovery, underpass routing, scoring, and the center
-// safety post unchanged.
+// Miami Nights: proven lower-playfield baseline restore.
+// Restore the simple physical geometry that played reliably before the LOWER2
+// experiments, while keeping the newer tapered flipper art, center safety post,
+// shooter recovery, underpass, multiball, scoring, and upper table untouched.
 
 (() => {
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260911-PERF1-MB2-UP2A-LOWER2B';
+  const BUILD = 'Build 20260911-PERF1-MB2-UP2A-LOWERBASE1';
 
-  // LOWER2A used a large collection of curved lower guides on both sides.
-  // They looked like catcher mitts and, worse, created places where a ball
-  // could settle beside a flipper. Replace the entire set with one clean rail
-  // across the bottom of the lower-right open zone.
-  //
-  // The rail begins just inside the shooter divider and ends well above/right
-  // of the right-flipper pivot. Its endpoint stays far enough from the flipper
-  // collision envelope that the ball cannot be pinched into another pocket.
-  const rightDeathTrapGuard = [
-    {
-      x1: 390,
-      y1: 570,
-      x2: 364,
-      y2: 582,
-      radius: 4,
-      accent: 'magenta'
-    },
-    {
-      x1: 364,
-      y1: 582,
-      x2: 338,
-      y2: 598,
-      radius: 4,
-      accent: 'magenta'
-    }
-  ];
+  const leftFlipper = flippers.find(candidate => candidate.side === 'left');
+  const rightFlipper = flippers.find(candidate => candidate.side === 'right');
 
+  // Known-good physical flipper geometry from the working lower-table layout.
+  // The existing collision model, cradle logic, stored energy, and tapered
+  // renderer remain unchanged; only these hardware coordinates are restored.
+  if (leftFlipper) {
+    Object.assign(leftFlipper, {
+      pivotX: PLAYFIELD_CENTER - 95,
+      pivotY: 620,
+      length: 74,
+      restAngle: 0.34,
+      activeAngle: -0.48,
+      angle: 0.34,
+      angularVelocity: 0
+    });
+  }
+
+  if (rightFlipper) {
+    Object.assign(rightFlipper, {
+      pivotX: PLAYFIELD_CENTER + 95,
+      pivotY: 620,
+      length: 74,
+      restAngle: Math.PI - 0.34,
+      activeAngle: Math.PI + 0.48,
+      angle: Math.PI - 0.34,
+      angularVelocity: 0
+    });
+  }
+
+  // Restore the original powered sling faces. Their kick/scoring/audio state is
+  // preserved because these are the same established sideBumper objects.
+  Object.assign(sideBumpers[0], {
+    x1: 56,
+    y1: 553,
+    x2: 115,
+    y2: 602,
+    radius: 10
+  });
+  Object.assign(sideBumpers[1], {
+    x1: 364,
+    y1: 553,
+    x2: 305,
+    y2: 602,
+    radius: 10
+  });
+
+  // Restore the two simple guide posts that left the flipper heels open and
+  // avoided the catcher-mitt pockets. Both main and companion balls already
+  // consume this shared lowerGuides array through the established physics.
   lowerGuides.splice(
     0,
     lowerGuides.length,
-    ...rightDeathTrapGuard
+    { x1: 65, y1: 590, x2: 72, y2: 640, radius: 4 },
+    { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 }
   );
 
   const stampBuild = () => {
