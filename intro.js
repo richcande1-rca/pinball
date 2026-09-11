@@ -63,15 +63,12 @@
   window.addEventListener('keyup', blockGameKeys);
 })();
 
-// Prewarm the late feature files in parallel. Their execution order below stays
-// exactly the same, but a cold load no longer waits on one network request
-// before the browser can even begin fetching the next file.
 (() => {
   const featurePreloads = [
     'circle3x.js?v=20260906-buildowner',
     'businesses.js?v=20260906-perf1',
     'cars.js?v=20260904-ferraritransparent',
-    'center-post.js?v=20260904-centerpost',
+    'center-post.js?v=20260911-lower2a-chain1',
     'displays.js?v=20260906-polish1',
     'recovery-outlet-polish.js?v=20260906-outlet1',
     'reef-feedback.js?v=20260902-displaycache',
@@ -89,7 +86,7 @@
     'high-scores.js?v=20260907-world3',
     'reverse-loop.js?v=20260907-reverse1',
     'pause-controls.js?v=20260908-perf1',
-    'clock-event.js?v=20260908-clock3'
+    'clock-event.js?v=20260911-clock3-lower2a'
   ];
 
   for (const href of featurePreloads) {
@@ -101,10 +98,8 @@
   }
 })();
 
-// Late-load small feature hooks after all core/table scripts have established
-// their globals. The loader is the sole owner of the visible build label.
 document.addEventListener('DOMContentLoaded', () => {
-  const CURRENT_BUILD = 'Build 20260908-PERF1-CLOCK3';
+  const CURRENT_BUILD = 'Build 20260911-PERF1-MB2-UP2A-LOWER2A';
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
     if (buildNumberDisplay) buildNumberDisplay.textContent = CURRENT_BUILD;
@@ -125,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
       carsScript.async = false;
       carsScript.addEventListener('load', () => {
         const centerPostScript = document.createElement('script');
-        centerPostScript.src = 'center-post.js?v=20260904-centerpost';
+        centerPostScript.src = 'center-post.js?v=20260911-lower2a-chain1';
         centerPostScript.async = false;
         centerPostScript.addEventListener('load', () => {
           const displaysScript = document.createElement('script');
@@ -176,10 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 deflectorRemovalScript.src = 'deflector-removal.js?v=20260905-nodeflectors';
                                 deflectorRemovalScript.async = false;
                                 deflectorRemovalScript.addEventListener('load', () => {
-                                  // Strategy must install before captive-repeat so a
-                                  // side-target double-progress hit is visible to the
-                                  // existing repeatable-extra-ball listener in the
-                                  // same captive-ball impact event.
                                   const strategyRulesScript = document.createElement('script');
                                   strategyRulesScript.src = 'strategy-rules.js?v=20260906-perf1';
                                   strategyRulesScript.async = false;
@@ -201,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                           pauseControlsScript.async = false;
                                           pauseControlsScript.addEventListener('load', () => {
                                             const clockEventScript = document.createElement('script');
-                                            clockEventScript.src = 'clock-event.js?v=20260908-clock3';
+                                            clockEventScript.src = 'clock-event.js?v=20260911-clock3-lower2a';
                                             clockEventScript.async = false;
                                             clockEventScript.addEventListener('load', () => {
                                               stampCurrentBuild();
