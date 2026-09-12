@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1B-RECOVERY1B';
+  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1B-RECOVERY1C';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -111,12 +111,12 @@
     }
   );
 
-  // Keep the visible recovery curve unchanged, but simplify its collision path.
-  // The former physical bend at (447,510) could form a tiny wall-side shelf, so
-  // the off-table lead-in now runs directly to (434,522) before continuing
-  // through the same inner recovery path and into the GATE1B bridge.
+  // Keep the visible recovery curve unchanged, but widen its collision mouth.
+  // The former physical lead-in began only 14 px outside TABLE.right; extending
+  // it farther out delays where that hidden rail enters the playable table and
+  // gives a descending ball substantially more clearance at the outer wall.
   const safeRecoveryGuidePoints = [
-    { x: 470, y: 498 },
+    { x: 500, y: 512 },
     { x: 434, y: 522 },
     { x: 414, y: 534 },
     { x: 386, y: 538 }
