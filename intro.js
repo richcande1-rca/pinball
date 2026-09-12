@@ -114,6 +114,7 @@
 
   function blockGameKeys(event) {
     if (window.miamiGameStarted) return;
+    if (event.ctrlKey || event.altKey || event.metaKey) return;
     event.stopImmediatePropagation();
     if (!(event.target instanceof HTMLButtonElement)) event.preventDefault();
   }
