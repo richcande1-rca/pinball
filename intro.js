@@ -50,17 +50,21 @@
     srcDescriptor?.set &&
     srcDescriptor.configurable !== false
   ) {
-    Object.defineProperty(HTMLScriptElement.prototype, 'src', {
-      configurable: srcDescriptor.configurable,
-      enumerable: srcDescriptor.enumerable,
-      get() {
-        return srcDescriptor.get.call(this);
-      },
-      set(value) {
-        srcDescriptor.set.call(this, window.miamiVersionedAsset(value));
-      }
-    });
-    window.miamiDynamicScriptVersionHookInstalled = true;
+    try {
+      Object.defineProperty(HTMLScriptElement.prototype, 'src', {
+        configurable: srcDescriptor.configurable,
+        enumerable: srcDescriptor.enumerable,
+        get() {
+          return srcDescriptor.get.call(this);
+        },
+        set(value) {
+          srcDescriptor.set.call(this, window.miamiVersionedAsset(value));
+        }
+      });
+      window.miamiDynamicScriptVersionHookInstalled = true;
+    } catch (_) {
+      window.miamiDynamicScriptVersionHookInstalled = false;
+    }
   }
 })();
 
@@ -180,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const script = document.createElement('script');
-    script.src = MIAMI_FEATURE_SCRIPTS[index];
+    script.src = window.miamiVersionedAsset(MIAMI_FEATURE_SCRIPTS[index]);
     script.async = false;
     script.addEventListener('load', () => loadFeature(index + 1), { once: true });
     script.addEventListener('error', () => {
