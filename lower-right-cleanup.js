@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1B';
+  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1B-RECOVERY1';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -177,14 +177,10 @@
     );
   };
 
-  const baseUpdateWithRecoveryBaseline = update;
-  update = function updateWithRecoveryBaseline(dt) {
-    baseUpdateWithRecoveryBaseline(dt);
-
+  function resolveSafeRecoveryRailCollisions() {
     if (
       gameOver ||
       ball.ready ||
-      shooterRoute !== 'recovery' ||
       underpass.active ||
       oceanRamp.active ||
       loopRamp.active ||
@@ -192,14 +188,26 @@
     ) return;
 
     if (
-      ball.y >= SHOOTER.recoveryGateTop - 14 &&
-      ball.y <= SHOOTER.recoveryGateBottom + 14 &&
-      ball.x >= SHOOTER.dividerX - 28
+      ball.y >= SHOOTER.recoveryGateTop - 18 &&
+      ball.y <= SHOOTER.recoveryGateBottom + 18 &&
+      ball.x >= SHOOTER.dividerX - 36
     ) {
       for (const rail of safeRecoveryRails) {
         resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.24);
       }
     }
+  }
+
+  const baseUpdateWithRecoveryBaseline = update;
+  update = function updateWithRecoveryBaseline(dt) {
+    // The recovery curve is real table hardware, not route-dependent scenery.
+    // Resolve it before the established update so the core recovery fallback
+    // cannot switch the route to "released" before the descending ball ever
+    // gets a physical chance to meet the rail. Resolve again afterward to catch
+    // ordinary loose balls approaching the same visible surface from play.
+    resolveSafeRecoveryRailCollisions();
+    baseUpdateWithRecoveryBaseline(dt);
+    resolveSafeRecoveryRailCollisions();
   };
 
   // Return the recovery hardware to its neutral structural presentation rather
