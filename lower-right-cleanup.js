@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1B-RECOVERY1C';
+  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -56,26 +56,14 @@
     radius: 10
   });
 
-  // Keep the known-good two short guide posts. Replace the separate GATE1A
-  // flap with one continuous bridge from the recovery rail endpoint directly
-  // into the established right sling. The bridge and sling meet as one downhill
-  // surface instead of forming the tiny concave pocket that could trap/jitter a
-  // ball between competing collision normals.
-  const rightReturnBridge = {
-    x1: 386,
-    y1: 538,
-    x2: 364,
-    y2: 553,
-    radius: 4,
-    accent: 'structure'
-  };
-
+  // Keep only the known-good two short lower guide posts. RECOVERY2 removes the
+  // separate right-side bridge entirely; the recovery rail now runs directly
+  // into the established right sling with no collision joint between them.
   lowerGuides.splice(
     0,
     lowerGuides.length,
     { x1: 65, y1: 590, x2: 72, y2: 640, radius: 4 },
-    { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 },
-    rightReturnBridge
+    { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 }
   );
 
   // --- Recovery rail baseline --------------------------------------------
@@ -111,31 +99,23 @@
     }
   );
 
-  // Keep the visible recovery curve unchanged, but widen its collision mouth.
-  // The former physical lead-in began only 14 px outside TABLE.right; extending
-  // it farther out delays where that hidden rail enters the playable table and
-  // gives a descending ball substantially more clearance at the outer wall.
-  const safeRecoveryGuidePoints = [
+  // RECOVERY2 uses one simple surface for both drawing and collision. It begins
+  // well outside the right wall, enters the table lower than the old cramped
+  // mouth, and terminates exactly at the existing right sling endpoint. With no
+  // intermediate vertices there are no elbow/kink collision normals to trap a
+  // slow ball, and what the player sees is exactly what the physics resolves.
+  const recoveryGuidePoints = [
     { x: 500, y: 512 },
-    { x: 434, y: 522 },
-    { x: 414, y: 534 },
-    { x: 386, y: 538 }
-  ];
-  const recoveryVisualGuidePoints = [
-    { x: TABLE.right, y: 505 },
-    { x: 447, y: 510 },
-    { x: 434, y: 522 },
-    { x: 414, y: 534 },
-    { x: 386, y: 538 }
+    { x: 364, y: 553 }
   ];
 
   shooterRecoveryGuidePoints.splice(
     0,
     shooterRecoveryGuidePoints.length,
-    ...safeRecoveryGuidePoints
+    ...recoveryGuidePoints
   );
 
-  const safeRecoveryRails = makeRailSegments(safeRecoveryGuidePoints, 4);
+  const safeRecoveryRails = makeRailSegments(recoveryGuidePoints, 4);
 
   // LOWER2A already closed over its long recovery-rail array before this late
   // baseline layer loads. Suppress only those seven obsolete segments when its
@@ -202,22 +182,21 @@
 
   const baseUpdateWithRecoveryBaseline = update;
   update = function updateWithRecoveryBaseline(dt) {
-    // The visible recovery curve is one-way hardware: descending balls meet it,
-    // while upward launch motion passes through untouched. Resolve before the
-    // established update so the core recovery fallback cannot change route state
-    // before a returning ball gets a physical chance to meet the rail, then
-    // resolve again afterward for ordinary downward loose-ball approaches.
+    // The recovery surface is one-way hardware: descending balls meet it while
+    // upward launch motion passes through untouched. Resolve before the core
+    // update so recovery route changes cannot bypass the surface, then resolve
+    // once more afterward for ordinary downward loose-ball approaches.
     resolveSafeRecoveryRailCollisions();
     baseUpdateWithRecoveryBaseline(dt);
     resolveSafeRecoveryRailCollisions();
   };
 
-  // Return the recovery hardware to its neutral structural presentation rather
-  // than the LOWER2A magenta neon treatment.
+  // Keep the recovery hardware visually neutral. The visible line is the same
+  // two-point path used for collision so there is no visual/physics mismatch.
   drawShooterRecoveryGate = function drawBaselineRecoveryGate() {
     ctx.save();
     ctx.globalAlpha = shooterRoute === 'recovery' ? 0.9 : 0.52;
-    drawSmoothNeonRail(recoveryVisualGuidePoints, MIAMI_COLORS.structure);
+    drawSmoothNeonRail(recoveryGuidePoints, MIAMI_COLORS.structure);
     ctx.restore();
   };
 
