@@ -59,7 +59,7 @@
   const loadLowerCleanup = () => {
     if (window.miamiLowerRightCleanupInstalled) return;
     const cleanup = document.createElement('script');
-    cleanup.src = 'lower-right-cleanup.js?v=20260911-lowerbase1-r1';
+    cleanup.src = 'lower-right-cleanup.js?v=20260912-lowerbase1-gate1';
     cleanup.async = false;
     document.body.appendChild(cleanup);
   };
