@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260911-PERF1-MB2-UP2A-LOWERBASE1-R1';
+  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -56,13 +56,25 @@
     radius: 10
   });
 
-  // Restore the two simple guide posts that left the flipper heels open and
-  // avoided the catcher-mitt pockets.
+  // Keep the known-good two short guide posts. Add one small right-side flap at
+  // the choke point between the recovery opening and the right sling. It is a
+  // normal guard during play, but becomes non-colliding while a ball is on the
+  // shooter recovery route so the return path stays open.
+  const rightReturnGate = {
+    x1: 393,
+    y1: 548,
+    x2: 370,
+    y2: 557,
+    radius: 4,
+    accent: 'structure'
+  };
+
   lowerGuides.splice(
     0,
     lowerGuides.length,
     { x1: 65, y1: 590, x2: 72, y2: 640, radius: 4 },
-    { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 }
+    { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 },
+    rightReturnGate
   );
 
   // --- Recovery rail baseline --------------------------------------------
@@ -155,6 +167,13 @@
     extraKick = 0
   ) {
     if (isObsoleteRecoverySegment(segment)) return false;
+
+    // The flap is solid for ordinary play and transparent only to a ball that
+    // is explicitly returning through the shooter-recovery route. The multiball
+    // engine swaps each peer's route state into shooterRoute while stepping it,
+    // so this same rule applies to both physical balls.
+    if (segment === rightReturnGate && shooterRoute === 'recovery') return false;
+
     return baseResolveSegmentCollisionWithRecoveryBaseline(
       segment,
       surfaceVelocity,
