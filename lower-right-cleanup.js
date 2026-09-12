@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1A';
+  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1B';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -56,15 +56,16 @@
     radius: 10
   });
 
-  // Keep the known-good two short guide posts. Add one small right-side flap at
-  // the choke point between the recovery opening and the right sling. It stays
-  // physically solid for every ball and route so both ordinary drops and
-  // shooter-recovery returns are deflected back toward the live playfield.
-  const rightReturnGate = {
-    x1: 393,
-    y1: 548,
-    x2: 370,
-    y2: 557,
+  // Keep the known-good two short guide posts. Replace the separate GATE1A
+  // flap with one continuous bridge from the recovery rail endpoint directly
+  // into the established right sling. The bridge and sling meet as one downhill
+  // surface instead of forming the tiny concave pocket that could trap/jitter a
+  // ball between competing collision normals.
+  const rightReturnBridge = {
+    x1: 386,
+    y1: 538,
+    x2: 364,
+    y2: 553,
     radius: 4,
     accent: 'structure'
   };
@@ -74,7 +75,7 @@
     lowerGuides.length,
     { x1: 65, y1: 590, x2: 72, y2: 640, radius: 4 },
     { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 },
-    rightReturnGate
+    rightReturnBridge
   );
 
   // --- Recovery rail baseline --------------------------------------------
