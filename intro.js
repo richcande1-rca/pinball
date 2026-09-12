@@ -1,25 +1,16 @@
 // Title-screen gate. Gameplay remains paused until the intro completes or is skipped.
 
-// One page-wide cache token now owns every dynamically loaded Miami Nights script.
-// The token changes on each page load, but remains identical for preloads and the
-// matching runtime requests on that page. This prevents an old parent loader from
-// walking the browser through stale child versions one refresh at a time.
+// One stable release token owns every dynamically loaded Miami Nights script.
+// A release fetches fresh files once, then normal browser caching makes later
+// reloads fast. Every dynamic child receives the same token, so an older parent
+// cannot walk the browser through stale child versions one refresh at a time.
 (() => {
   if (window.miamiVersionedAsset) return;
 
-  const introScript = document.currentScript;
-  let bootstrapVersion = 'miami';
-  if (introScript?.src) {
-    try {
-      bootstrapVersion = new URL(introScript.src, document.baseURI)
-        .searchParams.get('v') || bootstrapVersion;
-    } catch (_) {}
-  }
-
-  const pageNonce = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-  const buildToken = `${bootstrapVersion}-${pageNonce}`;
+  const buildToken = '20260912-gate1b-recovery1';
   window.miamiBuildToken = buildToken;
-  window.miamiCurrentBuildLabel = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1A';
+  window.miamiCurrentBuildLabel =
+    'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1B-RECOVERY1';
 
   window.miamiVersionedAsset = function miamiVersionedAsset(path) {
     try {
@@ -169,17 +160,33 @@ const MIAMI_FEATURE_SCRIPTS = [
 document.addEventListener('DOMContentLoaded', () => {
   const stampCurrentBuild = () => {
     const buildNumberDisplay = document.querySelector('.build-number');
-    if (buildNumberDisplay) {
+    if (
+      buildNumberDisplay &&
+      buildNumberDisplay.textContent !== window.miamiCurrentBuildLabel
+    ) {
       buildNumberDisplay.textContent = window.miamiCurrentBuildLabel;
     }
   };
 
   stampCurrentBuild();
 
+  // Older feature modules still contain historical build stamps. Keep the
+  // visible footer owned by the release loader so intermediate MB0/MB2 labels
+  // cannot flash during startup or remain behind after an interrupted stamp.
+  const buildNumberDisplay = document.querySelector('.build-number');
+  if (buildNumberDisplay && typeof MutationObserver === 'function') {
+    const observer = new MutationObserver(stampCurrentBuild);
+    observer.observe(buildNumberDisplay, {
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
+    window.miamiBuildLabelObserver = observer;
+  }
+
   function loadFeature(index) {
     if (index >= MIAMI_FEATURE_SCRIPTS.length) {
       stampCurrentBuild();
-      window.setTimeout(stampCurrentBuild, 400);
       return;
     }
 
