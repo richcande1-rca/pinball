@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1B-RECOVERY1';
+  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1B-RECOVERY1A';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -181,6 +181,7 @@
     if (
       gameOver ||
       ball.ready ||
+      ball.vy <= 0 ||
       underpass.active ||
       oceanRamp.active ||
       loopRamp.active ||
@@ -200,11 +201,11 @@
 
   const baseUpdateWithRecoveryBaseline = update;
   update = function updateWithRecoveryBaseline(dt) {
-    // The recovery curve is real table hardware, not route-dependent scenery.
-    // Resolve it before the established update so the core recovery fallback
-    // cannot switch the route to "released" before the descending ball ever
-    // gets a physical chance to meet the rail. Resolve again afterward to catch
-    // ordinary loose balls approaching the same visible surface from play.
+    // The visible recovery curve is one-way hardware: descending balls meet it,
+    // while upward launch motion passes through untouched. Resolve before the
+    // established update so the core recovery fallback cannot change route state
+    // before a returning ball gets a physical chance to meet the rail, then
+    // resolve again afterward for ordinary downward loose-ball approaches.
     resolveSafeRecoveryRailCollisions();
     baseUpdateWithRecoveryBaseline(dt);
     resolveSafeRecoveryRailCollisions();
