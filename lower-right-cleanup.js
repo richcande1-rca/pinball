@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1B-RECOVERY1A';
+  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-GATE1B-RECOVERY1B';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -111,11 +111,12 @@
     }
   );
 
-  // Keep the proven short recovery path, but retain the safe off-table lead-in
-  // that prevents the old x=447 endpoint from pinching a ball against the wall.
+  // Keep the visible recovery curve unchanged, but simplify its collision path.
+  // The former physical bend at (447,510) could form a tiny wall-side shelf, so
+  // the off-table lead-in now runs directly to (434,522) before continuing
+  // through the same inner recovery path and into the GATE1B bridge.
   const safeRecoveryGuidePoints = [
     { x: 470, y: 498 },
-    { x: 447, y: 510 },
     { x: 434, y: 522 },
     { x: 414, y: 534 },
     { x: 386, y: 538 }
