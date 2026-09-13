@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-HANDOFF1';
+  const BUILD = 'Build 20260913-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-PEERHANDOFF1';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
