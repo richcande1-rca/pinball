@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2';
+  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-HANDOFF1';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -186,8 +186,27 @@
     // upward launch motion passes through untouched. Resolve before the core
     // update so recovery route changes cannot bypass the surface, then resolve
     // once more afterward for ordinary downward loose-ball approaches.
+    const wasRecoveryRoute = shooterRoute === 'recovery';
     resolveSafeRecoveryRailCollisions();
     baseUpdateWithRecoveryBaseline(dt);
+
+    // The core handoff places a recovered ball just inside the divider with a
+    // down-left velocity. That trajectory can run directly into the powered
+    // right sling. Keep the same release point and route transition, but flatten
+    // only this recovery handoff so the ball travels left into open play above
+    // the right flipper instead of being delivered into the sling face.
+    if (
+      wasRecoveryRoute &&
+      shooterRoute === 'released' &&
+      !gameOver &&
+      !ball.ready &&
+      Math.abs(ball.x - (SHOOTER.dividerX - ball.radius - 4)) <= 2 &&
+      Math.abs(ball.y - SHOOTER.recoveryFeedY) <= 2
+    ) {
+      ball.vx = -245;
+      ball.vy = 10;
+    }
+
     resolveSafeRecoveryRailCollisions();
   };
 
