@@ -324,7 +324,8 @@
     }
 
     // Match the normal live-ball recovery feed: a peer returning down the
-    // shooter lane is diverted back above the right flipper instead of draining.
+    // shooter lane is sent left into open play instead of down into the right
+    // sling/return-rail corner, where a slow ball can become trapped.
     if (
       shooterRoute === 'recovery' &&
       ball.vy > 0 &&
@@ -333,8 +334,8 @@
     ) {
       ball.x = SHOOTER.dividerX - ball.radius - 4;
       ball.y = SHOOTER.recoveryFeedY;
-      ball.vx = -155;
-      ball.vy = 80;
+      ball.vx = -245;
+      ball.vy = 10;
       shooterRoute = 'released';
       ballHasEnteredPlayfield = true;
     }
