@@ -7,10 +7,10 @@
 (() => {
   if (window.miamiVersionedAsset) return;
 
-  const buildToken = '20260912-recovery2-handoff1';
+  const buildToken = '20260913-recovery2-handoff3';
   window.miamiBuildToken = buildToken;
   window.miamiCurrentBuildLabel =
-    'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-HANDOFF1';
+    'Build 20260913-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-HANDOFF3';
 
   window.miamiVersionedAsset = function miamiVersionedAsset(path) {
     try {

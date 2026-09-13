@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260912-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-HANDOFF1';
+  const BUILD = 'Build 20260913-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-HANDOFF3';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -159,10 +159,14 @@
   };
 
   function resolveSafeRecoveryRailCollisions() {
+    // Do not let the rail catch a descending ball that is already touching the
+    // launch-chute opening, even one frame before its route flips to recovery.
     if (
       gameOver ||
       ball.ready ||
       ball.vy <= 0 ||
+      shooterRoute === 'recovery' ||
+      ball.x + ball.radius >= SHOOTER.dividerX ||
       underpass.active ||
       oceanRamp.active ||
       loopRamp.active ||
@@ -182,10 +186,9 @@
 
   const baseUpdateWithRecoveryBaseline = update;
   update = function updateWithRecoveryBaseline(dt) {
-    // The recovery surface is one-way hardware: descending balls meet it while
-    // upward launch motion passes through untouched. Resolve before the core
-    // update so recovery route changes cannot bypass the surface, then resolve
-    // once more afterward for ordinary downward loose-ball approaches.
+    // Ordinary descending playfield balls can meet the one-way recovery
+    // surface. A ball already returning through the shooter lane instead uses
+    // the core handoff below, so the rail cannot steer it into the right sling.
     const wasRecoveryRoute = shooterRoute === 'recovery';
     resolveSafeRecoveryRailCollisions();
     baseUpdateWithRecoveryBaseline(dt);
