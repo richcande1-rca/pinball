@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260913-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-HANDOFF3';
+  const BUILD = 'Build 20260915-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-TRAPS1';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -55,6 +55,51 @@
     y2: 602,
     radius: 10
   });
+
+  // The recovery rail ends exactly at the upper endpoint of the right sling.
+  // Let a returning ball pass that joint instead of immediately hitting a
+  // powered face and bouncing back up the rail. Keep the full sling artwork,
+  // scoring, flash and lower collision face; only the upper portion is removed
+  // from collision by temporarily shortening that one segment during physics.
+  const rightSling = sideBumpers[1];
+  const RIGHT_SLING_TOP_TRIM = 0.36;
+  const baseCollideWithSideBumperTrapFix = collideWithSideBumper;
+  collideWithSideBumper = function collideWithSideBumperTrapFix(bumper) {
+    if (bumper !== rightSling) {
+      return baseCollideWithSideBumperTrapFix(bumper);
+    }
+
+    const originalX1 = bumper.x1;
+    const originalY1 = bumper.y1;
+    const originalX2 = bumper.x2;
+    const originalY2 = bumper.y2;
+
+    bumper.x1 = originalX1 + (originalX2 - originalX1) * RIGHT_SLING_TOP_TRIM;
+    bumper.y1 = originalY1 + (originalY2 - originalY1) * RIGHT_SLING_TOP_TRIM;
+
+    try {
+      return baseCollideWithSideBumperTrapFix(bumper);
+    } finally {
+      bumper.x1 = originalX1;
+      bumper.y1 = originalY1;
+      bumper.x2 = originalX2;
+      bumper.y2 = originalY2;
+    }
+  };
+
+  // The strong-launch orbit narrows into a small lower-right pocket where a
+  // slow ball can shuttle between the outer wall and the last inner rail.
+  // Open that final inner segment only. The visible ramp/rail artwork and the
+  // rest of the launch guide remain unchanged, but gravity now has a clean exit.
+  const trappedOrbitExitRailIndex = coastalOrbitRails.findIndex(rail =>
+    rail.x1 === 410 &&
+    rail.y1 === 148 &&
+    rail.x2 === 396 &&
+    rail.y2 === 158
+  );
+  if (trappedOrbitExitRailIndex !== -1) {
+    coastalOrbitRails.splice(trappedOrbitExitRailIndex, 1);
+  }
 
   // Keep only the known-good two short lower guide posts. RECOVERY2 removes the
   // separate right-side bridge entirely; the recovery rail now runs directly
