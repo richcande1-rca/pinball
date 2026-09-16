@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260913-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-HANDOFF2';
+  const BUILD = 'Build 20260913-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-HANDOFF3';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -159,11 +159,14 @@
   };
 
   function resolveSafeRecoveryRailCollisions() {
+    // Do not let the rail catch a descending ball that is already touching the
+    // launch-chute opening, even one frame before its route flips to recovery.
     if (
       gameOver ||
       ball.ready ||
       ball.vy <= 0 ||
       shooterRoute === 'recovery' ||
+      ball.x + ball.radius >= SHOOTER.dividerX ||
       underpass.active ||
       oceanRamp.active ||
       loopRamp.active ||
