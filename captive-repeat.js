@@ -5,10 +5,9 @@
   if (window.miamiCaptiveRepeatInstalled) return;
   window.miamiCaptiveRepeatInstalled = true;
 
-  const RESET_DELAY_MS = 900;
+  const AWARD_VISUAL_HOLD_MS = 900;
   let extraBallsEarnedThisGame = captiveExtraBallAwarded ? 1 : 0;
-  let cycleAwardSeen = Boolean(captiveExtraBallAwarded);
-  let resetTimer = null;
+  let awardVisualHoldUntil = -Infinity;
 
   function renderRepeatableBallPips() {
     const slotCount = Math.max(
@@ -32,41 +31,49 @@
     renderRepeatableBallPips();
   };
 
-  function resetCaptiveAwardCycle() {
-    resetTimer = null;
-    captiveHitProgress = 0;
-    captiveExtraBallAwarded = false;
-    captiveExtraBallFlashStartedAt = -Infinity;
-    cycleAwardSeen = false;
-    syncStatusDisplay();
-  }
+  // Keep the completed five-lamp look on screen briefly after an award without
+  // holding the gameplay counter at five. Hits during this visual celebration
+  // already count toward the next five-hit cycle.
+  const baseDrawCaptiveBallAssemblyWithRepeatableCycle = drawCaptiveBallAssembly;
+  drawCaptiveBallAssembly = function drawCaptiveBallAssemblyWithRepeatableCycle() {
+    if (performance.now() >= awardVisualHoldUntil) {
+      return baseDrawCaptiveBallAssemblyWithRepeatableCycle();
+    }
+
+    const actualProgress = captiveHitProgress;
+    captiveHitProgress = CAPTIVE_EXTRA_BALL_HITS;
+
+    try {
+      return baseDrawCaptiveBallAssemblyWithRepeatableCycle();
+    } finally {
+      captiveHitProgress = actualProgress;
+    }
+  };
 
   window.addEventListener('miami-impact', event => {
     const detail = event.detail || {};
     if (detail.type !== 'post' || Number(detail.index) !== 8) return;
 
     if (
-      !cycleAwardSeen &&
       captiveExtraBallAwarded &&
       captiveHitProgress >= CAPTIVE_EXTRA_BALL_HITS
     ) {
-      cycleAwardSeen = true;
       extraBallsEarnedThisGame += 1;
-      syncStatusDisplay();
+      awardVisualHoldUntil = performance.now() + AWARD_VISUAL_HOLD_MS;
 
-      if (resetTimer !== null) window.clearTimeout(resetTimer);
-      resetTimer = window.setTimeout(resetCaptiveAwardCycle, RESET_DELAY_MS);
+      // The award has already been granted and announced by the established
+      // captive/feedback logic. Re-arm the rules immediately so the very next
+      // legitimate captive hit becomes hit #1 of the next cycle.
+      captiveHitProgress = 0;
+      captiveExtraBallAwarded = false;
+      syncStatusDisplay();
     }
   });
 
   const baseResetGameWithRepeatableExtraBall = resetGame;
   resetGame = function resetGameWithRepeatableExtraBall() {
-    if (resetTimer !== null) {
-      window.clearTimeout(resetTimer);
-      resetTimer = null;
-    }
     extraBallsEarnedThisGame = 0;
-    cycleAwardSeen = false;
+    awardVisualHoldUntil = -Infinity;
     baseResetGameWithRepeatableExtraBall();
     renderRepeatableBallPips();
   };
