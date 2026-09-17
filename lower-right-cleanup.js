@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260915-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-TRAPS1';
+  const BUILD = 'Build 20260917-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY3-DIVERT1';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -56,11 +56,10 @@
     radius: 10
   });
 
-  // The recovery rail ends exactly at the upper endpoint of the right sling.
-  // Let a returning ball pass that joint instead of immediately hitting a
-  // powered face and bouncing back up the rail. Keep the full sling artwork,
-  // scoring, flash and lower collision face; only the upper portion is removed
-  // from collision by temporarily shortening that one segment during physics.
+  // Keep the full sling artwork, scoring, flash and lower collision face, while
+  // removing collision from its upper handoff section. The divert now ends in
+  // open play before reaching this face, so this trim remains only a small
+  // safety margin instead of carrying the whole handoff fix.
   const rightSling = sideBumpers[1];
   const RIGHT_SLING_TOP_TRIM = 0.36;
   const baseCollideWithSideBumperTrapFix = collideWithSideBumper;
@@ -101,9 +100,9 @@
     coastalOrbitRails.splice(trappedOrbitExitRailIndex, 1);
   }
 
-  // Keep only the known-good two short lower guide posts. RECOVERY2 removes the
-  // separate right-side bridge entirely; the recovery rail now runs directly
-  // into the established right sling with no collision joint between them.
+  // Keep only the known-good two short lower guide posts. RECOVERY3 leaves the
+  // right sling fully independent from the recovery divert so a descending ball
+  // is released into open play instead of being handed directly to a powered face.
   lowerGuides.splice(
     0,
     lowerGuides.length,
@@ -144,14 +143,13 @@
     }
   );
 
-  // RECOVERY2 uses one simple surface for both drawing and collision. It begins
-  // well outside the right wall, enters the table lower than the old cramped
-  // mouth, and terminates exactly at the existing right sling endpoint. With no
-  // intermediate vertices there are no elbow/kink collision normals to trap a
-  // slow ball, and what the player sees is exactly what the physics resolves.
+  // RECOVERY3 keeps the simple two-point surface but deliberately ends it left
+  // and slightly above the powered right sling. The short physical air gap lets
+  // the ball roll off the divert and fall into open play instead of contacting
+  // the sling at the handoff. Drawing and collision still use this exact path.
   const recoveryGuidePoints = [
     { x: 500, y: 512 },
-    { x: 364, y: 553 }
+    { x: 350, y: 548 }
   ];
 
   shooterRecoveryGuidePoints.splice(
