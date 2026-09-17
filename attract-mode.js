@@ -17,8 +17,8 @@
 
   const targets = [];
 
-  function addTarget(x, y, accent = 'cyan', radius = 7, clockIndex = -1) {
-    targets.push({ x, y, accent, radius, clockIndex });
+  function addTarget(x, y, accent = 'cyan', radius = 7) {
+    targets.push({ x, y, accent, radius });
   }
 
   function addSegmentTarget(target, accent, radius = 7) {
@@ -91,17 +91,8 @@
     [341.5, 350.5, 'magenta']
   ].forEach(([x, y, accent]) => addTarget(x, y, accent, 7));
 
-  // The clock keeps its own tighter clockwise chase inside the table-wide orbits.
-  for (let lampIndex = 0; lampIndex < 12; lampIndex += 1) {
-    const angle = -Math.PI / 2 + lampIndex * TWO_PI / 12;
-    addTarget(
-      CENTER_X + Math.cos(angle) * 66,
-      CENTER_Y + Math.sin(angle) * 55,
-      lampIndex % 2 === 0 ? 'cyan' : 'magenta',
-      6.5,
-      lampIndex
-    );
-  }
+  // Clock lamps/pegs are deliberately excluded here. They are not physical
+  // startup targets and should only appear when the earned CLOCK mode opens.
 
   // Lower/side secondary target bank.
   [
@@ -193,16 +184,9 @@
     const primary = angularLobe(angle - clockwise, 0.78);
     const secondary = angularLobe(angle - counterClockwise, 0.62) * 0.76;
 
-    let clockChase = 0;
-    if (target.clockIndex >= 0) {
-      const clockAngle = -Math.PI / 2 + target.clockIndex * TWO_PI / 12;
-      const clockHead = clockwise * 1.75 - Math.PI / 2;
-      clockChase = angularLobe(clockAngle - clockHead, 0.48) * 0.88;
-    }
-
     const rhythm = 0.82 + 0.18 * Math.sin(elapsed / 105 + angle * 1.4);
     const bloom = bloomIntensity(elapsed);
-    const orbit = Math.max(primary, secondary, clockChase) * rhythm;
+    const orbit = Math.max(primary, secondary) * rhythm;
 
     return clamp(Math.max(orbit, bloom * 0.94), 0, 1);
   }
