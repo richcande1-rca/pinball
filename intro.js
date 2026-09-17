@@ -7,10 +7,10 @@
 (() => {
   if (window.miamiVersionedAsset) return;
 
-  const buildToken = '20260917-clock1';
+  const buildToken = '20260917-attract1';
   window.miamiBuildToken = buildToken;
   window.miamiCurrentBuildLabel =
-    'Build 20260917-CLOCK1';
+    'Build 20260917-ATTRACT1';
 
   window.miamiVersionedAsset = function miamiVersionedAsset(path) {
     try {
@@ -146,7 +146,8 @@ const MIAMI_FEATURE_SCRIPTS = [
   'reverse-loop.js',
   'pause-controls.js',
   'clock-event.js',
-  'clock-polish.js'
+  'clock-polish.js',
+  'attract-mode.js'
 ];
 
 (() => {
