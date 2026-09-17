@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260917-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-DIVERTGAP1';
+  const BUILD = 'Build 20260917-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-DIVERTZONE1';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -219,7 +219,7 @@
     if (
       ball.y >= SHOOTER.recoveryGateTop - 18 &&
       ball.y <= SHOOTER.recoveryGateBottom + 18 &&
-      ball.x >= SHOOTER.dividerX - 36
+      ball.x >= recoveryGuidePoints[1].x - ball.radius - 4
     ) {
       for (const rail of safeRecoveryRails) {
         resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.24);
