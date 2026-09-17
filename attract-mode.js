@@ -7,9 +7,9 @@
 
   const CENTER_X = 210;
   const CENTER_Y = 350;
-  const ORBIT_MS = 4300;
-  const COLOR_MS = 6800;
-  const BLOOM_MS = 5600;
+  const ORBIT_MS = 5600;
+  const COLOR_MS = 9200;
+  const BLOOM_MS = 7600;
   const TWO_PI = Math.PI * 2;
 
   let attractStartedAt = performance.now();
@@ -170,7 +170,7 @@
 
   function bloomIntensity(elapsed) {
     const phase = (elapsed % BLOOM_MS) / BLOOM_MS;
-    const start = 0.72;
+    const start = 0.80;
     const end = 0.90;
     if (phase < start || phase > end) return 0;
     return Math.sin((phase - start) / (end - start) * Math.PI);
@@ -179,16 +179,19 @@
   function targetIntensity(target, elapsed) {
     const angle = targetAngle(target);
     const clockwise = elapsed / ORBIT_MS * TWO_PI;
-    const counterClockwise = Math.PI - clockwise * 0.72;
+    const counterClockwise = Math.PI - clockwise * 0.68;
 
-    const primary = angularLobe(angle - clockwise, 0.78);
-    const secondary = angularLobe(angle - counterClockwise, 0.62) * 0.76;
+    // Narrower lobes leave genuine dark space between illuminated regions.
+    const primary = angularLobe(angle - clockwise, 0.50);
+    const secondary = angularLobe(angle - counterClockwise, 0.38) * 0.58;
 
-    const rhythm = 0.82 + 0.18 * Math.sin(elapsed / 105 + angle * 1.4);
+    const rhythm = 0.90 + 0.10 * Math.sin(elapsed / 165 + angle * 1.2);
     const bloom = bloomIntensity(elapsed);
     const orbit = Math.max(primary, secondary) * rhythm;
 
-    return clamp(Math.max(orbit, bloom * 0.94), 0, 1);
+    // The whole-table breath is intentionally restrained; it should never
+    // erase the dark pauses created by the narrower orbiting pools.
+    return clamp(Math.max(orbit, bloom * 0.38), 0, 1);
   }
 
   function hexToRgb(hex) {
@@ -214,7 +217,6 @@
   function rotatingColor(target, elapsed) {
     const palette = [
       MIAMI_COLORS.cyan,
-      MIAMI_COLORS.lavender,
       MIAMI_COLORS.magenta,
       MIAMI_COLORS.lavender
     ];
@@ -222,43 +224,53 @@
     const cycle = (elapsed / COLOR_MS + anglePhase) % 1;
     const position = cycle * palette.length;
     const index = Math.floor(position) % palette.length;
+    const local = position - Math.floor(position);
     const nextIndex = (index + 1) % palette.length;
-    return mixColor(palette[index], palette[nextIndex], position - Math.floor(position));
+
+    // Hold each color for most of its sector, then crossfade briefly. This keeps
+    // cyan and magenta visually distinct instead of washing everything together.
+    if (local < 0.72) return palette[index];
+    return mixColor(
+      palette[index],
+      palette[nextIndex],
+      (local - 0.72) / 0.28
+    );
   }
 
   function drawAttractTarget(target, intensity, elapsed) {
-    if (intensity <= 0.015) return;
+    if (intensity <= 0.025) return;
 
     const mobile = Boolean(window.miamiMobilePerformanceMode);
     const movingColor = rotatingColor(target, elapsed);
     const baseAccent = MIAMI_COLORS[target.accent] || MIAMI_COLORS.cyan;
-    const accent = mixColor(baseAccent, movingColor, 0.74);
-    const radius = target.radius + intensity * 4.5;
-    const peak = intensity > 0.84;
+    const accent = mixColor(baseAccent, movingColor, 0.62);
+    const radius = target.radius + intensity * 3.2;
+    const sparkle = intensity > 0.94;
 
     ctx.save();
-    ctx.globalAlpha = 0.18 + intensity * 0.78;
-    ctx.strokeStyle = peak ? '#ffffff' : accent;
-    ctx.lineWidth = 1.35 + intensity * 2.35;
+    ctx.globalAlpha = 0.12 + intensity * 0.72;
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 1.25 + intensity * 1.8;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = mobile ? 0 : (4 + intensity * 18);
+    ctx.shadowBlur = mobile ? 0 : (3 + intensity * 13);
     ctx.beginPath();
     ctx.arc(target.x, target.y, radius, 0, TWO_PI);
     ctx.stroke();
 
-    ctx.globalAlpha = 0.14 + intensity * 0.76;
+    ctx.globalAlpha = 0.08 + intensity * 0.58;
     ctx.strokeStyle = movingColor;
-    ctx.lineWidth = 1 + intensity * 1.15;
-    ctx.shadowBlur = mobile ? 0 : (2 + intensity * 8);
+    ctx.lineWidth = 0.9 + intensity * 0.9;
+    ctx.shadowBlur = mobile ? 0 : (1 + intensity * 6);
     ctx.beginPath();
-    ctx.arc(target.x, target.y, radius + 3.3 + intensity * 2, 0, TWO_PI);
+    ctx.arc(target.x, target.y, radius + 2.6 + intensity * 1.4, 0, TWO_PI);
     ctx.stroke();
 
-    ctx.globalAlpha = 0.18 + intensity * 0.78;
-    ctx.fillStyle = peak ? '#f4ffff' : accent;
-    ctx.shadowBlur = mobile ? 0 : (2 + intensity * 10);
+    // White is now only a tiny peak sparkle; the visible rings stay colored.
+    ctx.globalAlpha = 0.14 + intensity * 0.66;
+    ctx.fillStyle = sparkle ? '#ffffff' : accent;
+    ctx.shadowBlur = mobile ? 0 : (1 + intensity * 7);
     ctx.beginPath();
-    ctx.arc(target.x, target.y, 1.2 + intensity * 2.6, 0, TWO_PI);
+    ctx.arc(target.x, target.y, 1 + intensity * 1.8, 0, TWO_PI);
     ctx.fill();
     ctx.restore();
   }
