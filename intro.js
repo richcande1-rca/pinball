@@ -7,10 +7,10 @@
 (() => {
   if (window.miamiVersionedAsset) return;
 
-  const buildToken = '20260917-captivecycle1';
+  const buildToken = '20260917-clock1';
   window.miamiBuildToken = buildToken;
   window.miamiCurrentBuildLabel =
-    'Build 20260917-CYCLE1';
+    'Build 20260917-CLOCK1';
 
   window.miamiVersionedAsset = function miamiVersionedAsset(path) {
     try {
@@ -145,7 +145,8 @@ const MIAMI_FEATURE_SCRIPTS = [
   'high-scores.js',
   'reverse-loop.js',
   'pause-controls.js',
-  'clock-event.js'
+  'clock-event.js',
+  'clock-polish.js'
 ];
 
 (() => {
