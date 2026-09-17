@@ -7,10 +7,10 @@
 (() => {
   if (window.miamiVersionedAsset) return;
 
-  const buildToken = '20260917-divertgap1';
+  const buildToken = '20260917-divertzone1';
   window.miamiBuildToken = buildToken;
   window.miamiCurrentBuildLabel =
-    'Build 20260917-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-DIVERTGAP1';
+    'Build 20260917-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-DIVERTZONE1';
 
   window.miamiVersionedAsset = function miamiVersionedAsset(path) {
     try {
