@@ -28,6 +28,9 @@
     }
   };
 
+  // Child modules created later still contain historical ?v= tags. Normalize
+  // those assignments centrally instead of editing every loader whenever one
+  // feature changes. Static HTML scripts are intentionally unaffected.
   const srcDescriptor = Object.getOwnPropertyDescriptor(
     HTMLScriptElement.prototype,
     'src'
@@ -168,6 +171,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   stampCurrentBuild();
 
+  // Older feature modules still contain historical build stamps. Keep the
+  // visible footer owned by the release loader so intermediate MB0/MB2 labels
+  // cannot flash during startup or remain behind after an interrupted stamp.
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay && typeof MutationObserver === 'function') {
     const observer = new MutationObserver(stampCurrentBuild);
