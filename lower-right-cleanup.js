@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260915-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-TRAPS1';
+  const BUILD = 'Build 20260917-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-DIVERTGAP1';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -56,11 +56,10 @@
     radius: 10
   });
 
-  // The recovery rail ends exactly at the upper endpoint of the right sling.
-  // Let a returning ball pass that joint instead of immediately hitting a
-  // powered face and bouncing back up the rail. Keep the full sling artwork,
-  // scoring, flash and lower collision face; only the upper portion is removed
-  // from collision by temporarily shortening that one segment during physics.
+  // The recovery rail approaches the upper end of the right sling. Let a
+  // returning ball pass that area instead of immediately hitting a powered face
+  // and bouncing back up the rail. Keep the full sling artwork, scoring, flash
+  // and lower collision face; only the upper portion is removed from collision.
   const rightSling = sideBumpers[1];
   const RIGHT_SLING_TOP_TRIM = 0.36;
   const baseCollideWithSideBumperTrapFix = collideWithSideBumper;
@@ -102,8 +101,8 @@
   }
 
   // Keep only the known-good two short lower guide posts. RECOVERY2 removes the
-  // separate right-side bridge entirely; the recovery rail now runs directly
-  // into the established right sling with no collision joint between them.
+  // separate right-side bridge entirely; the recovery rail remains a single
+  // clean surface with no intermediate collision joint.
   lowerGuides.splice(
     0,
     lowerGuides.length,
@@ -145,13 +144,12 @@
   );
 
   // RECOVERY2 uses one simple surface for both drawing and collision. It begins
-  // well outside the right wall, enters the table lower than the old cramped
-  // mouth, and terminates exactly at the existing right sling endpoint. With no
-  // intermediate vertices there are no elbow/kink collision normals to trap a
-  // slow ball, and what the player sees is exactly what the physics resolves.
+  // well outside the right wall and enters the table lower than the old cramped
+  // mouth. DIVERTGAP1 stops it short of the powered sling so a descending ball
+  // rolls off into open play rather than being delivered directly into the kick.
   const recoveryGuidePoints = [
     { x: 500, y: 512 },
-    { x: 364, y: 553 }
+    { x: 350, y: 548 }
   ];
 
   shooterRecoveryGuidePoints.splice(
