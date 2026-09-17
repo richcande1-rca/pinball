@@ -7,10 +7,10 @@
 (() => {
   if (window.miamiVersionedAsset) return;
 
-  const buildToken = '20260915-traps1';
+  const buildToken = '20260917-divertgap1';
   window.miamiBuildToken = buildToken;
   window.miamiCurrentBuildLabel =
-    'Build 20260915-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-TRAPS1';
+    'Build 20260917-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-DIVERTGAP1';
 
   window.miamiVersionedAsset = function miamiVersionedAsset(path) {
     try {
@@ -28,9 +28,6 @@
     }
   };
 
-  // Child modules created later still contain historical ?v= tags. Normalize
-  // those assignments centrally instead of editing every loader whenever one
-  // feature changes. Static HTML scripts are intentionally unaffected.
   const srcDescriptor = Object.getOwnPropertyDescriptor(
     HTMLScriptElement.prototype,
     'src'
@@ -171,9 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   stampCurrentBuild();
 
-  // Older feature modules still contain historical build stamps. Keep the
-  // visible footer owned by the release loader so intermediate MB0/MB2 labels
-  // cannot flash during startup or remain behind after an interrupted stamp.
   const buildNumberDisplay = document.querySelector('.build-number');
   if (buildNumberDisplay && typeof MutationObserver === 'function') {
     const observer = new MutationObserver(stampCurrentBuild);
