@@ -7,7 +7,7 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260915-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-TRAPS1';
+  const BUILD = 'Build 20260917-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-DIVERTGAP1';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -56,11 +56,11 @@
     radius: 10
   });
 
-  // The recovery rail ends exactly at the upper endpoint of the right sling.
-  // Let a returning ball pass that joint instead of immediately hitting a
-  // powered face and bouncing back up the rail. Keep the full sling artwork,
-  // scoring, flash and lower collision face; only the upper portion is removed
-  // from collision by temporarily shortening that one segment during physics.
+  // The recovery rail no longer terminates on the powered sling. Keep a small
+  // physical gap so a descending ball rolls off the divert into open play above
+  // the right flipper instead of being delivered directly into the sling face.
+  // The full sling artwork/scoring remains intact; its existing upper collision
+  // trim still prevents incidental catches near the handoff area.
   const rightSling = sideBumpers[1];
   const RIGHT_SLING_TOP_TRIM = 0.36;
   const baseCollideWithSideBumperTrapFix = collideWithSideBumper;
@@ -101,9 +101,7 @@
     coastalOrbitRails.splice(trappedOrbitExitRailIndex, 1);
   }
 
-  // Keep only the known-good two short lower guide posts. RECOVERY2 removes the
-  // separate right-side bridge entirely; the recovery rail now runs directly
-  // into the established right sling with no collision joint between them.
+  // Keep only the known-good two short lower guide posts.
   lowerGuides.splice(
     0,
     lowerGuides.length,
@@ -112,8 +110,6 @@
   );
 
   // --- Recovery rail baseline --------------------------------------------
-  // Restore the original recovery opening and feed height. LOWER2A stretched
-  // this system down toward the right sling, where it became a catch surface.
   SHOOTER.recoveryGateTop = 500;
   SHOOTER.recoveryGateBottom = 560;
   SHOOTER.recoveryFeedY = 526;
@@ -144,14 +140,11 @@
     }
   );
 
-  // RECOVERY2 uses one simple surface for both drawing and collision. It begins
-  // well outside the right wall, enters the table lower than the old cramped
-  // mouth, and terminates exactly at the existing right sling endpoint. With no
-  // intermediate vertices there are no elbow/kink collision normals to trap a
-  // slow ball, and what the player sees is exactly what the physics resolves.
+  // One simple recovery surface for both drawing and collision. Its inner end
+  // stops left/up of the sling, leaving a real air gap at the handoff.
   const recoveryGuidePoints = [
     { x: 500, y: 512 },
-    { x: 364, y: 553 }
+    { x: 350, y: 548 }
   ];
 
   shooterRecoveryGuidePoints.splice(
@@ -162,10 +155,6 @@
 
   const safeRecoveryRails = makeRailSegments(recoveryGuidePoints, 4);
 
-  // LOWER2A already closed over its long recovery-rail array before this late
-  // baseline layer loads. Suppress only those seven obsolete segments when its
-  // wrapper calls resolveSegmentCollision; every unrelated collision continues
-  // through the established resolver unchanged.
   const obsoleteRecoverySegments = [
     [470, 498, 448, 518],
     [448, 518, 438, 533],
@@ -204,8 +193,6 @@
   };
 
   function resolveSafeRecoveryRailCollisions() {
-    // Do not let the rail catch a descending ball that is already touching the
-    // launch-chute opening, even one frame before its route flips to recovery.
     if (
       gameOver ||
       ball.ready ||
@@ -231,18 +218,10 @@
 
   const baseUpdateWithRecoveryBaseline = update;
   update = function updateWithRecoveryBaseline(dt) {
-    // Ordinary descending playfield balls can meet the one-way recovery
-    // surface. A ball already returning through the shooter lane instead uses
-    // the core handoff below, so the rail cannot steer it into the right sling.
     const wasRecoveryRoute = shooterRoute === 'recovery';
     resolveSafeRecoveryRailCollisions();
     baseUpdateWithRecoveryBaseline(dt);
 
-    // The core handoff places a recovered ball just inside the divider with a
-    // down-left velocity. That trajectory can run directly into the powered
-    // right sling. Keep the same release point and route transition, but flatten
-    // only this recovery handoff so the ball travels left into open play above
-    // the right flipper instead of being delivered into the sling face.
     if (
       wasRecoveryRoute &&
       shooterRoute === 'released' &&
@@ -258,8 +237,6 @@
     resolveSafeRecoveryRailCollisions();
   };
 
-  // Keep the recovery hardware visually neutral. The visible line is the same
-  // two-point path used for collision so there is no visual/physics mismatch.
   drawShooterRecoveryGate = function drawBaselineRecoveryGate() {
     ctx.save();
     ctx.globalAlpha = shooterRoute === 'recovery' ? 0.9 : 0.52;
