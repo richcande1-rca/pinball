@@ -1,7 +1,7 @@
 // Miami Nights: bidirectional blind underpass network.
-// Every physical tunnel mouth can now be both an entrance and an exit.
-// A trip always exits from a different mouth than the one it entered, while
-// preserving the existing blind/random travel time and velocity character.
+// Every physical tunnel mouth remains eligible as an entrance. The lower-right
+// recovery-side mouth is intentionally entrance-only so the underpass cannot
+// eject a ball directly into the drain-adjacent recovery area.
 
 (() => {
   if (window.miamiBidirectionalUnderpassInstalled) return;
@@ -18,6 +18,9 @@
   const SECONDARY_MIN_SPEED = 240;
   const SECONDARY_MIN_INWARD_SPEED = 150;
   const SECONDARY_MIN_ALIGNMENT = 0.72;
+  // currentMouths() prepends the primary entry at index 0, so
+  // underpass.outlets[3] is router mouth index 4.
+  const RECOVERY_SIDE_MOUTH_INDEX = 4;
 
   function outwardAngle(mouth) {
     if (mouth.edge === 'top') return -Math.PI / 2;
@@ -82,7 +85,10 @@
 
     const destinations = mouths
       .map((_, index) => index)
-      .filter(index => index !== sourceIndex);
+      .filter(index =>
+        index !== sourceIndex &&
+        index !== RECOVERY_SIDE_MOUTH_INDEX
+      );
     const exitIndex = destinations[Math.floor(Math.random() * destinations.length)];
 
     pruneStaleTrips(now);
