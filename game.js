@@ -44,8 +44,10 @@ const rollingDrag = 0.9992;
 const TOTAL_BALLS = 3;
 let score = 0;
 let ballNumber = 1;
-let ballsRemaining = TOTAL_BALLS;
-let gameOver = false;
+// Boot in the cabinet's idle NEW GAME state. The existing NEW GAME press calls
+// resetGame(), restores all three balls, and begins the normal plunger charge.
+let ballsRemaining = 0;
+let gameOver = true;
 
 const plunger = {
   x: SHOOTER.ballX,
