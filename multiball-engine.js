@@ -237,6 +237,10 @@
   }
 
   function stepCompanionLoosePlay(dt) {
+    // Mirror DIVERTZONE1's check-before/check-after ordering so a descending
+    // peer cannot cross into the recovery-route state before seeing the rail.
+    resolvePeerSafeRecoveryRailCollisions();
+
     // Special physical routes use the exact core route functions. Their progress
     // is kept in the companion route context instead of stealing the table ball's
     // current Ocean Drive / loop / underpass state.
