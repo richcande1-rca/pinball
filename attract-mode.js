@@ -13,7 +13,7 @@
   const TWO_PI = Math.PI * 2;
 
   let attractStartedAt = performance.now();
-  let firstLaunchSeen = false;
+  let newGameWasLit = false;
 
   const targets = [];
 
@@ -105,31 +105,17 @@
     }
   }
 
-  function resetAttractMode() {
-    firstLaunchSeen = false;
-    attractStartedAt = performance.now();
-  }
+  function attractActive(now) {
+    const newGameLit =
+      window.miamiGameStarted === true &&
+      gameOver === true;
 
-  window.addEventListener('miami-game-start', () => {
-    if (ballNumber === 1 && ball.ready && !gameOver) resetAttractMode();
-  });
-
-  const baseResetGameWithAttractMode = resetGame;
-  resetGame = function resetGameWithAttractMode() {
-    resetAttractMode();
-    baseResetGameWithAttractMode();
-  };
-
-  function attractActive() {
-    if (window.miamiGameStarted !== true || gameOver || ballNumber !== 1) return false;
-    if (firstLaunchSeen) return false;
-
-    if (!ball.ready) {
-      firstLaunchSeen = true;
-      return false;
+    if (newGameLit && !newGameWasLit) {
+      attractStartedAt = now;
     }
 
-    return true;
+    newGameWasLit = newGameLit;
+    return newGameLit;
   }
 
   function wrapAngle(angle) {
@@ -246,35 +232,35 @@
     const sparkle = intensity > 0.94;
 
     ctx.save();
-    ctx.globalAlpha = 0.12 + intensity * 0.72;
+    ctx.globalAlpha = 0.18 + intensity * 0.80;
     ctx.strokeStyle = accent;
-    ctx.lineWidth = 1.25 + intensity * 1.8;
+    ctx.lineWidth = 1.4 + intensity * 2.0;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = mobile ? 0 : (3 + intensity * 13);
+    ctx.shadowBlur = mobile ? 0 : (4 + intensity * 16);
     ctx.beginPath();
     ctx.arc(target.x, target.y, radius, 0, TWO_PI);
     ctx.stroke();
 
-    ctx.globalAlpha = 0.08 + intensity * 0.58;
+    ctx.globalAlpha = 0.12 + intensity * 0.66;
     ctx.strokeStyle = movingColor;
-    ctx.lineWidth = 0.9 + intensity * 0.9;
-    ctx.shadowBlur = mobile ? 0 : (1 + intensity * 6);
+    ctx.lineWidth = 1.0 + intensity * 1.05;
+    ctx.shadowBlur = mobile ? 0 : (2 + intensity * 8);
     ctx.beginPath();
     ctx.arc(target.x, target.y, radius + 2.6 + intensity * 1.4, 0, TWO_PI);
     ctx.stroke();
 
     // White is now only a tiny peak sparkle; the visible rings stay colored.
-    ctx.globalAlpha = 0.14 + intensity * 0.66;
+    ctx.globalAlpha = 0.18 + intensity * 0.72;
     ctx.fillStyle = sparkle ? '#ffffff' : accent;
-    ctx.shadowBlur = mobile ? 0 : (1 + intensity * 7);
+    ctx.shadowBlur = mobile ? 0 : (2 + intensity * 9);
     ctx.beginPath();
-    ctx.arc(target.x, target.y, 1 + intensity * 1.8, 0, TWO_PI);
+    ctx.arc(target.x, target.y, 1.1 + intensity * 1.9, 0, TWO_PI);
     ctx.fill();
     ctx.restore();
   }
 
   function drawAttractMode(now) {
-    if (!attractActive()) return;
+    if (!attractActive(now)) return;
 
     const elapsed = Math.max(0, now - attractStartedAt);
     for (const target of targets) {
