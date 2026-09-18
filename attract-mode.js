@@ -61,16 +61,8 @@
 
   // Captive-ball cage: roof, five progress lamps, and captive itself.
   addTarget(70, 250, 'magenta', 9);
-  if (typeof captiveHitLampY !== 'undefined') {
-    for (let index = 0; index < captiveHitLampY.length; index += 1) {
-      addTarget(
-        70,
-        captiveHitLampY[index],
-        index % 2 === 0 ? 'cyan' : 'magenta',
-        6.5
-      );
-    }
-  }
+  // Captive progress lamps already draw themselves at x=96. Do not add a
+  // second attract overlay at the historical x=70 position.
   addTarget(70, 320, 'lavender', 10);
 
   // Ocean Drive wall standups.
@@ -197,7 +189,7 @@
     }
 
     const rgb = value.match(
-      /^rgb\\(\\s*(\\d+(?:\\.\\d+)?)\\s*,\\s*(\\d+(?:\\.\\d+)?)\\s*,\\s*(\\d+(?:\\.\\d+)?)\\s*\\)$/i
+      /^rgb\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)$/i
     );
     if (rgb) {
       return {
