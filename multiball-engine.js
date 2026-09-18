@@ -47,10 +47,6 @@
     lastPeerDrainAt: -Infinity
   };
 
-  const peerRecoveryRails = typeof makeRailSegments === 'function'
-    ? makeRailSegments(shooterRecoveryGuidePoints)
-    : [];
-
   function copyBallState(source, target) {
     target.x = source.x;
     target.y = source.y;
@@ -201,6 +197,45 @@
     peer.vy += impulse * ny;
   }
 
+  function resolvePeerSafeRecoveryRailCollisions() {
+    // Match DIVERTZONE1: a loose companion descending on the playfield side may
+    // meet the current recovery surface, but a ball already in the shooter lane
+    // uses the controlled handoff below and must not collide with the rail.
+    if (
+      gameOver ||
+      ball.ready ||
+      ball.vy <= 0 ||
+      shooterRoute === 'recovery' ||
+      ball.x + ball.radius >= SHOOTER.dividerX ||
+      underpass.active ||
+      oceanRamp.active ||
+      loopRamp.active ||
+      magneticTarget.state === 'holding' ||
+      typeof makeRailSegments !== 'function' ||
+      !Array.isArray(shooterRecoveryGuidePoints) ||
+      shooterRecoveryGuidePoints.length < 2
+    ) return;
+
+    const endpoint = shooterRecoveryGuidePoints[
+      shooterRecoveryGuidePoints.length - 1
+    ];
+
+    if (
+      ball.y >= SHOOTER.recoveryGateTop - 18 &&
+      ball.y <= SHOOTER.recoveryGateBottom + 18 &&
+      ball.x >= endpoint.x - ball.radius - 4
+    ) {
+      const liveRecoveryRails = makeRailSegments(
+        shooterRecoveryGuidePoints,
+        4
+      );
+
+      for (const rail of liveRecoveryRails) {
+        resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.24);
+      }
+    }
+  }
+
   function stepCompanionLoosePlay(dt) {
     // Special physical routes use the exact core route functions. Their progress
     // is kept in the companion route context instead of stealing the table ball's
@@ -313,15 +348,7 @@
       resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
     }
 
-    if (shooterRoute === 'recovery' && ball.vy > 0 && ballIsInShooterLane()) {
-      for (const rail of peerRecoveryRails) {
-        resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.88);
-      }
-      if (ball.x + ball.radius < SHOOTER.dividerX) {
-        shooterRoute = 'released';
-        ballHasEnteredPlayfield = true;
-      }
-    }
+    resolvePeerSafeRecoveryRailCollisions();
 
     // Match the normal live-ball recovery feed: a peer returning down the
     // shooter lane is sent left into open play instead of down into the right
