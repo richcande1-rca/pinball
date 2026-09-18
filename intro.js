@@ -7,10 +7,10 @@
 (() => {
   if (window.miamiVersionedAsset) return;
 
-  const buildToken = '20260918-attract6';
+  const buildToken = '20260918-loadgate1';
   window.miamiBuildToken = buildToken;
   window.miamiCurrentBuildLabel =
-    'Build 20260918-ATTRACT6';
+    'Build 20260918-LOADGATE1';
 
   window.miamiVersionedAsset = function miamiVersionedAsset(path) {
     try {
@@ -67,8 +67,27 @@
   const status = document.getElementById('intro-status');
   let introState = 'ready';
   let introTimer = null;
+  const readyStatus = status.textContent;
 
   window.miamiGameStarted = false;
+
+  // Do not expose gameplay while the temporary LOWER2A lower-right geometry
+  // is still live. DIVERTZONE1 sets this flag only after the proven recovery
+  // rail, sling and collision-zone cleanup has finished installing.
+  startButton.disabled = true;
+  status.textContent = 'Finishing table setup...';
+
+  function waitForLowerRightCleanup() {
+    if (window.miamiLowerRightCleanupInstalled === true) {
+      startButton.disabled = false;
+      if (introState === 'ready') status.textContent = readyStatus;
+      return;
+    }
+
+    window.setTimeout(waitForLowerRightCleanup, 50);
+  }
+
+  waitForLowerRightCleanup();
 
   function finishIntro(skipped) {
     if (introState !== 'playing') return;
@@ -88,7 +107,10 @@
   }
 
   function startIntro() {
-    if (introState !== 'ready') return;
+    if (
+      introState !== 'ready' ||
+      window.miamiLowerRightCleanupInstalled !== true
+    ) return;
     introState = 'playing';
     screen.classList.add('is-playing');
     startButton.hidden = true;
