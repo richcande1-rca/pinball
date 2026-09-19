@@ -542,7 +542,7 @@
     const wasTestOnly = companion.testOnly;
     companion.active = false;
     companion.testOnly = false;
-    engineState.livePhysicalBalls = 1;
+    syncLivePhysicalBalls();
     engineState.lastPeerDrainAt = performance.now();
 
     let report = null;
@@ -553,9 +553,32 @@
     window.dispatchEvent(new CustomEvent('miami-multiball-peer-drain', {
       detail: {
         peer: PEER_ID,
-        survivor: 'table-ball',
+        survivor: report?.survivor || 'table-ball',
         consumesNormalBall: false,
         testOnly: wasTestOnly,
+        lifecycle: report
+      }
+    }));
+  }
+
+  function finishStackedPeerDrain() {
+    if (!stackedCompanion.active) return;
+
+    stackedCompanion.active = false;
+    stackedCompanion.testOnly = false;
+    syncLivePhysicalBalls();
+    engineState.lastPeerDrainAt = performance.now();
+
+    const report = typeof window.miamiReportMultiballPeerDrain === 'function'
+      ? window.miamiReportMultiballPeerDrain(STACKED_PEER_ID)
+      : null;
+
+    window.dispatchEvent(new CustomEvent('miami-multiball-peer-drain', {
+      detail: {
+        peer: STACKED_PEER_ID,
+        survivor: report?.survivor || 'table-ball',
+        consumesNormalBall: false,
+        testOnly: false,
         lifecycle: report
       }
     }));
@@ -571,6 +594,33 @@
     });
 
     if (drained) finishPeerDrain();
+  }
+
+  function stepStackedCompanion(dt) {
+    if (!stackedCompanion.active || gameOver) return;
+
+    let drained = false;
+    withStackedCompanionContext(() => {
+      stepCompanionLoosePlay(dt);
+      drained = ball.y - ball.radius > canvas.height;
+    });
+
+    if (drained) finishStackedPeerDrain();
+  }
+
+  function resetPeerRoute(peer) {
+    peer.route = {
+      shooterRoute: 'released',
+      enteredPlayfield: true,
+      underpassActive: false,
+      underpassEnteredAt: -Infinity,
+      oceanActive: false,
+      oceanProgress: 0,
+      oceanSpinnerTriggered: false,
+      oceanEntrySpeed: 0,
+      loopActive: false,
+      loopProgress: 0
+    };
   }
 
   function spawnCompanion({
@@ -595,26 +645,15 @@
     companion.ball.vy = vy;
     companion.ball.radius = ball.radius;
     companion.ball.ready = false;
-    companion.route = {
-      shooterRoute: 'released',
-      enteredPlayfield: true,
-      underpassActive: false,
-      underpassEnteredAt: -Infinity,
-      oceanActive: false,
-      oceanProgress: 0,
-      oceanSpinnerTriggered: false,
-      oceanEntrySpeed: 0,
-      loopActive: false,
-      loopProgress: 0
-    };
-    engineState.livePhysicalBalls = 2;
+    resetPeerRoute(companion);
+    syncLivePhysicalBalls();
 
     if (confirmLifecycle) {
       const confirm = window.miamiConfirmTwoBallMultiballStarted;
       if (typeof confirm !== 'function' || !confirm(PEER_ID)) {
         companion.active = false;
         companion.testOnly = false;
-        engineState.livePhysicalBalls = 1;
+        syncLivePhysicalBalls();
         return false;
       }
     }
@@ -622,8 +661,68 @@
     window.dispatchEvent(new CustomEvent('miami-multiball-peer-created', {
       detail: {
         peer: PEER_ID,
-        liveCount: 2,
+        liveCount: engineState.livePhysicalBalls,
         testOnly: companion.testOnly
+      }
+    }));
+    return true;
+  }
+
+  function spawnStackedCompanion({
+    x,
+    y,
+    vx = 55,
+    vy = -285,
+    confirmLifecycle = false
+  } = {}) {
+    const lifecycle = window.miamiMultiballState;
+    if (
+      stackedCompanion.active ||
+      !companion.active ||
+      gameOver ||
+      ball.ready
+    ) return false;
+
+    if (
+      confirmLifecycle &&
+      (
+        !lifecycle ||
+        lifecycle.phase !== 'multiball' ||
+        lifecycle.liveCount !== 2 ||
+        !lifecycle.stackPending
+      )
+    ) return false;
+
+    stackedCompanion.active = true;
+    stackedCompanion.testOnly = false;
+    stackedCompanion.ball.x = Number.isFinite(x)
+      ? x
+      : clamp(ball.x + 34, TABLE.left + ball.radius + 2, SHOOTER.dividerX - ball.radius - 2);
+    stackedCompanion.ball.y = Number.isFinite(y)
+      ? y
+      : clamp(ball.y - 38, TABLE.top + ball.radius + 2, TABLE.bottom - 90);
+    stackedCompanion.ball.vx = vx;
+    stackedCompanion.ball.vy = vy;
+    stackedCompanion.ball.radius = ball.radius;
+    stackedCompanion.ball.ready = false;
+    resetPeerRoute(stackedCompanion);
+    syncLivePhysicalBalls();
+
+    if (confirmLifecycle) {
+      const confirm = window.miamiConfirmThreeBallStackStarted;
+      if (typeof confirm !== 'function' || !confirm(STACKED_PEER_ID)) {
+        stackedCompanion.active = false;
+        syncLivePhysicalBalls();
+        return false;
+      }
+    }
+
+    window.dispatchEvent(new CustomEvent('miami-multiball-peer-created', {
+      detail: {
+        peer: STACKED_PEER_ID,
+        liveCount: engineState.livePhysicalBalls,
+        stacked: true,
+        testOnly: false
       }
     }));
     return true;
@@ -634,27 +733,37 @@
     const wasTestOnly = companion.testOnly;
     companion.active = false;
     companion.testOnly = false;
-    engineState.livePhysicalBalls = 1;
+    syncLivePhysicalBalls();
     window.dispatchEvent(new CustomEvent('miami-multiball-peer-removed', {
       detail: { peer: PEER_ID, reason, testOnly: wasTestOnly }
     }));
     return true;
   }
 
-  function promoteCompanionToTableBall() {
-    if (!companion.active) return false;
+  function removeStackedCompanion(reason = 'removed') {
+    if (!stackedCompanion.active) return false;
+    stackedCompanion.active = false;
+    stackedCompanion.testOnly = false;
+    syncLivePhysicalBalls();
+    window.dispatchEvent(new CustomEvent('miami-multiball-peer-removed', {
+      detail: { peer: STACKED_PEER_ID, reason, testOnly: false }
+    }));
+    return true;
+  }
 
-    copyBallState(companion.ball, ball);
-    applyRouteState(companion.route);
-    companion.active = false;
-    companion.testOnly = false;
-    engineState.livePhysicalBalls = 1;
+  function promotePeerToTableBall(peer, peerId) {
+    if (!peer.active) return false;
 
-    if (window.miamiMultiballState) {
-      window.miamiMultiballState.phase = 'single';
-      window.miamiMultiballState.liveCount = 1;
-      window.miamiMultiballState.peers = ['table-ball'];
-      window.miamiMultiballState.sourceBallNumber = null;
+    copyBallState(peer.ball, ball);
+    applyRouteState(peer.route);
+    peer.active = false;
+    peer.testOnly = false;
+    syncLivePhysicalBalls();
+
+    const lifecycle = window.miamiMultiballState;
+    if (lifecycle && Array.isArray(lifecycle.peers)) {
+      const index = lifecycle.peers.indexOf(peerId);
+      if (index >= 0) lifecycle.peers[index] = 'table-ball';
     }
     return true;
   }
@@ -662,9 +771,15 @@
   const baseHandleDrainWithPeerEngine = handleDrain;
   handleDrain = function handleDrainWithPeerEngine() {
     const lifecycle = window.miamiMultiballState;
+    const promotionPeer =
+      companion.active && !companion.testOnly
+        ? companion
+        : stackedCompanion.active
+          ? stackedCompanion
+          : null;
+
     if (
-      companion.active &&
-      !companion.testOnly &&
+      promotionPeer &&
       lifecycle &&
       lifecycle.phase === 'multiball'
     ) {
@@ -673,13 +788,14 @@
         : null;
 
       if (report && report.handled && report.consumesNormalBall === false) {
-        promoteCompanionToTableBall();
+        const promotedFrom = promotionPeer.id;
+        promotePeerToTableBall(promotionPeer, promotedFrom);
         engineState.lastPeerDrainAt = performance.now();
         window.dispatchEvent(new CustomEvent('miami-multiball-peer-drain', {
           detail: {
             peer: 'table-ball',
             survivor: 'table-ball',
-            promotedFrom: PEER_ID,
+            promotedFrom,
             consumesNormalBall: false,
             lifecycle: report
           }
@@ -694,43 +810,59 @@
   const baseUpdateWithPeerEngine = update;
   update = function updateWithPeerEngine(dt) {
     baseUpdateWithPeerEngine(dt);
-    if (!companion.active || gameOver) return;
-    stepCompanion(dt);
-    resolvePeerBallCollision(dt);
+    if (gameOver) return;
+
+    if (companion.active) stepCompanion(dt);
+    if (stackedCompanion.active) stepStackedCompanion(dt);
+
+    if (companion.active) resolvePeerBallCollision(dt);
+    if (stackedCompanion.active) resolveStackedPeerBallCollision(dt);
+    if (companion.active && stackedCompanion.active) {
+      resolveCompanionPairCollision(dt);
+    }
   };
 
-  function companionVisible() {
-    if (!companion.active) return false;
-    if (!companion.route.underpassActive) return true;
+  function peerVisible(peer) {
+    if (!peer.active) return false;
+    if (!peer.route.underpassActive) return true;
 
-    const peer = companion.ball;
     return [underpass.entry, ...underpass.outlets].some(
-      mouth => Math.hypot(peer.x - mouth.x, peer.y - mouth.y) < mouth.radius + 4
+      mouth => Math.hypot(
+        peer.ball.x - mouth.x,
+        peer.ball.y - mouth.y
+      ) < mouth.radius + 4
     );
+  }
+
+  function drawPeerBall(peer) {
+    if (!peerVisible(peer)) return;
+
+    ctx.fillStyle = '#eef4ff';
+    ctx.beginPath();
+    ctx.arc(peer.ball.x, peer.ball.y, peer.ball.radius, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   const baseDrawBallWithPeerEngine = drawBall;
   drawBall = function drawBallWithPeerEngine() {
     baseDrawBallWithPeerEngine();
-    if (!companionVisible()) return;
-
-    const peer = companion.ball;
-    ctx.fillStyle = '#eef4ff';
-    ctx.beginPath();
-    ctx.arc(peer.x, peer.y, peer.radius, 0, Math.PI * 2);
-    ctx.fill();
+    drawPeerBall(companion);
+    drawPeerBall(stackedCompanion);
   };
 
   const baseResetGameWithPeerEngine = resetGame;
   resetGame = function resetGameWithPeerEngine() {
     removeCompanion('new-game');
+    removeStackedCompanion('new-game');
     baseResetGameWithPeerEngine();
   };
 
   window.miamiMultiballEngine = {
     state: engineState,
     spawnCompanion,
+    spawnStackedCompanion,
     removeCompanion,
+    removeStackedCompanion,
     // Dormant MB1 test hook. It never consumes O/C/H and is not bound to a key.
     spawnTestPeer(overrides = {}) {
       return spawnCompanion({
