@@ -259,6 +259,100 @@
     peer.vy += impulse * ny;
   }
 
+  function resolveBallStateCollision(first, second, dt = 1 / 240) {
+    let dx = second.x - first.x;
+    let dy = second.y - first.y;
+    let distance = Math.hypot(dx, dy);
+    const minimum = first.radius + second.radius;
+    let nx;
+    let ny;
+    let overlap = 0;
+
+    if (distance < minimum) {
+      if (distance < 0.0001) {
+        dx = 1;
+        dy = 0;
+        distance = 1;
+      }
+      nx = dx / distance;
+      ny = dy / distance;
+      overlap = minimum - distance;
+    } else {
+      const relativeVx = second.vx - first.vx;
+      const relativeVy = second.vy - first.vy;
+      const a = relativeVx * relativeVx + relativeVy * relativeVy;
+      if (a < 0.000001) return;
+
+      const b = 2 * (dx * relativeVx + dy * relativeVy);
+      if (b >= 0) return;
+
+      const c = distance * distance - minimum * minimum;
+      const discriminant = b * b - 4 * a * c;
+      if (discriminant < 0) return;
+
+      const timeToContact = (-b - Math.sqrt(discriminant)) / (2 * a);
+      if (timeToContact < 0 || timeToContact > dt) return;
+
+      const contactDx = dx + relativeVx * timeToContact;
+      const contactDy = dy + relativeVy * timeToContact;
+      const contactDistance = Math.hypot(contactDx, contactDy);
+      if (contactDistance < 0.0001) {
+        nx = dx / distance;
+        ny = dy / distance;
+      } else {
+        nx = contactDx / contactDistance;
+        ny = contactDy / contactDistance;
+      }
+    }
+
+    if (overlap > 0) {
+      first.x -= nx * overlap * 0.5;
+      first.y -= ny * overlap * 0.5;
+      second.x += nx * overlap * 0.5;
+      second.y += ny * overlap * 0.5;
+    }
+
+    const relativeNormalSpeed =
+      (second.vx - first.vx) * nx +
+      (second.vy - first.vy) * ny;
+    if (relativeNormalSpeed >= 0) return;
+
+    const impulse = -(
+      (1 + BALL_COLLISION_RESTITUTION) * relativeNormalSpeed
+    ) / 2;
+
+    first.vx -= impulse * nx;
+    first.vy -= impulse * ny;
+    second.vx += impulse * nx;
+    second.vy += impulse * ny;
+  }
+
+  function resolveStackedPeerBallCollision(dt = 1 / 240) {
+    if (
+      !stackedCompanion.active ||
+      ball.ready ||
+      stackedPeerInSpecialRoute() ||
+      tableBallInSpecialRoute()
+    ) return;
+
+    resolveBallStateCollision(ball, stackedCompanion.ball, dt);
+  }
+
+  function resolveCompanionPairCollision(dt = 1 / 240) {
+    if (
+      !companion.active ||
+      !stackedCompanion.active ||
+      peerInSpecialRoute() ||
+      stackedPeerInSpecialRoute()
+    ) return;
+
+    resolveBallStateCollision(
+      companion.ball,
+      stackedCompanion.ball,
+      dt
+    );
+  }
+
   function resolvePeerSafeRecoveryRailCollisions() {
     // Match DIVERTZONE1: a loose companion descending on the playfield side may
     // meet the current recovery surface, but a ball already in the shooter lane
