@@ -140,10 +140,37 @@
     }
   }
 
+  function storeStackedCompanionContext() {
+    copyBallState(ball, stackedCompanion.ball);
+    stackedCompanion.route = captureRouteState();
+  }
+
+  function withStackedCompanionContext(callback) {
+    const tableBall = { ...ball };
+    const tableRoute = captureRouteState();
+
+    copyBallState(stackedCompanion.ball, ball);
+    applyRouteState(stackedCompanion.route);
+
+    try {
+      callback();
+    } finally {
+      storeStackedCompanionContext();
+      copyBallState(tableBall, ball);
+      applyRouteState(tableRoute);
+    }
+  }
+
   function peerInSpecialRoute() {
     return companion.route.underpassActive ||
       companion.route.oceanActive ||
       companion.route.loopActive;
+  }
+
+  function stackedPeerInSpecialRoute() {
+    return stackedCompanion.route.underpassActive ||
+      stackedCompanion.route.oceanActive ||
+      stackedCompanion.route.loopActive;
   }
 
   function tableBallInSpecialRoute() {
