@@ -7,10 +7,10 @@
 (() => {
   if (window.miamiVersionedAsset) return;
 
-  const buildToken = '20260919-story1fix';
+  const buildToken = '20260919-story1fix2';
   window.miamiBuildToken = buildToken;
   window.miamiCurrentBuildLabel =
-    'Build 20260919-STORY1FIX';
+    'Build 20260919-STORY1FIX2';
 
   window.miamiVersionedAsset = function miamiVersionedAsset(path) {
     try {
@@ -161,6 +161,10 @@
 })();
 
 const MIAMI_FEATURE_SCRIPTS = [
+  'story-art-case1-0.js',
+  'story-art-case1-1.js',
+  'story-art-case1-2.js',
+  'story-art-case1-3.js',
   'story-vignette.js',
   'circle3x.js',
   'businesses.js',
