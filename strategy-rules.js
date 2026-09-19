@@ -525,7 +525,7 @@
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
     instructions.append(document.createTextNode(
-      ' Strategy: complete OCEAN DRIVE, three circle passes, and the hotel district to light O/C/H beside the captive ball. All three light CAPTIVE READY. Completed OCEAN DRIVE stays HOT for 2500, 5000, 7500, then 10000 per additional pass. The center drop bank gives 15 seconds of 2X captive-hit value; the two captive-side standups make the next eligible captive hit count as two progress hits; the upper-right pair spots one hotel-district step for that ball.'
+      ' Strategy: completing OCEAN DRIVE starts 2-ball multiball and lights O. Three circle passes and the hotel district light C/H; O/C/H remain live during Ocean Drive multiball. All three light CAPTIVE READY. If both balls are still alive, hitting the captive ball adds a third ball; otherwise CAPTIVE READY starts the normal 2-ball multiball. Completed OCEAN DRIVE stays HOT for 2500, 5000, 7500, then 10000 per additional pass. The center drop bank gives 15 seconds of 2X captive-hit value; the two captive-side standups make the next eligible captive hit count as two progress hits; the upper-right pair spots one hotel-district step for that ball.'
     ));
   }
 })();
