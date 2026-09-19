@@ -24,16 +24,17 @@
   }
   stripeOffsets.sort((a, b) => a - b);
 
-  // Cheap animated glow overlay for the existing static ribs. Geometry is built
-  // once; runtime only fills three cached paths with the center motif's shared
-  // brightness phase. No shadow blur, filter, or full-canvas transparent layer.
-  const ribGlowPaths = [new Path2D(), new Path2D(), new Path2D()];
+  // RIBSYNC3: brighten the actual existing rib lines sequentially rather than
+  // lifting the whole rib field together. The sequence starts nearest the center
+  // motif and alternates above/below as it travels outward.
   const verticalFadeDistance = Math.max(
     STRIPE_CENTER_Y - TABLE.top,
     TABLE.bottom - STRIPE_CENTER_Y
   );
-
-  for (const offset of stripeOffsets) {
+  const ribSequenceOffsets = [...stripeOffsets].sort(
+    (a, b) => Math.abs(a) - Math.abs(b) || a - b
+  );
+  const ribGlowEntries = ribSequenceOffsets.map(offset => {
     const tableY = STRIPE_CENTER_Y + offset;
     const normalizedDistance = Math.min(
       1,
@@ -42,15 +43,16 @@
     const centerStrength = Math.pow(1 - normalizedDistance, 1.35);
     const phaseIndex = Math.round((offset + 60) / STRIPE_SPACING);
     const bandHeight = Math.abs(phaseIndex) % 2 === 0 ? 4 : 3;
-    const group = centerStrength > 0.66 ? 0 : centerStrength > 0.33 ? 1 : 2;
-
-    ribGlowPaths[group].rect(
+    const path = new Path2D();
+    path.rect(
       TABLE.left,
       tableY - bandHeight / 2,
       playfieldWidth,
       bandHeight
     );
-  }
+
+    return { path, centerStrength };
+  });
 
   const ribGlowGradient = ctx.createLinearGradient(
     TABLE.left,
@@ -62,33 +64,44 @@
   ribGlowGradient.addColorStop(0.08, 'rgba(155, 96, 238, 0.18)');
   ribGlowGradient.addColorStop(0.24, 'rgba(173, 105, 255, 0.55)');
   ribGlowGradient.addColorStop(0.42, 'rgba(193, 126, 255, 0.92)');
-  ribGlowGradient.addColorStop(0.50, 'rgba(207, 146, 255, 1)');
+  ribGlowGradient.addColorStop(0.50, 'rgba(220, 168, 255, 1)');
   ribGlowGradient.addColorStop(0.58, 'rgba(193, 126, 255, 0.92)');
   ribGlowGradient.addColorStop(0.76, 'rgba(173, 105, 255, 0.55)');
   ribGlowGradient.addColorStop(0.92, 'rgba(155, 96, 238, 0.18)');
   ribGlowGradient.addColorStop(1, 'rgba(155, 96, 238, 0)');
 
+  function circularRibDistance(a, b, count) {
+    const direct = Math.abs(a - b);
+    return Math.min(direct, count - direct);
+  }
+
   function drawSyncedRibGlow() {
     if (typeof window.miamiSunsetSyncStateAt !== 'function') return;
 
     const state = window.miamiSunsetSyncStateAt(performance.now());
-    const mobileScale = window.miamiMobilePerformanceMode ? 0.76 : 1;
-    const pulseAlpha =
-      (0.02 + state.pulse * 0.36) *
-      (0.72 + state.energy * 0.28) *
-      mobileScale;
+    const count = ribGlowEntries.length;
+    if (!count) return;
+
+    const head = state.phase * count;
+    const mobileScale = window.miamiMobilePerformanceMode ? 0.78 : 1;
 
     ctx.save();
     ctx.fillStyle = ribGlowGradient;
 
-    ctx.globalAlpha = pulseAlpha;
-    ctx.fill(ribGlowPaths[0]);
+    for (let index = 0; index < count; index += 1) {
+      const distance = circularRibDistance(index, head, count);
+      if (distance >= 2.7) continue;
 
-    ctx.globalAlpha = pulseAlpha * 0.78;
-    ctx.fill(ribGlowPaths[1]);
-
-    ctx.globalAlpha = pulseAlpha * 0.48;
-    ctx.fill(ribGlowPaths[2]);
+      const chase = 1 - distance / 2.7;
+      const entry = ribGlowEntries[index];
+      const centerWeight = 0.42 + entry.centerStrength * 0.58;
+      ctx.globalAlpha =
+        chase * chase *
+        (0.48 + state.energy * 0.34) *
+        centerWeight *
+        mobileScale;
+      ctx.fill(entry.path);
+    }
 
     ctx.restore();
   }
