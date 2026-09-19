@@ -14,6 +14,11 @@
     if (typeof cancel === 'function') cancel(reason);
   }
 
+  function cancelStack(reason) {
+    const cancel = window.miamiCancelMultiballStack;
+    if (typeof cancel === 'function') cancel(reason);
+  }
+
   window.addEventListener('miami-multiball-start-requested', () => {
     const lifecycle = window.miamiMultiballState;
     if (!lifecycle || lifecycle.phase !== 'starting') return;
@@ -39,6 +44,35 @@
     // CAPTIVE READY or leaving the lifecycle stuck in "starting".
     if (!started && lifecycle.phase === 'starting') {
       cancelStart('peer-create-failed');
+    }
+  });
+
+  window.addEventListener('miami-multiball-stack-requested', () => {
+    const lifecycle = window.miamiMultiballState;
+    if (
+      !lifecycle ||
+      lifecycle.phase !== 'multiball' ||
+      lifecycle.liveCount !== 2 ||
+      !lifecycle.stackPending
+    ) return;
+
+    const engine = window.miamiMultiballEngine;
+    if (!engine || typeof engine.spawnStackedCompanion !== 'function') {
+      cancelStack('engine-unavailable');
+      return;
+    }
+
+    if (engine.state?.stackedCompanion?.active) {
+      cancelStack('third-peer-already-active');
+      return;
+    }
+
+    const started = engine.spawnStackedCompanion({
+      confirmLifecycle: true
+    });
+
+    if (!started && lifecycle.stackPending) {
+      cancelStack('third-peer-create-failed');
     }
   });
 
