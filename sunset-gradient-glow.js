@@ -250,8 +250,14 @@
       energy = 1;
     }
 
-    return { phase: wrap01(phase), energy, flash };
+    const wrappedPhase = wrap01(phase);
+    const pulse = 0.5 - 0.5 * Math.cos(wrappedPhase * Math.PI * 2);
+    return { phase: wrappedPhase, energy, flash, pulse };
   }
+
+  // The extended background ribs read this exact state so their brightness
+  // rises and falls on the same phase as the center sunset bands.
+  window.miamiSunsetSyncStateAt = getCycleState;
 
   function drawSyncedSunBands() {
     if (!buildSunMask()) return;
@@ -288,9 +294,10 @@
 
     ctx.save();
     ctx.globalCompositeOperation = 'source-over';
+    const centerPulse = state.pulse * (window.miamiMobilePerformanceMode ? 0.025 : 0.045);
     ctx.globalAlpha = window.miamiMobilePerformanceMode
-      ? 0.76 + state.energy * 0.08 + state.flash * 0.03
-      : 0.84 + state.energy * 0.08 + state.flash * 0.04;
+      ? 0.75 + state.energy * 0.08 + state.flash * 0.03 + centerPulse
+      : 0.82 + state.energy * 0.08 + state.flash * 0.04 + centerPulse;
     ctx.drawImage(sunPaint, left, top);
     ctx.restore();
   }

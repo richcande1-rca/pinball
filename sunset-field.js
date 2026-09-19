@@ -24,6 +24,75 @@
   }
   stripeOffsets.sort((a, b) => a - b);
 
+  // Cheap animated glow overlay for the existing static ribs. Geometry is built
+  // once; runtime only fills three cached paths with the center motif's shared
+  // brightness phase. No shadow blur, filter, or full-canvas transparent layer.
+  const ribGlowPaths = [new Path2D(), new Path2D(), new Path2D()];
+  const verticalFadeDistance = Math.max(
+    STRIPE_CENTER_Y - TABLE.top,
+    TABLE.bottom - STRIPE_CENTER_Y
+  );
+
+  for (const offset of stripeOffsets) {
+    const tableY = STRIPE_CENTER_Y + offset;
+    const normalizedDistance = Math.min(
+      1,
+      Math.abs(offset) / Math.max(1, verticalFadeDistance)
+    );
+    const centerStrength = Math.pow(1 - normalizedDistance, 1.35);
+    const phaseIndex = Math.round((offset + 60) / STRIPE_SPACING);
+    const bandHeight = Math.abs(phaseIndex) % 2 === 0 ? 4 : 3;
+    const group = centerStrength > 0.66 ? 0 : centerStrength > 0.33 ? 1 : 2;
+
+    ribGlowPaths[group].rect(
+      TABLE.left,
+      tableY - bandHeight / 2,
+      playfieldWidth,
+      bandHeight
+    );
+  }
+
+  const ribGlowGradient = ctx.createLinearGradient(
+    TABLE.left,
+    0,
+    TABLE.right,
+    0
+  );
+  ribGlowGradient.addColorStop(0, 'rgba(155, 96, 238, 0)');
+  ribGlowGradient.addColorStop(0.08, 'rgba(155, 96, 238, 0.18)');
+  ribGlowGradient.addColorStop(0.24, 'rgba(173, 105, 255, 0.55)');
+  ribGlowGradient.addColorStop(0.42, 'rgba(193, 126, 255, 0.92)');
+  ribGlowGradient.addColorStop(0.50, 'rgba(207, 146, 255, 1)');
+  ribGlowGradient.addColorStop(0.58, 'rgba(193, 126, 255, 0.92)');
+  ribGlowGradient.addColorStop(0.76, 'rgba(173, 105, 255, 0.55)');
+  ribGlowGradient.addColorStop(0.92, 'rgba(155, 96, 238, 0.18)');
+  ribGlowGradient.addColorStop(1, 'rgba(155, 96, 238, 0)');
+
+  function drawSyncedRibGlow() {
+    if (typeof window.miamiSunsetSyncStateAt !== 'function') return;
+
+    const state = window.miamiSunsetSyncStateAt(performance.now());
+    const mobileScale = window.miamiMobilePerformanceMode ? 0.62 : 1;
+    const pulseAlpha =
+      (0.018 + state.pulse * 0.13) *
+      (0.72 + state.energy * 0.28) *
+      mobileScale;
+
+    ctx.save();
+    ctx.fillStyle = ribGlowGradient;
+
+    ctx.globalAlpha = pulseAlpha;
+    ctx.fill(ribGlowPaths[0]);
+
+    ctx.globalAlpha = pulseAlpha * 0.66;
+    ctx.fill(ribGlowPaths[1]);
+
+    ctx.globalAlpha = pulseAlpha * 0.34;
+    ctx.fill(ribGlowPaths[2]);
+
+    ctx.restore();
+  }
+
   // Opaque playfield backing: base color + all static ribs are composited once.
   // Runtime cost is one opaque drawImage rather than a base fill followed by a
   // large transparent overlay blend.
@@ -141,6 +210,7 @@
   // ribs arrive as one opaque image. Shooter lane and border remain unchanged.
   drawTable = function drawTableWithPrecomposedSunsetField() {
     ctx.drawImage(playfieldLayer, TABLE.left, TABLE.top);
+    drawSyncedRibGlow();
 
     ctx.fillStyle = MIAMI_COLORS.shooterLane;
     ctx.fillRect(
