@@ -72,9 +72,9 @@
     if (typeof window.miamiSunsetSyncStateAt !== 'function') return;
 
     const state = window.miamiSunsetSyncStateAt(performance.now());
-    const mobileScale = window.miamiMobilePerformanceMode ? 0.62 : 1;
+    const mobileScale = window.miamiMobilePerformanceMode ? 0.76 : 1;
     const pulseAlpha =
-      (0.018 + state.pulse * 0.13) *
+      (0.02 + state.pulse * 0.36) *
       (0.72 + state.energy * 0.28) *
       mobileScale;
 
@@ -84,10 +84,10 @@
     ctx.globalAlpha = pulseAlpha;
     ctx.fill(ribGlowPaths[0]);
 
-    ctx.globalAlpha = pulseAlpha * 0.66;
+    ctx.globalAlpha = pulseAlpha * 0.78;
     ctx.fill(ribGlowPaths[1]);
 
-    ctx.globalAlpha = pulseAlpha * 0.34;
+    ctx.globalAlpha = pulseAlpha * 0.48;
     ctx.fill(ribGlowPaths[2]);
 
     ctx.restore();
