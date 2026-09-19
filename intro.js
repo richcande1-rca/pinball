@@ -7,10 +7,10 @@
 (() => {
   if (window.miamiVersionedAsset) return;
 
-  const buildToken = '20260919-ribsync3';
+  const buildToken = '20260919-story1';
   window.miamiBuildToken = buildToken;
   window.miamiCurrentBuildLabel =
-    'Build 20260919-RIBSYNC3';
+    'Build 20260919-STORY1';
 
   window.miamiVersionedAsset = function miamiVersionedAsset(path) {
     try {
@@ -70,24 +70,27 @@
   window.miamiGameStarted = false;
 
   // Do not expose gameplay while the temporary LOWER2A lower-right geometry
-  // is still live. DIVERTZONE1 sets this flag only after the proven recovery
-  // rail, sling and collision-zone cleanup has finished installing.
+  // is still live, or before the story card artwork has finished preloading.
+  // This keeps the existing build-catch-up screen as the single startup gate.
   startButton.disabled = true;
   startButton.hidden = true;
   status.textContent = 'Finishing table setup...';
 
-  function waitForLowerRightCleanup() {
-    if (window.miamiLowerRightCleanupInstalled === true) {
+  function waitForRequiredSetup() {
+    if (
+      window.miamiLowerRightCleanupInstalled === true &&
+      window.miamiStoryVignetteReady === true
+    ) {
       // Let the rest of this script finish binding skip/click handlers first,
       // then begin the existing intro automatically.
       window.setTimeout(startIntro, 0);
       return;
     }
 
-    window.setTimeout(waitForLowerRightCleanup, 50);
+    window.setTimeout(waitForRequiredSetup, 50);
   }
 
-  waitForLowerRightCleanup();
+  waitForRequiredSetup();
 
   function finishIntro(skipped) {
     if (introState !== 'playing') return;
@@ -101,15 +104,32 @@
     screen.classList.add('is-leaving');
     window.setTimeout(() => {
       screen.hidden = true;
-      window.miamiGameStarted = true;
-      window.dispatchEvent(new CustomEvent('miami-game-start'));
+
+      const releaseGameplay = () => {
+        if (window.miamiGameStarted) return;
+        window.miamiGameStarted = true;
+        window.dispatchEvent(new CustomEvent('miami-game-start'));
+      };
+
+      if (typeof window.miamiPlayStoryVignette !== 'function') {
+        releaseGameplay();
+        return;
+      }
+
+      Promise.resolve(window.miamiPlayStoryVignette({
+        caseId: 'case-1',
+        duration: 3800
+      }))
+        .catch(() => null)
+        .then(releaseGameplay);
     }, 420);
   }
 
   function startIntro() {
     if (
       introState !== 'ready' ||
-      window.miamiLowerRightCleanupInstalled !== true
+      window.miamiLowerRightCleanupInstalled !== true ||
+      window.miamiStoryVignetteReady !== true
     ) return;
     introState = 'playing';
     screen.classList.add('is-playing');
@@ -141,6 +161,7 @@
 })();
 
 const MIAMI_FEATURE_SCRIPTS = [
+  'story-vignette.js',
   'circle3x.js',
   'businesses.js',
   'cars.js',
