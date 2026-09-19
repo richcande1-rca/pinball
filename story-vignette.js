@@ -6,9 +6,12 @@
   window.miamiStoryVignetteInstalled = true;
   window.miamiStoryVignetteReady = false;
 
-  const CASE_ONE_SRC = window.miamiVersionedAsset(
-    'assets/miami-case1-vignette.webp'
-  );
+  const artChunks = Array.isArray(window.miamiCase1ArtChunks)
+    ? window.miamiCase1ArtChunks
+    : [];
+  const CASE_ONE_SRC = artChunks.length === 4
+    ? `data:image/webp;base64,${artChunks.join('')}`
+    : '';
   const DEFAULT_DURATION_MS = 3800;
   const FADE_OUT_MS = 220;
 
@@ -76,12 +79,16 @@
     }));
   }
 
-  preload.addEventListener('load', () => markReady(false), { once: true });
-  preload.addEventListener('error', () => markReady(true), { once: true });
-  preload.src = CASE_ONE_SRC;
+  if (!CASE_ONE_SRC) {
+    markReady(true);
+  } else {
+    preload.addEventListener('load', () => markReady(false), { once: true });
+    preload.addEventListener('error', () => markReady(true), { once: true });
+    preload.src = CASE_ONE_SRC;
 
-  if (preload.complete) {
-    window.queueMicrotask(() => markReady(!preload.naturalWidth));
+    if (preload.complete) {
+      window.queueMicrotask(() => markReady(!preload.naturalWidth));
+    }
   }
 
   window.miamiPlayStoryVignette = function miamiPlayStoryVignette(options = {}) {
