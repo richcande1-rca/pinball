@@ -13,6 +13,7 @@
   window.miamiMultiballEngineInstalled = true;
 
   const PEER_ID = 'companion-ball';
+  const STACKED_PEER_ID = 'companion-ball-2';
   const BALL_COLLISION_RESTITUTION = 0.92;
 
   const companion = {
@@ -41,11 +42,45 @@
     }
   };
 
+  const stackedCompanion = {
+    active: false,
+    testOnly: false,
+    id: STACKED_PEER_ID,
+    ball: {
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      radius: ball.radius,
+      ready: false
+    },
+    route: {
+      shooterRoute: 'released',
+      enteredPlayfield: true,
+      underpassActive: false,
+      underpassEnteredAt: -Infinity,
+      oceanActive: false,
+      oceanProgress: 0,
+      oceanSpinnerTriggered: false,
+      oceanEntrySpeed: 0,
+      loopActive: false,
+      loopProgress: 0
+    }
+  };
+
   const engineState = {
     companion,
+    stackedCompanion,
     livePhysicalBalls: 1,
     lastPeerDrainAt: -Infinity
   };
+
+  function syncLivePhysicalBalls() {
+    engineState.livePhysicalBalls =
+      1 +
+      (companion.active ? 1 : 0) +
+      (stackedCompanion.active ? 1 : 0);
+  }
 
   function copyBallState(source, target) {
     target.x = source.x;
