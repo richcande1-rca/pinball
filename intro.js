@@ -7,10 +7,10 @@
 (() => {
   if (window.miamiVersionedAsset) return;
 
-  const buildToken = '20260918-divertpeer2';
+  const buildToken = '20260919-autointro1';
   window.miamiBuildToken = buildToken;
   window.miamiCurrentBuildLabel =
-    'Build 20260918-DIVERTPEER2';
+    'Build 20260919-AUTOINTRO1';
 
   window.miamiVersionedAsset = function miamiVersionedAsset(path) {
     try {
@@ -67,20 +67,20 @@
   const status = document.getElementById('intro-status');
   let introState = 'ready';
   let introTimer = null;
-  const readyStatus = status.textContent;
-
   window.miamiGameStarted = false;
 
   // Do not expose gameplay while the temporary LOWER2A lower-right geometry
   // is still live. DIVERTZONE1 sets this flag only after the proven recovery
   // rail, sling and collision-zone cleanup has finished installing.
   startButton.disabled = true;
+  startButton.hidden = true;
   status.textContent = 'Finishing table setup...';
 
   function waitForLowerRightCleanup() {
     if (window.miamiLowerRightCleanupInstalled === true) {
-      startButton.disabled = false;
-      if (introState === 'ready') status.textContent = readyStatus;
+      // Let the rest of this script finish binding skip/click handlers first,
+      // then begin the existing intro automatically.
+      window.setTimeout(startIntro, 0);
       return;
     }
 
@@ -119,11 +119,6 @@
     window.dispatchEvent(new CustomEvent('miami-intro-start'));
     introTimer = window.setTimeout(() => finishIntro(false), INTRO_DURATION_MS);
   }
-
-  startButton.addEventListener('click', event => {
-    event.stopPropagation();
-    startIntro();
-  });
 
   skipButton.addEventListener('click', event => {
     event.stopPropagation();
