@@ -7,10 +7,10 @@
 (() => {
   if (window.miamiVersionedAsset) return;
 
-  const buildToken = '20260920-mobileperf1';
+  const buildToken = '20260920-mobileperf2';
   window.miamiBuildToken = buildToken;
   window.miamiCurrentBuildLabel =
-    'Build 20260920-MOBILEPERF1';
+    'Build 20260920-MOBILEPERF2';
 
   window.miamiVersionedAsset = function miamiVersionedAsset(path) {
     try {
