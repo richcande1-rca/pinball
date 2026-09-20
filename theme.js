@@ -454,9 +454,7 @@ drawLowerApron = function drawMiamiLowerApron() {
   ctx.restore();
 };
 
-const mobilePerformanceMode = window.matchMedia('(pointer: coarse)').matches
-  && window.matchMedia('(max-width: 768px)').matches;
-window.miamiMobilePerformanceMode = mobilePerformanceMode;
+const mobilePerformanceMode = window.miamiMobilePerformanceMode === true;
 
 draw = function drawMiamiNightsFrame() {
   const now = performance.now();
