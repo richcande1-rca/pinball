@@ -27,8 +27,11 @@
     '#050817'
   ];
 
+  const SUN_PAINT_INTERVAL_MS = 1000 / 30;
   let sunMask = null;
   let sunPaint = null;
+  let sunPaintCtx = null;
+  let lastSunPaintAt = -Infinity;
   let maskNaturalWidth = 0;
   let maskNaturalHeight = 0;
   let override = {
@@ -59,6 +62,9 @@
       until: now + duration,
       origin
     };
+    // Force the next render to refresh the cached sun paint immediately so
+    // gameplay flashes still react on the first visible frame.
+    lastSunPaintAt = -Infinity;
   }
 
   function mode2xActive() {
@@ -77,9 +83,9 @@
     };
   }
 
-  function mixHex(a, b, amount) {
-    const ca = hexToRgb(a);
-    const cb = hexToRgb(b);
+  const cyclePaletteRgb = cyclePalette.map(hexToRgb);
+
+  function mixRgb(ca, cb, amount) {
     const t = clamp01(amount);
     const r = Math.round(ca.r + (cb.r - ca.r) * t);
     const g = Math.round(ca.g + (cb.g - ca.g) * t);
@@ -89,10 +95,14 @@
 
   function sampleCycle(position) {
     const wrapped = wrap01(position);
-    const scaled = wrapped * cyclePalette.length;
-    const index = Math.floor(scaled) % cyclePalette.length;
-    const next = (index + 1) % cyclePalette.length;
-    return mixHex(cyclePalette[index], cyclePalette[next], scaled - Math.floor(scaled));
+    const scaled = wrapped * cyclePaletteRgb.length;
+    const index = Math.floor(scaled) % cyclePaletteRgb.length;
+    const next = (index + 1) % cyclePaletteRgb.length;
+    return mixRgb(
+      cyclePaletteRgb[index],
+      cyclePaletteRgb[next],
+      scaled - Math.floor(scaled)
+    );
   }
 
   function buildSunMask() {
@@ -165,6 +175,8 @@
     sunPaint = document.createElement('canvas');
     sunPaint.width = width;
     sunPaint.height = height;
+    sunPaintCtx = sunPaint.getContext('2d');
+    lastSunPaintAt = -Infinity;
     maskNaturalWidth = miamiArtwork.naturalWidth;
     maskNaturalHeight = miamiArtwork.naturalHeight;
     return true;
@@ -266,28 +278,34 @@
     const state = getCycleState(now);
     const width = sunPaint.width;
     const height = sunPaint.height;
-    const paintCtx = sunPaint.getContext('2d');
 
-    paintCtx.clearRect(0, 0, width, height);
+    // Rebuilding an offscreen gradient, masking it, and compositing it every
+    // display frame was doing far more work than this deliberately slow color
+    // animation needs. Refresh the tiny paint cache at 30 Hz, while the main
+    // canvas can still render at full display rate.
+    if (now - lastSunPaintAt >= SUN_PAINT_INTERVAL_MS) {
+      lastSunPaintAt = now;
+      sunPaintCtx.clearRect(0, 0, width, height);
 
-    // Fixed top-to-bottom gradient = horizontal color bands. Only the palette
-    // phase changes, so the motif never spins and the stripe geometry never moves.
-    const gradient = paintCtx.createLinearGradient(0, 0, 0, height);
-    const stopCount = 9;
-    for (let index = 0; index < stopCount; index += 1) {
-      const position = index / (stopCount - 1);
-      const palettePosition = state.phase + position * 0.42;
-      gradient.addColorStop(position, sampleCycle(palettePosition));
+      // Fixed top-to-bottom gradient = horizontal color bands. Only the palette
+      // phase changes, so the motif never spins and the stripe geometry never moves.
+      const gradient = sunPaintCtx.createLinearGradient(0, 0, 0, height);
+      const stopCount = 9;
+      for (let index = 0; index < stopCount; index += 1) {
+        const position = index / (stopCount - 1);
+        const palettePosition = state.phase + position * 0.42;
+        gradient.addColorStop(position, sampleCycle(palettePosition));
+      }
+
+      sunPaintCtx.globalCompositeOperation = 'source-over';
+      sunPaintCtx.globalAlpha = 1;
+      sunPaintCtx.fillStyle = gradient;
+      sunPaintCtx.fillRect(0, 0, width, height);
+
+      sunPaintCtx.globalCompositeOperation = 'destination-in';
+      sunPaintCtx.drawImage(sunMask, 0, 0);
+      sunPaintCtx.globalCompositeOperation = 'source-over';
     }
-
-    paintCtx.globalCompositeOperation = 'source-over';
-    paintCtx.globalAlpha = 1;
-    paintCtx.fillStyle = gradient;
-    paintCtx.fillRect(0, 0, width, height);
-
-    paintCtx.globalCompositeOperation = 'destination-in';
-    paintCtx.drawImage(sunMask, 0, 0);
-    paintCtx.globalCompositeOperation = 'source-over';
 
     const left = SUN_X - SUN_RX - PAD;
     const top = SUN_Y - SUN_RY - PAD;
