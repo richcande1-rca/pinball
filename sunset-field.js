@@ -88,7 +88,14 @@
     ctx.save();
     ctx.fillStyle = ribGlowGradient;
 
-    for (let index = 0; index < count; index += 1) {
+    // Only a tiny neighborhood around the moving head can ever be visible.
+    // Visit those candidates directly instead of scanning every rib each frame.
+    const candidateCount = Math.min(count, 7);
+    const firstCandidate = Math.floor(head) - 3;
+    for (let offset = 0; offset < candidateCount; offset += 1) {
+      const index = (
+        (firstCandidate + offset) % count + count
+      ) % count;
       const distance = circularRibDistance(index, head, count);
       if (distance >= 2.7) continue;
 
