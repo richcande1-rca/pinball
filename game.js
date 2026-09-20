@@ -2440,6 +2440,7 @@ let frameWasIdle = false;
 let lastMobileRenderAt = -Infinity;
 let mobileFpsWindowStart = performance.now();
 let mobileRenderedFrames = 0;
+let mobileUrgentRender = false;
 
 function recordMobileRender(now) {
   if (!miamiMobilePerformanceMode) return;
@@ -2483,12 +2484,14 @@ function frame(now) {
 
   const shouldRender =
     !miamiMobilePerformanceMode ||
+    mobileUrgentRender ||
     now - lastMobileRenderAt >= mobileRenderIntervalMs - 1;
 
   if (shouldRender) {
     draw();
     if (miamiMobilePerformanceMode) {
       lastMobileRenderAt = now;
+      mobileUrgentRender = false;
       recordMobileRender(now);
     }
   }
@@ -2518,6 +2521,13 @@ function syncFlipperInput(side) {
 
   keys[side] = isPressed;
   flipperButtonFor(side).setAttribute('aria-pressed', String(isPressed));
+
+  // The phone normally paints at 30 FPS, but a flipper transition gets the
+  // very next animation frame after the 240 Hz simulation has advanced it.
+  // This keeps touch response crisp without restoring full-rate table paints.
+  if (miamiMobilePerformanceMode && isPressed !== wasPressed) {
+    mobileUrgentRender = true;
+  }
 
   if (isPressed && !wasPressed) {
     window.dispatchEvent(new CustomEvent('miami-flipper', {
