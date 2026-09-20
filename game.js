@@ -8,6 +8,31 @@ const scoreValueDisplay = document.getElementById('score-value');
 const ballNumberDisplay = document.getElementById('ball-number');
 const ballPipsDisplay = document.getElementById('ball-pips');
 
+const miamiMobilePerformanceMode =
+  window.matchMedia('(pointer: coarse)').matches ||
+  window.matchMedia('(max-width: 768px)').matches;
+window.miamiMobilePerformanceMode = miamiMobilePerformanceMode;
+
+let miamiFpsReadout = null;
+if (miamiMobilePerformanceMode) {
+  miamiFpsReadout = document.createElement('div');
+  miamiFpsReadout.textContent = 'FPS -- · MOBILE';
+  Object.assign(miamiFpsReadout.style, {
+    position: 'fixed',
+    top: '4px',
+    right: '6px',
+    zIndex: '30',
+    padding: '2px 5px',
+    borderRadius: '3px',
+    background: 'rgba(3, 6, 16, 0.72)',
+    color: '#8ef7ff',
+    font: '700 10px ui-monospace, monospace',
+    letterSpacing: '0.04em',
+    pointerEvents: 'none'
+  });
+  document.body.appendChild(miamiFpsReadout);
+}
+
 const TABLE = {
   left: 24,
   right: canvas.width - 24,
@@ -2408,9 +2433,28 @@ function draw() {
 }
 
 const fixedStep = 1 / 240;
+const mobileRenderIntervalMs = 1000 / 30;
 let accumulator = 0;
 let previousTime = performance.now();
 let frameWasIdle = false;
+let lastMobileRenderAt = -Infinity;
+let mobileFpsWindowStart = performance.now();
+let mobileRenderedFrames = 0;
+
+function recordMobileRender(now) {
+  if (!miamiMobilePerformanceMode) return;
+
+  mobileRenderedFrames += 1;
+  const elapsed = now - mobileFpsWindowStart;
+  if (elapsed < 1000) return;
+
+  const fps = mobileRenderedFrames * 1000 / elapsed;
+  if (miamiFpsReadout) {
+    miamiFpsReadout.textContent = `FPS ${Math.round(fps)} · MOBILE`;
+  }
+  mobileRenderedFrames = 0;
+  mobileFpsWindowStart = now;
+}
 
 function frame(now) {
   let frameTime = (now - previousTime) / 1000;
@@ -2426,10 +2470,9 @@ function frame(now) {
 
   frameWasIdle = false;
 
-  // Avoid giant physics jumps after the tab has been inactive.
-  // Mobile browsers can occasionally render below 20 FPS. Allow the fixed-step
-  // simulation to catch up instead of discarding real elapsed time and visibly
-  // slowing the ball and flippers.
+  // Keep the 240 Hz simulation independent from rendering. Mobile browsers
+  // still receive every fixed physics step, while the expensive canvas paint
+  // is capped at 30 FPS so visual work cannot monopolize the frame budget.
   frameTime = Math.min(frameTime, 0.125);
   accumulator += frameTime;
 
@@ -2438,7 +2481,18 @@ function frame(now) {
     accumulator -= fixedStep;
   }
 
-  draw();
+  const shouldRender =
+    !miamiMobilePerformanceMode ||
+    now - lastMobileRenderAt >= mobileRenderIntervalMs - 1;
+
+  if (shouldRender) {
+    draw();
+    if (miamiMobilePerformanceMode) {
+      lastMobileRenderAt = now;
+      recordMobileRender(now);
+    }
+  }
+
   requestAnimationFrame(frame);
 }
 
