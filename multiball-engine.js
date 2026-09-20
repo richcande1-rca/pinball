@@ -76,10 +76,8 @@
   };
 
   function syncLivePhysicalBalls() {
-    engineState.livePhysicalBalls =
-      1 +
-      (companion.active ? 1 : 0) +
-      (stackedCompanion.active ? 1 : 0);
+    // Current rules cap multiball at two live balls: table ball + one peer.
+    engineState.livePhysicalBalls = 1 + (companion.active ? 1 : 0);
   }
 
   function copyBallState(source, target) {
@@ -774,9 +772,7 @@
     const promotionPeer =
       companion.active && !companion.testOnly
         ? companion
-        : stackedCompanion.active
-          ? stackedCompanion
-          : null;
+        : null;
 
     if (
       promotionPeer &&
@@ -812,13 +808,9 @@
     baseUpdateWithPeerEngine(dt);
     if (gameOver) return;
 
-    if (companion.active) stepCompanion(dt);
-    if (stackedCompanion.active) stepStackedCompanion(dt);
-
-    if (companion.active) resolvePeerBallCollision(dt);
-    if (stackedCompanion.active) resolveStackedPeerBallCollision(dt);
-    if (companion.active && stackedCompanion.active) {
-      resolveCompanionPairCollision(dt);
+    if (companion.active) {
+      stepCompanion(dt);
+      resolvePeerBallCollision(dt);
     }
   };
 
@@ -847,22 +839,18 @@
   drawBall = function drawBallWithPeerEngine() {
     baseDrawBallWithPeerEngine();
     drawPeerBall(companion);
-    drawPeerBall(stackedCompanion);
   };
 
   const baseResetGameWithPeerEngine = resetGame;
   resetGame = function resetGameWithPeerEngine() {
     removeCompanion('new-game');
-    removeStackedCompanion('new-game');
     baseResetGameWithPeerEngine();
   };
 
   window.miamiMultiballEngine = {
     state: engineState,
     spawnCompanion,
-    spawnStackedCompanion,
     removeCompanion,
-    removeStackedCompanion,
     // Dormant MB1 test hook. It never consumes O/C/H and is not bound to a key.
     spawnTestPeer(overrides = {}) {
       return spawnCompanion({
