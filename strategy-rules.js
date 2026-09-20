@@ -1,9 +1,9 @@
 // Miami Nights: first connected rules/strategy layer.
 //
 // Major feature loop:
-//   OCEAN DRIVE + CIRCLE + HOTEL DISTRICT -> CAPTIVE READY.
-// This build deliberately stops before spawning multiball; the ready state is
-// persistent and exposes a future consume hook for the multiball engine.
+//   OCEAN DRIVE -> renewable two-ball multiball.
+//   OCEAN DRIVE + CIRCLE + HOTEL DISTRICT -> CAPTIVE READY -> another
+//   two-ball multiball. Successful captive starts consume and reset the trio.
 //
 // Tactical helpers:
 //   center drop bank -> 15s captive-hit 2X value
