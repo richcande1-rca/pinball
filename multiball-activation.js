@@ -3,7 +3,8 @@
 // CAPTIVE READY still belongs to strategy-rules.js. The lifecycle foundation
 // raises a start request on a solid captive hit; this bridge asks the proven
 // MB1A peer engine to create the physical companion. READY is consumed only
-// after the engine confirms that the second ball really exists.
+// after the engine confirms that the second ball really exists. This bridge
+// intentionally exposes no three-ball stack path.
 
 (() => {
   if (window.miamiMultiballActivationInstalled) return;
@@ -11,11 +12,6 @@
 
   function cancelStart(reason) {
     const cancel = window.miamiCancelMultiballStart;
-    if (typeof cancel === 'function') cancel(reason);
-  }
-
-  function cancelStack(reason) {
-    const cancel = window.miamiCancelMultiballStack;
     if (typeof cancel === 'function') cancel(reason);
   }
 
@@ -44,35 +40,6 @@
     // CAPTIVE READY or leaving the lifecycle stuck in "starting".
     if (!started && lifecycle.phase === 'starting') {
       cancelStart('peer-create-failed');
-    }
-  });
-
-  window.addEventListener('miami-multiball-stack-requested', () => {
-    const lifecycle = window.miamiMultiballState;
-    if (
-      !lifecycle ||
-      lifecycle.phase !== 'multiball' ||
-      lifecycle.liveCount !== 2 ||
-      !lifecycle.stackPending
-    ) return;
-
-    const engine = window.miamiMultiballEngine;
-    if (!engine || typeof engine.spawnStackedCompanion !== 'function') {
-      cancelStack('engine-unavailable');
-      return;
-    }
-
-    if (engine.state?.stackedCompanion?.active) {
-      cancelStack('third-peer-already-active');
-      return;
-    }
-
-    const started = engine.spawnStackedCompanion({
-      confirmLifecycle: true
-    });
-
-    if (!started && lifecycle.stackPending) {
-      cancelStack('third-peer-create-failed');
     }
   });
 
