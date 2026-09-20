@@ -2,6 +2,7 @@
 // MB0 deliberately adds only the lifecycle contract: qualification request,
 // successful-start consumption, peer/live-ball bookkeeping, and the rule that
 // losing one of two peer balls does not consume a player's normal ball.
+// Multiball is deliberately capped at two live balls.
 // Actual two-ball simulation is installed in the next engine step; until that
 // succeeds CAPTIVE READY is never consumed and no fake second ball is shown.
 
@@ -13,9 +14,8 @@
     phase: 'single',
     sourceBallNumber: null,
     startSource: null,
+    activeSource: null,
     requestedAt: -Infinity,
-    stackPending: false,
-    stackRequestedAt: -Infinity,
     generation: 0,
     liveCount: 1,
     peers: ['table-ball']
@@ -33,9 +33,8 @@
     state.phase = 'single';
     state.sourceBallNumber = null;
     state.startSource = null;
+    state.activeSource = null;
     state.requestedAt = -Infinity;
-    state.stackPending = false;
-    state.stackRequestedAt = -Infinity;
     state.liveCount = 1;
     state.peers = ['table-ball'];
   }
@@ -48,21 +47,6 @@
     resetLifecycle();
     window.dispatchEvent(new CustomEvent('miami-multiball-start-cancelled', {
       detail: { reason, ball: sourceBallNumber, source }
-    }));
-    return true;
-  }
-
-  function cancelStackStart(reason = 'cancelled') {
-    if (!state.stackPending) return false;
-
-    state.stackPending = false;
-    state.stackRequestedAt = -Infinity;
-    window.dispatchEvent(new CustomEvent('miami-multiball-stack-cancelled', {
-      detail: {
-        reason,
-        ball: state.sourceBallNumber,
-        liveCount: state.liveCount
-      }
     }));
     return true;
   }
@@ -92,30 +76,6 @@
     return true;
   }
 
-  function requestThreeBallStack(source = 'captive-stack') {
-    if (
-      state.phase !== 'multiball' ||
-      state.liveCount !== 2 ||
-      state.stackPending ||
-      gameOver ||
-      ball.ready ||
-      !strategyReady()
-    ) return false;
-
-    state.stackPending = true;
-    state.stackRequestedAt = performance.now();
-
-    window.dispatchEvent(new CustomEvent('miami-multiball-stack-requested', {
-      detail: {
-        source,
-        ball: ballNumber,
-        requestedLiveCount: 3,
-        peers: [...state.peers]
-      }
-    }));
-    return true;
-  }
-
   function confirmTwoBallMultiballStarted(companionId = 'companion-ball') {
     if (state.phase !== 'starting') return false;
 
@@ -130,6 +90,7 @@
 
     state.phase = 'multiball';
     state.startSource = null;
+    state.activeSource = source;
     state.generation += 1;
     state.liveCount = 2;
     state.peers = ['table-ball', companionId];
@@ -137,37 +98,6 @@
     window.dispatchEvent(new CustomEvent('miami-multiball-start', {
       detail: {
         source,
-        ball: state.sourceBallNumber,
-        liveCount: state.liveCount,
-        peers: [...state.peers],
-        generation: state.generation
-      }
-    }));
-    return true;
-  }
-
-  function confirmThreeBallStackStarted(companionId = 'companion-ball-2') {
-    if (
-      !state.stackPending ||
-      state.phase !== 'multiball' ||
-      state.liveCount !== 2 ||
-      state.peers.includes(companionId)
-    ) return false;
-
-    const consume = window.miamiConsumeCaptiveReadyForMultiball;
-    if (typeof consume !== 'function' || !consume()) {
-      cancelStackStart('qualification-unavailable');
-      return false;
-    }
-
-    state.stackPending = false;
-    state.stackRequestedAt = -Infinity;
-    state.liveCount = 3;
-    state.peers.push(companionId);
-
-    window.dispatchEvent(new CustomEvent('miami-multiball-stack-start', {
-      detail: {
-        source: 'captive-stack',
         ball: state.sourceBallNumber,
         liveCount: state.liveCount,
         peers: [...state.peers],
@@ -192,9 +122,11 @@
 
     if (state.liveCount === 1) {
       const survivor = state.peers[0];
+      const source = state.activeSource;
       state.phase = 'single';
       window.dispatchEvent(new CustomEvent('miami-multiball-end', {
         detail: {
+          source,
           ball: state.sourceBallNumber,
           drained: peerId,
           survivor,
@@ -204,8 +136,7 @@
       }));
       state.sourceBallNumber = null;
       state.startSource = null;
-      state.stackPending = false;
-      state.stackRequestedAt = -Infinity;
+      state.activeSource = null;
       return {
         handled: true,
         consumesNormalBall: false,
@@ -221,12 +152,9 @@
   }
 
   window.miamiRequestTwoBallMultiball = requestTwoBallMultiball;
-  window.miamiRequestThreeBallStack = requestThreeBallStack;
   window.miamiConfirmTwoBallMultiballStarted = confirmTwoBallMultiballStarted;
-  window.miamiConfirmThreeBallStackStarted = confirmThreeBallStackStarted;
   window.miamiReportMultiballPeerDrain = reportPeerDrain;
   window.miamiCancelMultiballStart = cancelPendingStart;
-  window.miamiCancelMultiballStack = cancelStackStart;
 
   window.addEventListener('miami-ocean-hot', () => {
     // A completed Ocean Drive run starts the proven two-ball system directly.
@@ -242,17 +170,11 @@
 
     if (state.phase === 'single') {
       requestTwoBallMultiball('captive');
-      return;
-    }
-
-    if (state.phase === 'multiball' && state.liveCount === 2) {
-      requestThreeBallStack('captive-stack');
     }
   });
 
   window.addEventListener('miami-drain', () => {
     if (state.phase === 'starting') cancelPendingStart('drain');
-    if (state.stackPending) cancelStackStart('drain');
   });
 
   const baseResetGameWithMultiballFoundation = resetGame;
