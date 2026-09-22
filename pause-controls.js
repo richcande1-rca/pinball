@@ -114,6 +114,41 @@
       box-shadow: 0 0 28px rgba(34, 223, 243, 0.18);
     }
 
+    .miami-instruction-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+
+    .miami-instruction-card {
+      padding: 0.48rem 0.55rem;
+      border: 1px solid rgba(114, 91, 158, 0.28);
+      border-radius: 4px;
+      background: rgba(5, 10, 25, 0.58);
+    }
+
+    .miami-instruction-card h3 {
+      margin: 0 0 0.28rem;
+      color: #f1efff;
+      font: 800 0.68rem ui-monospace, monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .miami-instruction-card p {
+      margin: 0.22rem 0 0;
+    }
+
+    .miami-instruction-card strong {
+      color: #f1efff;
+    }
+
+    @media (max-width: 560px) {
+      .miami-instruction-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     @media (max-width: 430px) {
       .control-strip #miami-world-scores-button,
       .control-strip #miami-pause-button {
@@ -212,10 +247,48 @@
     baseResetGameWithPause();
   };
 
+  // Earlier feature modules append their own help fragments as they load.
+  // Replace that accumulated wall of text once, here, with one current rules
+  // card after those features are installed.
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
-    instructions.append(document.createTextNode(
-      ' Pause: P or the PAUSE button.'
-    ));
+    const cleanInstructions = document.createElement('div');
+    cleanInstructions.className = 'instruction-content';
+    cleanInstructions.innerHTML = `
+      <div class="miami-instruction-grid">
+        <section class="miami-instruction-card">
+          <h3>Controls</h3>
+          <p><strong>Flippers:</strong> <kbd>Z</kbd> / <kbd>/</kbd> or <kbd>←</kbd> / <kbd>→</kbd>.</p>
+          <p><strong>Launch:</strong> hold <kbd>Space</kbd> or <strong>LAUNCH</strong>; a strong shot takes the upper-right ramp.</p>
+          <p><strong>Pause:</strong> <kbd>P</kbd>. <strong>New game:</strong> <kbd>R</kbd>. Three balls per game.</p>
+          <p><strong>Difficulty:</strong> EASY keeps the center safety post; HARD removes it. Mode locks after the first launch.</p>
+        </section>
+
+        <section class="miami-instruction-card">
+          <h3>Multiball</h3>
+          <p><strong>Ocean Drive:</strong> complete the OCEAN DRIVE lettering to start 2-ball multiball.</p>
+          <p>When one ball drains, Ocean Drive resets and can be earned again in the same game.</p>
+          <p><strong>CAPTIVE READY:</strong> light O / C / H — Ocean Drive, three circle passes, and the Hotel District — then hit the captive ball during single-ball play to start another 2-ball multiball.</p>
+          <p>CAPTIVE READY earned during multiball is saved for afterward. Maximum: <strong>2 live balls</strong>.</p>
+        </section>
+
+        <section class="miami-instruction-card">
+          <h3>Modes & Awards</h3>
+          <p>Knock down the three upper-center gates for <strong>18 seconds of 2X table scoring</strong>.</p>
+          <p>Make three upper-left circle passes for <strong>3X loop-bumper scoring</strong> until drain.</p>
+          <p>Complete <strong>3-0-5</strong> for 500 each, a 3000 bank bonus, and a left-outlane save for that ball.</p>
+          <p>Five solid captive hits award an <strong>extra ball</strong>; the five-hit cycle is repeatable.</p>
+        </section>
+
+        <section class="miami-instruction-card">
+          <h3>Table Strategy</h3>
+          <p><strong>Hotel District:</strong> complete REEF HOTEL, hit NEON PALMS, and sink CAFE OCHO. The upper-right pair can spot one Hotel step.</p>
+          <p><strong>Helpers:</strong> the center secondary bank gives 15 seconds of 2X captive-hit value; the captive-side pair adds one step to the next eligible captive hit.</p>
+          <p><strong>Captive:</strong> 500 per solid hit, 2500 at the top switch, 1000 for a roof hit from above.</p>
+          <p><strong>Underpass:</strong> shoot the upper pocket for a blind five-way route.</p>
+        </section>
+      </div>
+    `;
+    instructions.replaceWith(cleanInstructions);
   }
 })();
