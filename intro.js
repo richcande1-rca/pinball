@@ -199,7 +199,8 @@ const MIAMI_FEATURE_SCRIPTS = [
   'clock-polish.js',
   'neon-rush.js',
   'attract-mode.js',
-  'midnight-run.js'
+  'midnight-run.js',
+  'test-mode.js'
 ];
 
 (() => {
