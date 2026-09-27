@@ -369,27 +369,13 @@
   };
 })();
 
-// HOTEL1: load the repeatable REEF HOTEL rule only after the established late
+// Load the repeatable REEF HOTEL rule only after the established late
 // feature chain (including strategy and display listeners) is already live.
 (() => {
-  const stampHotelBuild = () => {
-    const buildNumberDisplay = document.querySelector('.build-number');
-    if (buildNumberDisplay) {
-      buildNumberDisplay.textContent = 'Build 20260910-PERF1-HOTEL1';
-    }
-  };
-
-  if (window.miamiHotelRepeatInstalled) {
-    stampHotelBuild();
-    return;
-  }
+  if (window.miamiHotelRepeatInstalled) return;
 
   const hotelRepeatScript = document.createElement('script');
   hotelRepeatScript.src = 'hotel-repeat.js?v=20260911-hotel1-lower2a';
   hotelRepeatScript.async = false;
-  hotelRepeatScript.addEventListener('load', () => {
-    stampHotelBuild();
-    window.setTimeout(stampHotelBuild, 400);
-  }, { once: true });
   document.body.appendChild(hotelRepeatScript);
 })();
