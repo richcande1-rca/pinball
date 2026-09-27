@@ -52,7 +52,7 @@
   const loadLowerCleanup = () => {
     if (window.miamiLowerRightCleanupInstalled) return;
     const cleanup = document.createElement('script');
-    cleanup.src = 'lower-right-cleanup.js?v=20260912-lowerbase1-gate1a';
+    cleanup.src = window.miamiVersionedAsset('lower-right-cleanup.js');
     cleanup.async = false;
     document.body.appendChild(cleanup);
   };
@@ -63,7 +63,7 @@
   }
 
   const script = document.createElement('script');
-  script.src = 'underpass-bidirectional.js?v=20260911-up2a-lower2a';
+  script.src = window.miamiVersionedAsset('underpass-bidirectional.js');
   script.async = false;
   script.addEventListener('load', loadLowerCleanup, { once: true });
   document.body.appendChild(script);

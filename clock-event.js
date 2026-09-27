@@ -375,7 +375,7 @@
   if (window.miamiHotelRepeatInstalled) return;
 
   const hotelRepeatScript = document.createElement('script');
-  hotelRepeatScript.src = 'hotel-repeat.js?v=20260911-hotel1-lower2a';
+  hotelRepeatScript.src = window.miamiVersionedAsset('hotel-repeat.js');
   hotelRepeatScript.async = false;
   document.body.appendChild(hotelRepeatScript);
 })();

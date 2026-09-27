@@ -188,7 +188,7 @@
 (() => {
   if (window.miamiMultiballEngineInstalled) return;
   const script = document.createElement('script');
-  script.src = 'multiball-engine.js?v=20260910-mb1a';
+  script.src = window.miamiVersionedAsset('multiball-engine.js');
   script.async = false;
   document.body.appendChild(script);
 })();
@@ -196,7 +196,7 @@
 (() => {
   if (window.miamiMultiballActivationInstalled) return;
   const script = document.createElement('script');
-  script.src = 'multiball-activation.js?v=20260912-mb2-lowerbase1-gate1a';
+  script.src = window.miamiVersionedAsset('multiball-activation.js');
   script.async = false;
   document.body.appendChild(script);
 })();
