@@ -495,20 +495,20 @@
     noise(0.09, 0.055, 480);
   }
 
-  function playNeonRushBeat({ remaining = 10, finalCountdown = false } = {}) {
-    // A small temporal pulse only: this deliberately does not alter the music.
-    const low = finalCountdown ? 138 : 116;
-    tone(low, finalCountdown ? 0.085 : 0.055, 0.055, {
+  function playNeonRushBeat({ remaining = 15, finalCountdown = false } = {}) {
+    // Audible clock tick layered over a restrained low pulse. This remains a
+    // machine SFX and does not alter or duck the music track.
+    const low = finalCountdown ? 142 : 124;
+    tone(low, finalCountdown ? 0.11 : 0.075, 0.05, {
       type: 'triangle',
-      endFrequency: low * 0.74
+      endFrequency: low * 0.72
     });
 
-    if (finalCountdown) {
-      tone(520, 0.035, 0.032, {
-        type: 'triangle',
-        endFrequency: 390
-      });
-    }
+    tone(finalCountdown ? 1320 : 1080, finalCountdown ? 0.095 : 0.07, 0.028, {
+      type: 'square',
+      endFrequency: finalCountdown ? 860 : 720
+    });
+    noise(finalCountdown ? 0.055 : 0.04, 0.018, finalCountdown ? 4800 : 4200);
   }
 
   function observeAudioEvents() {
