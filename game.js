@@ -231,6 +231,8 @@ const coastalOrbitRails = [
   ...makeRailSegments(coastalOrbitOuterPoints),
   ...makeRailSegments(coastalOrbitInnerPoints)
 ];
+const coastalOrbitOuterFillPoints = coastalOrbitOuterPoints.slice(1);
+const coastalOrbitInnerFillPoints = [...coastalOrbitInnerPoints].reverse();
 
 // The upper-right target is now a recessed magnetic lock. A clean hit
 // captures the ball, holds it for a dramatic beat, then ejects down-left.
@@ -292,6 +294,10 @@ const upperLeftLoopRails = [
   ...makeRailSegments(upperLeftLoopOuterPoints),
   ...upperLeftLoopInnerRails.filter((rail, index) => index !== 8)
 ];
+const upperLeftLoopOuterFillPoints = upperLeftLoopOuterPoints.slice(1);
+const upperLeftLoopInnerFillPoints = [...upperLeftLoopInnerPoints].reverse();
+const upperLeftLoopInnerRailFront = upperLeftLoopInnerPoints.slice(0, 9);
+const upperLeftLoopInnerRailBack = upperLeftLoopInnerPoints.slice(9);
 
 const upperLeftLoopPath = [
   { x: 100, y: 192 },
@@ -1675,11 +1681,12 @@ function traceSmoothRail(points) {
   for (let index = 1; index < points.length - 1; index += 1) {
     const point = points[index];
     const next = points[index + 1];
-    const midpoint = {
-      x: (point.x + next.x) / 2,
-      y: (point.y + next.y) / 2
-    };
-    ctx.quadraticCurveTo(point.x, point.y, midpoint.x, midpoint.y);
+    ctx.quadraticCurveTo(
+      point.x,
+      point.y,
+      (point.x + next.x) / 2,
+      (point.y + next.y) / 2
+    );
   }
 
   const last = points[points.length - 1];
@@ -1707,20 +1714,20 @@ function drawSmoothNeonRail(points, accent) {
   ctx.restore();
 }
 
-function drawCoastalOrbit() {
-  const laneGlow = ctx.createLinearGradient(TABLE.left, 0, TABLE.right, 0);
-  laneGlow.addColorStop(0, 'rgba(255, 60, 172, 0.12)');
-  laneGlow.addColorStop(0.5, 'rgba(201, 184, 255, 0.07)');
-  laneGlow.addColorStop(1, 'rgba(34, 223, 243, 0.12)');
+const coastalOrbitLaneGlow = ctx.createLinearGradient(TABLE.left, 0, TABLE.right, 0);
+coastalOrbitLaneGlow.addColorStop(0, 'rgba(255, 60, 172, 0.12)');
+coastalOrbitLaneGlow.addColorStop(0.5, 'rgba(201, 184, 255, 0.07)');
+coastalOrbitLaneGlow.addColorStop(1, 'rgba(34, 223, 243, 0.12)');
 
+function drawCoastalOrbit() {
   ctx.save();
-  ctx.fillStyle = laneGlow;
+  ctx.fillStyle = coastalOrbitLaneGlow;
   ctx.beginPath();
   ctx.moveTo(coastalOrbitOuterPoints[0].x, coastalOrbitOuterPoints[0].y);
-  for (const point of coastalOrbitOuterPoints.slice(1)) {
+  for (const point of coastalOrbitOuterFillPoints) {
     ctx.lineTo(point.x, point.y);
   }
-  for (const point of [...coastalOrbitInnerPoints].reverse()) {
+  for (const point of coastalOrbitInnerFillPoints) {
     ctx.lineTo(point.x, point.y);
   }
   ctx.closePath();
@@ -1831,26 +1838,27 @@ function drawLowerGuides() {
   }
 }
 
+const upperLeftLoopLaneGlow = ctx.createLinearGradient(40, 0, 220, 0);
+upperLeftLoopLaneGlow.addColorStop(0, 'rgba(34, 223, 243, 0.13)');
+upperLeftLoopLaneGlow.addColorStop(1, 'rgba(255, 60, 172, 0.13)');
+
 function drawUpperLeftLoopRamp() {
   const active = loopRamp.active;
   const flashing = performance.now() - loopRamp.flashStartedAt < 260;
 
   ctx.save();
-  const laneGlow = ctx.createLinearGradient(40, 0, 220, 0);
-  laneGlow.addColorStop(0, 'rgba(34, 223, 243, 0.13)');
-  laneGlow.addColorStop(1, 'rgba(255, 60, 172, 0.13)');
-  ctx.fillStyle = laneGlow;
+  ctx.fillStyle = upperLeftLoopLaneGlow;
   ctx.beginPath();
   ctx.moveTo(upperLeftLoopOuterPoints[0].x, upperLeftLoopOuterPoints[0].y);
-  for (const point of upperLeftLoopOuterPoints.slice(1)) ctx.lineTo(point.x, point.y);
-  for (const point of [...upperLeftLoopInnerPoints].reverse()) ctx.lineTo(point.x, point.y);
+  for (const point of upperLeftLoopOuterFillPoints) ctx.lineTo(point.x, point.y);
+  for (const point of upperLeftLoopInnerFillPoints) ctx.lineTo(point.x, point.y);
   ctx.closePath();
   ctx.fill();
   ctx.restore();
 
   drawSmoothNeonRail(upperLeftLoopOuterPoints, MIAMI_COLORS.cyan);
-  drawSmoothNeonRail(upperLeftLoopInnerPoints.slice(0, 9), MIAMI_COLORS.magenta);
-  drawSmoothNeonRail(upperLeftLoopInnerPoints.slice(9), MIAMI_COLORS.magenta);
+  drawSmoothNeonRail(upperLeftLoopInnerRailFront, MIAMI_COLORS.magenta);
+  drawSmoothNeonRail(upperLeftLoopInnerRailBack, MIAMI_COLORS.magenta);
 
   if (active || flashing) {
     ctx.save();
@@ -2099,6 +2107,14 @@ function offsetPathPoints(points, distance) {
   });
 }
 
+const oceanRampLeftRail = offsetPathPoints(oceanRampPath, 16);
+const oceanRampRightRail = offsetPathPoints(oceanRampPath, -16);
+const oceanRampRaisedShadowPath = oceanRampPath.slice(2);
+const oceanRampDeckGlow = ctx.createLinearGradient(360, 480, 290, 120);
+oceanRampDeckGlow.addColorStop(0, '#081728');
+oceanRampDeckGlow.addColorStop(0.52, '#14102d');
+oceanRampDeckGlow.addColorStop(1, '#200d2b');
+
 function drawOceanRamp() {
   const now = performance.now();
   const impactAge = now - oceanSpinner.impactFlashStartedAt;
@@ -2113,11 +2129,8 @@ function drawOceanRamp() {
   const completionFlash = completionAge >= 0 && completionAge < 320
     ? 1 - completionAge / 320
     : 0;
-  const leftRail = offsetPathPoints(oceanRampPath, 16);
-  const rightRail = offsetPathPoints(oceanRampPath, -16);
   // Begin the underside shadow after the short ground-level entrance so the
   // mouth reads as rising from the playfield rather than already floating.
-  const raisedShadowPath = oceanRampPath.slice(2);
   ctx.save();
   ctx.translate(6, 9);
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.72)';
@@ -2125,16 +2138,12 @@ function drawOceanRamp() {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.beginPath();
-  traceSmoothRail(raisedShadowPath);
+  traceSmoothRail(oceanRampRaisedShadowPath);
   ctx.stroke();
   ctx.restore();
 
   ctx.save();
-  const deckGlow = ctx.createLinearGradient(360, 480, 290, 120);
-  deckGlow.addColorStop(0, '#081728');
-  deckGlow.addColorStop(0.52, '#14102d');
-  deckGlow.addColorStop(1, '#200d2b');
-  ctx.strokeStyle = deckGlow;
+  ctx.strokeStyle = oceanRampDeckGlow;
   ctx.lineWidth = 34;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -2154,8 +2163,8 @@ function drawOceanRamp() {
   ctx.stroke();
   ctx.restore();
 
-  drawSmoothNeonRail(rightRail, MIAMI_COLORS.cyan);
-  drawSmoothNeonRail(leftRail, MIAMI_COLORS.magenta);
+  drawSmoothNeonRail(oceanRampRightRail, MIAMI_COLORS.cyan);
+  drawSmoothNeonRail(oceanRampLeftRail, MIAMI_COLORS.magenta);
 
   if (oceanRamp.active || completionFlash > 0) {
     ctx.save();
