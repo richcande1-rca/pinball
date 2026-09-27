@@ -99,7 +99,7 @@
   </main>
 
   <script src="intro.js?v=20260920-mobileperf2"></script>
-  <script src="game.js?v=20260920-mobileperf2"></script>
+  <script src="game.js?v=20260927-trapfix1"></script>
   <script>
     // Tuck the scoop immediately beneath Ocean Drive and keep its playfield
     // guides above the established launch trajectory.
@@ -489,9 +489,11 @@
     };
 
     const captiveBallRails = [
-      { x1: 56, y1: 250, x2: 56, y2: 310, radius: 3 },
-      { x1: 84, y1: 250, x2: 84, y2: 310, radius: 3 },
-      { x1: 56, y1: 250, x2: 84, y2: 250, radius: 3 }
+      { x1: 56, y1: 252, x2: 56, y2: 310, radius: 3 },
+      { x1: 84, y1: 249, x2: 84, y2: 310, radius: 3 },
+      // A subtle three-pixel fall across the roof removes the perfectly level
+      // resting surface while preserving the cage target and its appearance.
+      { x1: 56, y1: 252, x2: 84, y2: 249, radius: 3 }
     ];
 
     const CAPTIVE_EXTRA_BALL_HITS = 5;
