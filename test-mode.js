@@ -234,19 +234,19 @@
     }));
   }
 
-  function ensureGame() {
-    if (gameOver) resetGame();
+  function cleanTestGame() {
+    resetGame();
   }
 
   function startTestBall() {
-    resetGame();
+    cleanTestGame();
     plunger.charge = 0.7;
     launchBall();
     setStatus('TEST BALL LAUNCHED');
   }
 
   function prepareTimedMode() {
-    ensureGame();
+    cleanTestGame();
     if (ball.ready) {
       plunger.charge = 0.7;
       launchBall();
@@ -268,7 +268,7 @@
         startTestBall();
         break;
       case 'clock1':
-        ensureGame();
+        cleanTestGame();
         if (typeof window.miamiTestOpenClockStage === 'function' &&
             window.miamiTestOpenClockStage(1)) {
           setStatus('CLOCK #1 OPEN');
@@ -282,7 +282,7 @@
         }
         break;
       case 'clock2':
-        ensureGame();
+        cleanTestGame();
         if (typeof window.miamiTestOpenClockStage === 'function' &&
             window.miamiTestOpenClockStage(2)) {
           setStatus('CLOCK #2 OPEN');
