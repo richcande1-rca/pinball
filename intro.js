@@ -197,6 +197,7 @@ const MIAMI_FEATURE_SCRIPTS = [
   'pause-controls.js',
   'clock-event.js',
   'clock-polish.js',
+  'neon-rush.js',
   'attract-mode.js'
 ];
 
