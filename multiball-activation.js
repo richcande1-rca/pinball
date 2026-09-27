@@ -43,14 +43,6 @@
     }
   });
 
-  const stampBuild = () => {
-    const buildNumberDisplay = document.querySelector('.build-number');
-    if (buildNumberDisplay) {
-      buildNumberDisplay.textContent = 'Build 20260910-PERF1-MB2';
-    }
-  };
-  stampBuild();
-  window.setTimeout(stampBuild, 400);
 })();
 
 // Underpass upgrade: every existing tunnel mouth is now bidirectional while
