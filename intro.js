@@ -7,10 +7,18 @@
 (() => {
   if (window.miamiVersionedAsset) return;
 
-  const buildToken = '20260921-help1';
+  // The page-level cache guard owns the release id. Read that same value from
+  // the versioned page URL so the loader cannot overwrite the visible build
+  // with an older hard-coded token.
+  const buildParam = new URLSearchParams(window.location.search).get('build');
+  const buildNumberDisplay = document.querySelector('.build-number');
+  const buildFromLabel = buildNumberDisplay
+    ? buildNumberDisplay.textContent.replace(/^Build\s+/i, '').trim()
+    : '';
+  const buildToken = buildParam || buildFromLabel || 'current';
+
   window.miamiBuildToken = buildToken;
-  window.miamiCurrentBuildLabel =
-    'Build 20260921-HELP1';
+  window.miamiCurrentBuildLabel = `Build ${buildToken}`;
 
   window.miamiVersionedAsset = function miamiVersionedAsset(path) {
     try {
