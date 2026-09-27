@@ -444,7 +444,10 @@
     drawCashout(now);
   }
 
-  window.addEventListener('miami-clock-complete', scheduleRush);
+  window.addEventListener('miami-clock-complete', event => {
+    const stage = Number(event.detail?.stage || 1);
+    if (stage === 1) scheduleRush();
+  });
 
   window.addEventListener('miami-impact', event => {
     if (!state.active) return;
