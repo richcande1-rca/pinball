@@ -7,7 +7,6 @@
   if (window.miamiLowerRightCleanupInstalled) return;
   window.miamiLowerRightCleanupInstalled = true;
 
-  const BUILD = 'Build 20260917-PERF1-MB2-UP2A-LOWERBASE1-RECOVERY2-DIVERTZONE1';
 
   const leftFlipper = flippers.find(candidate => candidate.side === 'left');
   const rightFlipper = flippers.find(candidate => candidate.side === 'right');
@@ -265,12 +264,4 @@
     ctx.restore();
   };
 
-  const stampBuild = () => {
-    const buildNumberDisplay = document.querySelector('.build-number');
-    if (buildNumberDisplay) buildNumberDisplay.textContent = BUILD;
-  };
-
-  stampBuild();
-  window.setTimeout(stampBuild, 700);
-  window.setTimeout(stampBuild, 1600);
 })();
