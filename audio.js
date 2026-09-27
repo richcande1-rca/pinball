@@ -495,6 +495,22 @@
     noise(0.09, 0.055, 480);
   }
 
+  function playNeonRushBeat({ remaining = 10, finalCountdown = false } = {}) {
+    // A small temporal pulse only: this deliberately does not alter the music.
+    const low = finalCountdown ? 138 : 116;
+    tone(low, finalCountdown ? 0.085 : 0.055, 0.055, {
+      type: 'triangle',
+      endFrequency: low * 0.74
+    });
+
+    if (finalCountdown) {
+      tone(520, 0.035, 0.032, {
+        type: 'triangle',
+        endFrequency: 390
+      });
+    }
+  }
+
   function observeAudioEvents() {
     sideBumpers.forEach((bumper, index) => {
       if (audioState.slings[index] && !bumper.armed) playSling(index);
@@ -551,6 +567,7 @@
   window.addEventListener('miami-spinner-hit', event => playSpinnerHit(event.detail));
   window.addEventListener('miami-spinner-tick', event => playSpinnerTick(event.detail));
   window.addEventListener('miami-spinner-exit', playSpinnerExit);
+  window.addEventListener('miami-neon-rush-beat', event => playNeonRushBeat(event.detail));
   window.addEventListener('miami-drain', playDrain);
 
   if (musicVolume && musicMute) {
