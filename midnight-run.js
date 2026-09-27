@@ -246,10 +246,11 @@
       return;
     }
 
-    baseDrawWithMidnightRun();
-
     if (state.phase === 'run') {
       drawBlackout(performance.now());
+      return;
     }
+
+    baseDrawWithMidnightRun();
   };
 })();
