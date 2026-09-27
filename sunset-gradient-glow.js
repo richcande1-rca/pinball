@@ -320,6 +320,10 @@
     ctx.restore();
   }
 
+  // Midnight Run needs the approved sunset bands without repainting the rest
+  // of the artwork after the table has been blacked out.
+  window.miamiDrawSunsetOnly = drawSyncedSunBands;
+
   const baseDrawMiamiArtworkWithSunsetGradientGlow = drawMiamiArtwork;
   drawMiamiArtwork = function drawMiamiArtworkWithSunsetBands() {
     baseDrawMiamiArtworkWithSunsetGradientGlow();

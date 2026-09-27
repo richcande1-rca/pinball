@@ -24,7 +24,8 @@
     open: false,
     completed: false,
     remaining: 6,
-    openedAt: -Infinity
+    openedAt: -Infinity,
+    stage: 0
   };
   window.miamiClockEventState = state;
 
@@ -48,6 +49,7 @@
     state.completed = false;
     state.remaining = pegs.length;
     state.openedAt = -Infinity;
+    state.stage = 0;
     upperBarrierHits.clear();
     lowerBarrierHits.clear();
 
@@ -69,6 +71,7 @@
     state.completed = false;
     state.remaining = pegs.length;
     state.openedAt = performance.now();
+    state.stage = 1;
     for (const peg of pegs) peg.dropped = false;
 
     window.dispatchEvent(new CustomEvent('miami-clock-open', {
@@ -76,10 +79,34 @@
         upperBarriers: upperBarrierHits.size,
         lowerBarriers: lowerBarrierHits.size,
         totalBarriers: 6,
-        clockPegs: pegs.length
+        clockPegs: pegs.length,
+        stage: state.stage
       }
     }));
   }
+
+  window.miamiReopenClockForNextStage = function miamiReopenClockForNextStage() {
+    if (!state.open || !state.completed || state.stage !== 1) return false;
+
+    state.completed = false;
+    state.remaining = pegs.length;
+    state.openedAt = performance.now();
+    state.stage = 2;
+
+    for (const peg of pegs) {
+      peg.dropped = false;
+      peg.flashStartedAt = -Infinity;
+    }
+
+    window.dispatchEvent(new CustomEvent('miami-clock-open', {
+      detail: {
+        reopened: true,
+        clockPegs: pegs.length,
+        stage: state.stage
+      }
+    }));
+    return true;
+  };
 
   window.addEventListener('miami-impact', event => {
     const detail = event.detail || {};
@@ -188,7 +215,10 @@
       if (state.remaining === 0 && !state.completed) {
         state.completed = true;
         window.dispatchEvent(new CustomEvent('miami-clock-complete', {
-          detail: { pegsKnockedDown: pegs.length }
+          detail: {
+            pegsKnockedDown: pegs.length,
+            stage: state.stage
+          }
         }));
       }
     }
