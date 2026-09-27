@@ -219,9 +219,11 @@ const coastalOrbitInnerPoints = [
   { x: 360, y: 100 },
   { x: 379, y: 86 },
   { x: 396, y: 86 },
-  { x: 410, y: 101 },
-  { x: 416, y: 126 },
-  { x: 410, y: 148 },
+  // Ease the recess outward so the live ball cannot be pinched between the
+  // magnetic target and the inner orbit rail at low speed.
+  { x: 413, y: 99 },
+  { x: 422, y: 126 },
+  { x: 413, y: 151 },
   { x: 396, y: 158 }
 ];
 
@@ -233,7 +235,9 @@ const coastalOrbitRails = [
 // The upper-right target is now a recessed magnetic lock. A clean hit
 // captures the ball, holds it for a dramatic beat, then ejects down-left.
 const magneticTarget = {
-  x: 390,
+  // Five pixels left plus the eased inner rail leaves real ball-width
+  // clearance around the recess instead of overlapping collision zones.
+  x: 385,
   y: 126,
   radius: 12,
   value: 500,
