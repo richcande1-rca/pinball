@@ -3,8 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Miami Nights Pinball</title>
-  <link rel="stylesheet" href="style.css?v=20260827-0813">
+  <script>
+    // GitHub Pages controls the HTTP cache headers, so keep a tiny independent
+    // build marker and force stale HTML onto a unique, current-build URL.
+    (() => {
+      const markerUrl = `build-version.txt?cacheBust=${Date.now()}`;
+      fetch(markerUrl, { cache: 'no-store' })
+        .then(response => {
+          if (!response.ok) throw new Error('build marker unavailable');
+          return response.text();
+        })
+        .then(text => {
+          const build = text.trim();
+          if (!build) return;
+
+          const url = new URL(window.location.href);
+          if (url.searchParams.get('build') !== build) {
+            url.searchParams.set('build', build);
+            window.location.replace(url.toString());
+          }
+        })
+        .catch(() => {
+          // A network failure must never prevent the game from starting.
+        });
+    })();
+  </script>
+  <link rel="stylesheet" href="style.css?v=20260927-cachefix1">
 </head>
 <body>
   <section id="intro-screen" class="intro-screen" aria-label="Miami Nights title screen">
@@ -77,7 +105,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260927-TRAPFIX1</span>
+        <span class="build-number">Build 20260927-CACHEFIX1</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -99,7 +127,7 @@
   </main>
 
   <script src="intro.js?v=20260920-mobileperf2"></script>
-  <script src="game.js?v=20260927-trapfix1"></script>
+  <script src="game.js?v=20260927-cachefix1"></script>
   <script>
     // Tuck the scoop immediately beneath Ocean Drive and keep its playfield
     // guides above the established launch trajectory.
