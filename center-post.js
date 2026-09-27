@@ -249,7 +249,7 @@
 (() => {
   if (window.miamiLowerPlayfieldInstalled) return;
   const script = document.createElement('script');
-  script.src = 'lower-playfield.js?v=20260910-lower2a';
+  script.src = window.miamiVersionedAsset('lower-playfield.js');
   script.async = false;
   document.body.appendChild(script);
 })();
