@@ -13,7 +13,7 @@
   const buildParam = new URLSearchParams(window.location.search).get('build');
   const buildNumberDisplay = document.querySelector('.build-number');
   const buildFromLabel = buildNumberDisplay
-    ? buildNumberDisplay.textContent.replace(/^Build\\s+/i, '').trim()
+    ? buildNumberDisplay.textContent.replace(/^Build\s+/i, '').trim()
     : '';
   const buildToken = buildParam || buildFromLabel || 'current';
 
