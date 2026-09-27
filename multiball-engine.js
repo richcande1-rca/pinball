@@ -861,12 +861,4 @@
     }
   };
 
-  const stampBuild = () => {
-    const buildNumberDisplay = document.querySelector('.build-number');
-    if (buildNumberDisplay) {
-      buildNumberDisplay.textContent = 'Build 20260910-PERF1-MB1A';
-    }
-  };
-  stampBuild();
-  window.setTimeout(stampBuild, 400);
 })();

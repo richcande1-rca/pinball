@@ -7,7 +7,6 @@
   if (window.miamiLowerPlayfieldInstalled) return;
   window.miamiLowerPlayfieldInstalled = true;
 
-  const BUILD = 'Build 20260910-PERF1-MB2-UP2A-LOWER2A';
 
   // --- Flipper geometry ----------------------------------------------------
   // Preserve the established rotating-segment physics, cradle logic and stored
@@ -357,22 +356,4 @@
     drawApronPanel(rightApron, MIAMI_COLORS.magenta, false);
   };
 
-  const stampBuild = () => {
-    const buildNumberDisplay = document.querySelector('.build-number');
-    if (buildNumberDisplay) buildNumberDisplay.textContent = BUILD;
-  };
-
-  stampBuild();
-
-  // The multiball/underpass scripts load later and normally stamp last. Wait
-  // until that final gameplay layer is installed, then identify this combined
-  // build without permanently fighting future build owners.
-  let buildPolls = 0;
-  const buildPoll = window.setInterval(() => {
-    buildPolls += 1;
-    if (window.miamiBidirectionalUnderpassInstalled || buildPolls >= 100) {
-      window.clearInterval(buildPoll);
-      stampBuild();
-    }
-  }, 100);
 })();

@@ -154,12 +154,4 @@
     return false;
   };
 
-  const stampBuild = () => {
-    const buildNumberDisplay = document.querySelector('.build-number');
-    if (buildNumberDisplay) {
-      buildNumberDisplay.textContent = 'Build 20260911-PERF1-MB2-UP2A-LOWER2A';
-    }
-  };
-  stampBuild();
-  window.setTimeout(stampBuild, 400);
 })();
