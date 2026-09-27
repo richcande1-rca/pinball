@@ -191,6 +191,7 @@
       if (
         boardOpen &&
         gameOver &&
+        !window.miamiTestModeActive &&
         !submittedThisGame &&
         scoreQualifies(score, entries)
       ) {
@@ -209,6 +210,12 @@
 
   async function submitScore(event) {
     event.preventDefault();
+    if (window.miamiTestModeActive) {
+      pendingGameOverScore = null;
+      form.hidden = true;
+      status.textContent = 'TEST MODE scores are not posted.';
+      return;
+    }
     if (submittedThisGame || !pendingGameOverScore) return;
 
     const initials = cleanInitials(initialsInput.value);
@@ -272,6 +279,11 @@
   }
 
   async function handleFinalScore(finalScore) {
+    if (window.miamiTestModeActive) {
+      pendingGameOverScore = null;
+      form.hidden = true;
+      return;
+    }
     if (submittedThisGame || finalScore <= 0) return;
 
     pendingGameOverScore = Math.floor(finalScore);
