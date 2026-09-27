@@ -362,10 +362,15 @@
     }
   }
 
-  buildNumber.addEventListener('click', registerBuildTap);
+  buildNumber.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+    registerBuildTap();
+  });
   buildNumber.addEventListener('keydown', event => {
     if (event.code !== 'Enter' && event.code !== 'Space') return;
     event.preventDefault();
+    event.stopPropagation();
     if (!event.repeat) registerBuildTap();
   });
 })();
