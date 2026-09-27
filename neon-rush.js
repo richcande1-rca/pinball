@@ -15,6 +15,22 @@
   const CLOCK_RADIUS_Y = 55;
   const CLOCK_LAMPS = 12;
 
+  const PERIMETER_POINTS = [];
+  for (let x = 54; x <= 426; x += 42) {
+    PERIMETER_POINTS.push({ x, y: 28 });
+  }
+  for (let y = 92; y <= 610; y += 58) {
+    PERIMETER_POINTS.push({ x: 24, y });
+    PERIMETER_POINTS.push({ x: 456, y });
+  }
+
+  const RUSH_RAY_ENDPOINTS = [
+    { x: 24, y: 28 },
+    { x: 456, y: 28 },
+    { x: 24, y: 636 },
+    { x: 456, y: 636 }
+  ];
+
   const state = {
     active: false,
     pendingUntil: -Infinity,
@@ -155,16 +171,9 @@
     const beatPhase = ((now - state.startedAt) % BEAT_MS) / BEAT_MS;
     const flash = 1 - clamp(beatPhase / 0.22, 0, 1);
     const chase = Math.floor((now - state.startedAt) / 70);
-    const points = [];
 
-    for (let x = 54; x <= 426; x += 42) points.push({ x, y: 28 });
-    for (let y = 92; y <= 610; y += 58) {
-      points.push({ x: 24, y });
-      points.push({ x: 456, y });
-    }
-
-    for (let index = 0; index < points.length; index += 1) {
-      const point = points[index];
+    for (let index = 0; index < PERIMETER_POINTS.length; index += 1) {
+      const point = PERIMETER_POINTS[index];
       const hot = (index + chase) % 6 === 0;
       const accent = index % 2 === 0 ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
 
@@ -189,10 +198,10 @@
       ctx.shadowColor = ctx.strokeStyle;
       ctx.shadowBlur = 9;
     }
-    for (const [x, y] of [[24, 28], [456, 28], [24, 636], [456, 636]]) {
+    for (const endpoint of RUSH_RAY_ENDPOINTS) {
       ctx.beginPath();
       ctx.moveTo(CENTER_X, CENTER_Y);
-      ctx.lineTo(x, y);
+      ctx.lineTo(endpoint.x, endpoint.y);
       ctx.stroke();
     }
     ctx.restore();
