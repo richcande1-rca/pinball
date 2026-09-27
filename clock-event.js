@@ -85,6 +85,30 @@
     }));
   }
 
+  window.miamiTestOpenClockStage = function miamiTestOpenClockStage(stage = 1) {
+    if (!window.miamiTestModeActive) return false;
+
+    state.open = true;
+    state.completed = false;
+    state.remaining = pegs.length;
+    state.openedAt = performance.now();
+    state.stage = Number(stage) === 2 ? 2 : 1;
+
+    for (const peg of pegs) {
+      peg.dropped = false;
+      peg.flashStartedAt = -Infinity;
+    }
+
+    window.dispatchEvent(new CustomEvent('miami-clock-open', {
+      detail: {
+        testMode: true,
+        clockPegs: pegs.length,
+        stage: state.stage
+      }
+    }));
+    return true;
+  };
+
   window.miamiReopenClockForNextStage = function miamiReopenClockForNextStage() {
     if (!state.open || !state.completed || state.stage !== 1) return false;
 

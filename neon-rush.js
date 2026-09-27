@@ -444,6 +444,20 @@
     drawCashout(now);
   }
 
+  window.miamiTestStartNeonRush = function miamiTestStartNeonRush() {
+    if (!window.miamiTestModeActive) return false;
+
+    state.active = false;
+    state.pendingUntil = -Infinity;
+    state.startedAt = -Infinity;
+    state.endsAt = -Infinity;
+    state.lastBeatIndex = -1;
+    state.bonusPot = 0;
+    state.lastScoreSeen = score;
+    startRush(performance.now());
+    return true;
+  };
+
   window.addEventListener('miami-clock-complete', event => {
     const stage = Number(event.detail?.stage || 1);
     if (stage === 1) scheduleRush();

@@ -110,6 +110,13 @@
   document.addEventListener('pointerup', blockTransitionPointer, true);
   document.addEventListener('pointercancel', blockTransitionPointer, true);
 
+  window.miamiTestStartMidnightRun = function miamiTestStartMidnightRun() {
+    if (!window.miamiTestModeActive) return false;
+    stopMidnightRun();
+    beginMidnightTransition();
+    return true;
+  };
+
   window.addEventListener('miami-neon-rush-end', event => {
     if (!event.detail?.completed || gameOver) return;
     if (typeof window.miamiReopenClockForNextStage !== 'function') return;
