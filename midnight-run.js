@@ -1,12 +1,10 @@
-// Miami Nights: MIDNIGHT RUN final-ball mode.
-// After NEON RUSH completes normally, the clock re-arms as stage two.
-// Clearing that second clock freezes the machine for a deliberate beat, then
-// resumes play with the table blacked out except for the sunset, car headlights,
-// flipper sheen, timer, and live ball. Survive the timed run to earn the clear
-// bonus; drain/reset ends it without the survival award.
+// Miami Nights: MIDNIGHT RUN story climax and encore loop.
+// First pass: Clock #1 -> Neon Rush -> Clock #2 -> Midnight Run.
+// Clearing Midnight re-arms the clock; encore passes use
+// Clock -> Neon Rush -> Midnight Run. Midnight #2 and later automatically use
+// the proven two-ball multiball lifecycle and pay 50,000 per surviving ball.
 //
-// Presentation/progression only: no score multiplier, ball save, geometry, or
-// physics changes.
+// No score multiplier, ball save, geometry, or physics changes.
 
 (() => {
   if (window.miamiMidnightRunInstalled) return;
@@ -28,6 +26,10 @@
     clearUntil: -Infinity,
     lastTickIndex: -1,
     lastBonus: 0,
+    completedRuns: 0,
+    currentRun: 0,
+    automaticMultiball: false,
+    survivingBalls: 1,
     freezeCaptured: false
   };
   window.miamiMidnightRunState = state;
@@ -56,6 +58,37 @@
     if (typeof releaseAllControls === 'function') releaseAllControls();
   }
 
+  function livePhysicalBallCount() {
+    const engineCount = Number(
+      window.miamiMultiballEngine?.state?.livePhysicalBalls
+    );
+    if (Number.isFinite(engineCount)) {
+      return clamp(Math.round(engineCount), 1, 2);
+    }
+
+    const lifecycleCount = Number(window.miamiMultiballState?.liveCount);
+    return Number.isFinite(lifecycleCount)
+      ? clamp(Math.round(lifecycleCount), 1, 2)
+      : 1;
+  }
+
+  function ensureEncoreMultiball() {
+    const lifecycle = window.miamiMultiballState;
+    if (lifecycle?.phase === 'multiball') return true;
+    if (lifecycle?.phase !== 'single') return false;
+
+    const request = window.miamiRequestTwoBallMultiball;
+    if (typeof request !== 'function') return false;
+
+    request('ocean');
+    return window.miamiMultiballState?.phase === 'multiball';
+  }
+
+  function rearmEncoreClock() {
+    const rearm = window.miamiRearmClockForEncore;
+    return typeof rearm === 'function' ? rearm() : false;
+  }
+
   function beginMidnightTransition() {
     if (state.phase !== 'idle') return;
 
@@ -68,6 +101,9 @@
     state.clearUntil = -Infinity;
     state.lastTickIndex = -1;
     state.lastBonus = 0;
+    state.currentRun = state.completedRuns + 1;
+    state.automaticMultiball = false;
+    state.survivingBalls = 1;
     state.freezeCaptured = false;
     window.miamiInputLocked = true;
     releaseForTransition();
@@ -88,13 +124,24 @@
     state.clearUntil = -Infinity;
     state.lastTickIndex = -1;
     state.lastBonus = 0;
+    state.currentRun = state.completedRuns + 1;
+    state.automaticMultiball = state.currentRun >= 2;
+    state.survivingBalls = 1;
     state.freezeCaptured = false;
     window.miamiInputLocked = false;
+
+    const multiballStarted = state.automaticMultiball
+      ? ensureEncoreMultiball()
+      : false;
 
     window.dispatchEvent(new CustomEvent('miami-midnight-run-start', {
       detail: {
         titleMs: TITLE_MS,
-        durationMs: RUN_MS
+        durationMs: RUN_MS,
+        run: state.currentRun,
+        automaticMultiball: state.automaticMultiball,
+        multiballStarted,
+        liveCount: livePhysicalBallCount()
       }
     }));
   }
@@ -102,18 +149,28 @@
   function completeMidnightRun(now) {
     if (state.phase !== 'run') return false;
 
+    const survivingBalls = state.currentRun >= 2
+      ? livePhysicalBallCount()
+      : 1;
+    const bonus = CLEAR_BONUS * survivingBalls;
+
     state.phase = 'clear';
     state.endsAt = -Infinity;
     state.clearUntil = now + CLEAR_MS;
     state.lastTickIndex = -1;
-    state.lastBonus = CLEAR_BONUS;
+    state.survivingBalls = survivingBalls;
+    state.lastBonus = bonus;
+    state.completedRuns += 1;
 
-    score += CLEAR_BONUS;
+    score += bonus;
     syncStatusDisplay();
 
     window.dispatchEvent(new CustomEvent('miami-midnight-run-clear', {
       detail: {
-        bonus: CLEAR_BONUS,
+        run: state.currentRun,
+        bonus,
+        survivingBalls,
+        perBall: CLEAR_BONUS,
         durationMs: RUN_MS,
         clearMs: CLEAR_MS
       }
@@ -121,31 +178,12 @@
     return true;
   }
 
-  function finishClear() {
-    if (state.phase !== 'clear') return;
+  function finishCompletedRun({ rearm = true } = {}) {
+    if (state.phase !== 'clear') return false;
 
+    const run = state.currentRun;
     const bonus = state.lastBonus;
-    state.phase = 'idle';
-    state.titleUntil = -Infinity;
-    state.startedAt = -Infinity;
-    state.endsAt = -Infinity;
-    state.clearUntil = -Infinity;
-    state.lastTickIndex = -1;
-    state.lastBonus = 0;
-
-    window.dispatchEvent(new CustomEvent('miami-midnight-run-end', {
-      detail: {
-        completed: true,
-        bonus
-      }
-    }));
-  }
-
-  function stopMidnightRun() {
-    if (state.phase === 'idle') return;
-
-    const completed = state.phase === 'clear';
-    const bonus = completed ? state.lastBonus : 0;
+    const survivingBalls = state.survivingBalls;
 
     state.phase = 'idle';
     state.freezeUntil = -Infinity;
@@ -155,13 +193,59 @@
     state.clearUntil = -Infinity;
     state.lastTickIndex = -1;
     state.lastBonus = 0;
+    state.currentRun = 0;
+    state.automaticMultiball = false;
+    state.survivingBalls = 1;
     state.freezeCaptured = false;
     window.miamiInputLocked = false;
 
     window.dispatchEvent(new CustomEvent('miami-midnight-run-end', {
       detail: {
-        completed,
-        bonus
+        completed: true,
+        run,
+        bonus,
+        survivingBalls
+      }
+    }));
+
+    if (rearm) rearmEncoreClock();
+    return true;
+  }
+
+  function finishClear() {
+    finishCompletedRun({ rearm: true });
+  }
+
+  function stopMidnightRun({ rearmCompleted = true } = {}) {
+    if (state.phase === 'idle') return;
+
+    if (state.phase === 'clear') {
+      finishCompletedRun({ rearm: rearmCompleted });
+      return;
+    }
+
+    const run = state.currentRun;
+
+    state.phase = 'idle';
+    state.freezeUntil = -Infinity;
+    state.titleUntil = -Infinity;
+    state.startedAt = -Infinity;
+    state.endsAt = -Infinity;
+    state.clearUntil = -Infinity;
+    state.lastTickIndex = -1;
+    state.lastBonus = 0;
+    state.currentRun = 0;
+    state.automaticMultiball = false;
+    state.survivingBalls = 1;
+    state.freezeCaptured = false;
+    window.miamiInputLocked = false;
+
+    window.dispatchEvent(new CustomEvent('miami-midnight-run-end', {
+      detail: {
+        completed: false,
+        run,
+        bonus: 0,
+        survivingBalls: 0
       }
     }));
   }
@@ -221,15 +305,21 @@
 
   window.miamiTestStartMidnightRun = function miamiTestStartMidnightRun() {
     if (!window.miamiTestModeActive) return false;
-    stopMidnightRun();
+    stopMidnightRun({ rearmCompleted: false });
     beginMidnightTransition();
     return true;
   };
 
   window.addEventListener('miami-neon-rush-end', event => {
     if (!event.detail?.completed || gameOver) return;
-    if (typeof window.miamiReopenClockForNextStage !== 'function') return;
-    window.miamiReopenClockForNextStage();
+
+    if (state.completedRuns >= 1) {
+      beginMidnightTransition();
+      return;
+    }
+
+    const reopen = window.miamiReopenClockForNextStage;
+    if (typeof reopen === 'function') reopen();
   });
 
   window.addEventListener('miami-clock-complete', event => {
@@ -237,11 +327,15 @@
     beginMidnightTransition();
   });
 
-  window.addEventListener('miami-drain', stopMidnightRun);
+  window.addEventListener('miami-drain', () => stopMidnightRun());
 
   const baseResetGameWithMidnightRun = resetGame;
   resetGame = function resetGameWithMidnightRun() {
-    stopMidnightRun();
+    stopMidnightRun({ rearmCompleted: false });
+    state.completedRuns = 0;
+    state.currentRun = 0;
+    state.automaticMultiball = false;
+    state.survivingBalls = 1;
     baseResetGameWithMidnightRun();
   };
 
@@ -337,10 +431,13 @@
     }
   }
 
-  function drawMidnightBall() {
-    if (underpass.active) {
+  function drawMidnightBallState(ballState, underpassActive = false) {
+    if (underpassActive) {
       const nearTransition = [underpass.entry, ...underpass.outlets].some(
-        mouth => Math.hypot(ball.x - mouth.x, ball.y - mouth.y) < mouth.radius + 4
+        mouth => Math.hypot(
+          ballState.x - mouth.x,
+          ballState.y - mouth.y
+        ) < mouth.radius + 4
       );
       if (!nearTransition) return;
     }
@@ -350,9 +447,27 @@
     ctx.shadowColor = '#ffffff';
     ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 5;
     ctx.beginPath();
-    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+    ctx.arc(
+      ballState.x,
+      ballState.y,
+      ballState.radius,
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
     ctx.restore();
+  }
+
+  function drawMidnightBalls() {
+    drawMidnightBallState(ball, underpass.active);
+
+    const companion = window.miamiMultiballEngine?.state?.companion;
+    if (companion?.active) {
+      drawMidnightBallState(
+        companion.ball,
+        Boolean(companion.route?.underpassActive)
+      );
+    }
   }
 
   function drawMidnightTitle(now) {
@@ -396,7 +511,7 @@
     ctx.globalAlpha = 0.78;
     ctx.font = '800 9px ui-monospace, monospace';
     ctx.fillStyle = '#b8efff';
-    ctx.fillText('SURVIVE UNTIL DAWN', canvas.width / 2, 246);
+    ctx.fillText('SURVIVE THE MIDNIGHT RUN', canvas.width / 2, 246);
 
     ctx.globalAlpha = pulse;
     ctx.font = '900 25px ui-monospace, monospace';
@@ -453,8 +568,20 @@
 
     ctx.font = '900 22px ui-monospace, monospace';
     ctx.fillStyle = '#f4ffff';
-    ctx.strokeText('+50,000', canvas.width / 2, 258);
-    ctx.fillText('+50,000', canvas.width / 2, 258);
+    const bonusText = `+${state.lastBonus.toLocaleString('en-US')}`;
+    ctx.strokeText(bonusText, canvas.width / 2, 258);
+    ctx.fillText(bonusText, canvas.width / 2, 258);
+
+    if (state.currentRun >= 2) {
+      ctx.font = '800 9px ui-monospace, monospace';
+      ctx.fillStyle = '#b8efff';
+      const ballWord = state.survivingBalls === 1 ? 'BALL' : 'BALLS';
+      ctx.fillText(
+        `${state.survivingBalls} ${ballWord} SURVIVED · 50,000 EACH`,
+        canvas.width / 2,
+        280
+      );
+    }
     ctx.restore();
   }
 
@@ -472,7 +599,7 @@
 
     drawCarHeadlights(now);
     drawFlipperGlare(now);
-    drawMidnightBall();
+    drawMidnightBalls();
     drawMidnightTimer(now);
     drawMidnightTitle(now);
   }
