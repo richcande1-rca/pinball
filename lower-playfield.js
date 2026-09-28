@@ -160,7 +160,6 @@
     { x: 350, y: 574 }
   ];
 
-  const lowerRecoveryRails = makeRailSegments(shooterRecoveryGuidePoints, 4);
   const baseUpdateWithLowerGeometry = update;
   update = function updateWithLowerGeometry(dt) {
     baseUpdateWithLowerGeometry(dt);
@@ -174,18 +173,6 @@
       loopRamp.active ||
       magneticTarget.state === 'holding'
     ) return;
-
-    if (
-      ball.y >= SHOOTER.recoveryGateTop - 14 &&
-      ball.y <= SHOOTER.recoveryGateBottom + 14 &&
-      ball.x >= SHOOTER.dividerX - 28
-    ) {
-      for (const rail of lowerRecoveryRails) {
-        // Low restitution makes this behave like a return guide instead of a
-        // powered rebound: retain motion while turning the ball into the lane.
-        resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.24);
-      }
-    }
 
     if (ball.x + ball.radius < SHOOTER.dividerX) {
       shooterRoute = 'released';

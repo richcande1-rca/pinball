@@ -159,47 +159,7 @@
 
   const safeRecoveryRails = makeRailSegments(recoveryGuidePoints, 4);
 
-  // LOWER2A already closed over its long recovery-rail array before this late
-  // baseline layer loads. Suppress only those seven obsolete segments when its
-  // wrapper calls resolveSegmentCollision; every unrelated collision continues
-  // through the established resolver unchanged.
-  const obsoleteRecoverySegments = [
-    [470, 498, 448, 518],
-    [448, 518, 438, 533],
-    [438, 533, 425, 546],
-    [425, 546, 409, 557],
-    [409, 557, 390, 566],
-    [390, 566, 370, 570],
-    [370, 570, 350, 574]
-  ];
-
-  function isObsoleteRecoverySegment(segment) {
-    if (!segment) return false;
-    return obsoleteRecoverySegments.some(([x1, y1, x2, y2]) =>
-      segment.x1 === x1 &&
-      segment.y1 === y1 &&
-      segment.x2 === x2 &&
-      segment.y2 === y2
-    );
-  }
-
-  const baseResolveSegmentCollisionWithRecoveryBaseline = resolveSegmentCollision;
-  resolveSegmentCollision = function resolveSegmentCollisionWithRecoveryBaseline(
-    segment,
-    surfaceVelocity = { x: 0, y: 0 },
-    restitution = 0.9,
-    extraKick = 0
-  ) {
-    if (isObsoleteRecoverySegment(segment)) return false;
-
-    return baseResolveSegmentCollisionWithRecoveryBaseline(
-      segment,
-      surfaceVelocity,
-      restitution,
-      extraKick
-    );
-  };
-
+  // The short baseline rail below is now the only live recovery collision path.
   function resolveSafeRecoveryRailCollisions() {
     // Do not let the rail catch a descending ball that is already touching the
     // launch-chute opening, even one frame before its route flips to recovery.
