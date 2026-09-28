@@ -160,7 +160,6 @@ const MIAMI_FEATURE_SCRIPTS = [
   'sunset-motif-clean.js',
   'sunset-gradient-glow.js',
   'palm-ring.js',
-  'deflector-removal.js',
   'strategy-rules.js',
   'captive-repeat.js',
   'high-scores.js',

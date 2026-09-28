@@ -339,11 +339,6 @@ const bumperCombo = {
   window: 1.1
 };
 
-const midPlayfieldGuides = [
-  { x1: 86, y1: 402, x2: 122, y2: 430, radius: 4 },
-  { x1: 334, y1: 402, x2: 298, y2: 430, radius: 4 }
-];
-
 // Three upright drop targets sit flush against the left wall. Their narrow
 // faces keep them readable as a bank without floating into the playfield.
 const dropTargets = [
@@ -1610,10 +1605,6 @@ function update(dt) {
     collideWithDropTarget(target, index);
   }
 
-  for (const guide of midPlayfieldGuides) {
-    resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
-  }
-
   for (const guide of lowerGuides) {
     resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
   }
@@ -2263,10 +2254,6 @@ function drawOceanRamp() {
 }
 
 function drawPassivePlayfieldGeometry() {
-  for (const guide of midPlayfieldGuides) {
-    drawNeonSegment(guide, MIAMI_COLORS.magenta);
-  }
-
   drawUpperLeftLoopRamp();
   drawPopBumpers();
   drawMagneticTarget();
