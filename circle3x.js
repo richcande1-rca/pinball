@@ -120,9 +120,7 @@
     }
   });
 
-  // The pink diverter now is the visible and physical 3-0-5 save. Suppress the
-  // obsolete separate cyan safety rail artwork entirely.
-  drawLeftOutlaneGate = function drawNoSeparateLeftOutlaneGate() {};
+  // The pink diverter is the visible and physical 3-0-5 save.
   clearLegacyLeftOutlaneGate();
 
   // Narrow the launch lane as far as practical: the physical gap between the
