@@ -32,7 +32,7 @@
         });
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=20260928-clean4">
+  <link rel="stylesheet" href="style.css?v=20260928-clean5">
 </head>
 <body>
   <section id="intro-screen" class="intro-screen" aria-label="Miami Nights title screen">
@@ -105,7 +105,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260928-CLEAN4</span>
+        <span class="build-number">Build 20260928-CLEAN5</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -126,8 +126,8 @@
     </details>
   </main>
 
-  <script src="intro.js?v=20260928-clean4"></script>
-  <script src="game.js?v=20260928-clean4"></script>
+  <script src="intro.js?v=20260928-clean5"></script>
+  <script src="game.js?v=20260928-clean5"></script>
   <script>
     // Tuck the scoop immediately beneath Ocean Drive and keep its playfield
     // guides above the established launch trajectory.
@@ -421,86 +421,6 @@
       ctx.restore();
     }
 
-    const upperNeonInserts = [
-      { x: 146, y: 210, accent: 'cyan', lit: false },
-      { x: 184, y: 228, accent: 'magenta', lit: false },
-      { x: 226, y: 216, accent: 'lavender', lit: false },
-      { x: 269, y: 228, accent: 'cyan', lit: false },
-      { x: 309, y: 210, accent: 'magenta', lit: false }
-    ];
-    const UPPER_NEON_TRIGGER_RADIUS = 20;
-    const UPPER_NEON_BONUS = 1000;
-    let upperNeonBonusAwarded = false;
-    let upperNeonCompleteFlashStartedAt = -Infinity;
-
-    function resetUpperNeonInserts() {
-      for (const insert of upperNeonInserts) {
-        insert.lit = false;
-      }
-      upperNeonBonusAwarded = false;
-      upperNeonCompleteFlashStartedAt = -Infinity;
-    }
-
-    const baseResetGameWithUpperNeons = resetGame;
-    resetGame = function resetGameWithUpperNeons() {
-      resetUpperNeonInserts();
-      baseResetGameWithUpperNeons();
-    };
-
-    window.addEventListener('miami-drain', resetUpperNeonInserts);
-
-    function updateUpperNeonInserts() {
-      const liveBallOnMainPlayfield =
-        !ball.ready &&
-        !underpass.active &&
-        !oceanRamp.active &&
-        !loopRamp.active &&
-        magneticTarget.state !== 'holding';
-      if (!liveBallOnMainPlayfield) return;
-
-      for (const insert of upperNeonInserts) {
-        if (insert.lit) continue;
-        if (Math.hypot(ball.x - insert.x, ball.y - insert.y) <= UPPER_NEON_TRIGGER_RADIUS) {
-          insert.lit = true;
-        }
-      }
-
-      if (!upperNeonBonusAwarded && upperNeonInserts.every(insert => insert.lit)) {
-        upperNeonBonusAwarded = true;
-        upperNeonCompleteFlashStartedAt = performance.now();
-        score += UPPER_NEON_BONUS * (centerDoubleScoreRemaining > 0 ? 2 : 1);
-        syncStatusDisplay();
-      }
-    }
-
-    function drawUpperNeonInserts() {
-      const now = performance.now();
-      const completionAge = now - upperNeonCompleteFlashStartedAt;
-      const completionFlash = completionAge >= 0 && completionAge < 700
-        ? 1 - completionAge / 700
-        : 0;
-
-      for (const insert of upperNeonInserts) {
-        const accent = MIAMI_COLORS[insert.accent];
-        ctx.save();
-        ctx.translate(insert.x, insert.y);
-        ctx.fillStyle = insert.lit
-          ? (completionFlash > 0.45 ? '#f4ffff' : accent)
-          : '#050815';
-        ctx.strokeStyle = insert.lit ? '#f4ffff' : accent;
-        ctx.globalAlpha = insert.lit ? 1 : 0.42;
-        ctx.shadowColor = accent;
-        ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 :
-          (insert.lit ? 8 + completionFlash * 16 : 3);
-        ctx.lineWidth = insert.lit ? 1.7 : 1.2;
-        ctx.beginPath();
-        ctx.arc(0, 0, 5.5 + completionFlash * 1.4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
-
     const captiveBall = {
       x: 70,
       y: 320,
@@ -784,12 +704,6 @@
         score += score - scoreBeforeTargets;
         syncStatusDisplay();
       }
-    };
-
-    const baseUpdateWithUpperNeons = update;
-    update = function updateWithUpperNeons(dt) {
-      baseUpdateWithUpperNeons(dt);
-      if (!gameOver) updateUpperNeonInserts();
     };
 
     const leftOutlaneGate = {
@@ -1096,7 +1010,7 @@
       drawCompactSideExit(underpass.outlets[4], MIAMI_COLORS.cyan);
     };
   </script>
-  <script src="theme.js?v=20260928-clean4"></script>
+  <script src="theme.js?v=20260928-clean5"></script>
   <script>
     const upperWallNeons = [
       { x1: 214, y1: 38, x2: 239, y2: 38, accent: 'cyan', flashStartedAt: -Infinity },
@@ -1105,7 +1019,7 @@
       { x1: 316, y1: 38, x2: 342, y2: 38, accent: 'cyan', flashStartedAt: -Infinity }
     ];
 
-    updateUpperNeonInserts = function updateUpperWallNeons() {
+    function updateUpperWallNeons() {
       const liveBallInUpperPocket =
         !ball.ready &&
         !underpass.active &&
@@ -1124,6 +1038,12 @@
           neon.flashStartedAt = now;
         }
       }
+    }
+
+    const baseUpdateWithUpperWallNeons = update;
+    update = function updateWithUpperWallNeons(dt) {
+      baseUpdateWithUpperWallNeons(dt);
+      if (!gameOver) updateUpperWallNeons();
     };
 
     function drawUpperWallNeons() {
@@ -1178,8 +1098,6 @@
       }
     }
 
-    drawUpperNeonInserts = function drawNoLegacyNeonDots() {};
-
     const baseDrawOceanRampWithUpperWallNeons = drawOceanRamp;
     drawOceanRamp = function drawOceanRampWithUpperWallNeons() {
       drawUpperWallNeons();
@@ -1188,14 +1106,13 @@
 
     const baseDrawBallWithUnderpassMouths = drawBall;
     drawBall = function drawBallWithUnderpassMouths() {
-      drawUpperNeonInserts();
       drawCenterStandupTargets();
       drawCaptiveBallAssembly();
       drawUnderpassMouths();
       baseDrawBallWithUnderpassMouths();
     };
   </script>
-  <script src="audio.js?v=20260928-clean4"></script>
+  <script src="audio.js?v=20260928-clean5"></script>
   <script>
     const musicMuteControl = document.getElementById('music-mute');
     if (musicMuteControl) {
