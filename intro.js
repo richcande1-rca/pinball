@@ -2,8 +2,8 @@
 
 // One stable release token owns every dynamically loaded Miami Nights script.
 // A release fetches fresh files once, then normal browser caching makes later
-// reloads fast. Every dynamic child receives the same token, so an older parent
-// cannot walk the browser through stale child versions one refresh at a time.
+// reloads fast. Dynamic loaders call miamiVersionedAsset() directly so every
+// child receives the same current token.
 (() => {
   if (window.miamiVersionedAsset) return;
 
@@ -36,35 +36,6 @@
     }
   };
 
-  // Child modules created later still contain historical ?v= tags. Normalize
-  // those assignments centrally instead of editing every loader whenever one
-  // feature changes. Static HTML scripts are intentionally unaffected.
-  const srcDescriptor = Object.getOwnPropertyDescriptor(
-    HTMLScriptElement.prototype,
-    'src'
-  );
-
-  if (
-    srcDescriptor?.get &&
-    srcDescriptor?.set &&
-    srcDescriptor.configurable !== false
-  ) {
-    try {
-      Object.defineProperty(HTMLScriptElement.prototype, 'src', {
-        configurable: srcDescriptor.configurable,
-        enumerable: srcDescriptor.enumerable,
-        get() {
-          return srcDescriptor.get.call(this);
-        },
-        set(value) {
-          srcDescriptor.set.call(this, window.miamiVersionedAsset(value));
-        }
-      });
-      window.miamiDynamicScriptVersionHookInstalled = true;
-    } catch (_) {
-      window.miamiDynamicScriptVersionHookInstalled = false;
-    }
-  }
 })();
 
 (() => {
@@ -225,20 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   stampCurrentBuild();
-
-  // Older feature modules still contain historical build stamps. Keep the
-  // visible footer owned by the release loader so intermediate MB0/MB2 labels
-  // cannot flash during startup or remain behind after an interrupted stamp.
-  const buildNumberDisplay = document.querySelector('.build-number');
-  if (buildNumberDisplay && typeof MutationObserver === 'function') {
-    const observer = new MutationObserver(stampCurrentBuild);
-    observer.observe(buildNumberDisplay, {
-      childList: true,
-      characterData: true,
-      subtree: true
-    });
-    window.miamiBuildLabelObserver = observer;
-  }
 
   function loadFeature(index) {
     if (index >= MIAMI_FEATURE_SCRIPTS.length) {
