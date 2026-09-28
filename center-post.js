@@ -23,12 +23,6 @@
     return window.miamiDifficultyMode !== HARD_MODE;
   }
 
-  // Remove the old purely decorative pulsing center dot. It is replaced by the
-  // real passive post below in EASY mode, and left open in HARD mode.
-  if (typeof drawDecorativeDisplays === 'function') {
-    drawDecorativeDisplays = function drawNoDecorativeCenterDot() {};
-  }
-
   function collideWithCenterPost() {
     if (
       !centerPostEnabled() ||
