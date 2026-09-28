@@ -41,11 +41,6 @@
     origin: 0
   };
 
-  // Keep the old broad halo disabled. All motion belongs inside the motif.
-  if (typeof drawSunsetGlow === 'function') {
-    drawSunsetGlow = function drawSunsetGlowDisabled() {};
-  }
-
   function clamp01(value) {
     return Math.max(0, Math.min(1, value));
   }
