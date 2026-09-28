@@ -327,7 +327,7 @@
     beginMidnightTransition();
   });
 
-  window.addEventListener('miami-drain', stopMidnightRun);
+  window.addEventListener('miami-drain', () => stopMidnightRun());
 
   const baseResetGameWithMidnightRun = resetGame;
   resetGame = function resetGameWithMidnightRun() {
@@ -511,7 +511,7 @@
     ctx.globalAlpha = 0.78;
     ctx.font = '800 9px ui-monospace, monospace';
     ctx.fillStyle = '#b8efff';
-    ctx.fillText('SURVIVE UNTIL DAWN', canvas.width / 2, 246);
+    ctx.fillText('SURVIVE THE MIDNIGHT RUN', canvas.width / 2, 246);
 
     ctx.globalAlpha = pulse;
     ctx.font = '900 25px ui-monospace, monospace';
