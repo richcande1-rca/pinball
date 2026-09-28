@@ -32,7 +32,7 @@
         });
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=20260928-clean3">
+  <link rel="stylesheet" href="style.css?v=20260928-clean4">
 </head>
 <body>
   <section id="intro-screen" class="intro-screen" aria-label="Miami Nights title screen">
@@ -105,7 +105,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260928-CLEAN3</span>
+        <span class="build-number">Build 20260928-CLEAN4</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -126,8 +126,8 @@
     </details>
   </main>
 
-  <script src="intro.js?v=20260928-clean3"></script>
-  <script src="game.js?v=20260928-clean3"></script>
+  <script src="intro.js?v=20260928-clean4"></script>
+  <script src="game.js?v=20260928-clean4"></script>
   <script>
     // Tuck the scoop immediately beneath Ocean Drive and keep its playfield
     // guides above the established launch trajectory.
@@ -830,40 +830,6 @@
       baseResetPlayfieldForLeftOutlane();
     };
 
-    function drawLeftOutlaneGate() {
-      if (!leftOutlaneProtectionActive) return;
-
-      const flashStrength = clamp(
-        1 - (performance.now() - leftOutlaneGateFlashStartedAt) / 280,
-        0,
-        1
-      );
-
-      ctx.save();
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = '#4a3b66';
-      ctx.lineWidth = 11;
-      ctx.beginPath();
-      ctx.moveTo(leftOutlaneGate.x1, leftOutlaneGate.y1);
-      ctx.lineTo(leftOutlaneGate.x2, leftOutlaneGate.y2);
-      ctx.stroke();
-
-      ctx.strokeStyle = MIAMI_COLORS.cyan;
-      ctx.lineWidth = 5;
-      ctx.shadowColor = MIAMI_COLORS.cyan;
-      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 :
-        (10 + flashStrength * 18);
-      ctx.stroke();
-
-      ctx.strokeStyle = '#f4ffff';
-      ctx.lineWidth = 1.5 + flashStrength * 1.5;
-      ctx.shadowColor = '#ffffff';
-      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 :
-        (4 + flashStrength * 10);
-      ctx.stroke();
-      ctx.restore();
-    }
-
     function drawCaptiveBallAssembly() {
       const now = performance.now();
       const hitStrength = 1 - (now - captiveBall.flashStartedAt) / 160;
@@ -1130,7 +1096,7 @@
       drawCompactSideExit(underpass.outlets[4], MIAMI_COLORS.cyan);
     };
   </script>
-  <script src="theme.js?v=20260928-clean3"></script>
+  <script src="theme.js?v=20260928-clean4"></script>
   <script>
     const upperWallNeons = [
       { x1: 214, y1: 38, x2: 239, y2: 38, accent: 'cyan', flashStartedAt: -Infinity },
@@ -1225,12 +1191,11 @@
       drawUpperNeonInserts();
       drawCenterStandupTargets();
       drawCaptiveBallAssembly();
-      drawLeftOutlaneGate();
       drawUnderpassMouths();
       baseDrawBallWithUnderpassMouths();
     };
   </script>
-  <script src="audio.js?v=20260928-clean3"></script>
+  <script src="audio.js?v=20260928-clean4"></script>
   <script>
     const musicMuteControl = document.getElementById('music-mute');
     if (musicMuteControl) {
