@@ -498,10 +498,6 @@
       collideWithDropTarget(target, index);
     }
 
-    for (const guide of midPlayfieldGuides) {
-      resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
-    }
-
     for (const guide of lowerGuides) {
       resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
     }
