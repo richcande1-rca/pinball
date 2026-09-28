@@ -2,7 +2,8 @@
 // After NEON RUSH completes normally, the clock re-arms as stage two.
 // Clearing that second clock freezes the machine for a deliberate beat, then
 // resumes play with the table blacked out except for the sunset, car headlights,
-// and the live ball. Midnight Run lasts until drain/reset.
+// flipper sheen, timer, and live ball. Survive the timed run to earn the clear
+// bonus; drain/reset ends it without the survival award.
 //
 // Presentation/progression only: no score multiplier, ball save, geometry, or
 // physics changes.
@@ -13,11 +14,20 @@
 
   const FREEZE_MS = 850;
   const TITLE_MS = 1100;
+  const RUN_MS = 20000;
+  const CLEAR_MS = 1400;
+  const CLEAR_BONUS = 50000;
+  const TICK_MS = 1000;
 
   const state = {
     phase: 'idle',
     freezeUntil: -Infinity,
     titleUntil: -Infinity,
+    startedAt: -Infinity,
+    endsAt: -Infinity,
+    clearUntil: -Infinity,
+    lastTickIndex: -1,
+    lastBonus: 0,
     freezeCaptured: false
   };
   window.miamiMidnightRunState = state;
@@ -53,6 +63,11 @@
     state.phase = 'freeze';
     state.freezeUntil = now + FREEZE_MS;
     state.titleUntil = -Infinity;
+    state.startedAt = -Infinity;
+    state.endsAt = -Infinity;
+    state.clearUntil = -Infinity;
+    state.lastTickIndex = -1;
+    state.lastBonus = 0;
     state.freezeCaptured = false;
     window.miamiInputLocked = true;
     releaseForTransition();
@@ -68,22 +83,116 @@
     state.phase = 'run';
     state.freezeUntil = -Infinity;
     state.titleUntil = now + TITLE_MS;
+    state.startedAt = now;
+    state.endsAt = now + RUN_MS;
+    state.clearUntil = -Infinity;
+    state.lastTickIndex = -1;
+    state.lastBonus = 0;
     state.freezeCaptured = false;
     window.miamiInputLocked = false;
 
     window.dispatchEvent(new CustomEvent('miami-midnight-run-start', {
-      detail: { titleMs: TITLE_MS }
+      detail: {
+        titleMs: TITLE_MS,
+        durationMs: RUN_MS
+      }
+    }));
+  }
+
+  function completeMidnightRun(now) {
+    if (state.phase !== 'run') return false;
+
+    state.phase = 'clear';
+    state.endsAt = -Infinity;
+    state.clearUntil = now + CLEAR_MS;
+    state.lastTickIndex = -1;
+    state.lastBonus = CLEAR_BONUS;
+
+    score += CLEAR_BONUS;
+    syncStatusDisplay();
+
+    window.dispatchEvent(new CustomEvent('miami-midnight-run-clear', {
+      detail: {
+        bonus: CLEAR_BONUS,
+        durationMs: RUN_MS,
+        clearMs: CLEAR_MS
+      }
+    }));
+    return true;
+  }
+
+  function finishClear() {
+    if (state.phase !== 'clear') return;
+
+    const bonus = state.lastBonus;
+    state.phase = 'idle';
+    state.titleUntil = -Infinity;
+    state.startedAt = -Infinity;
+    state.endsAt = -Infinity;
+    state.clearUntil = -Infinity;
+    state.lastTickIndex = -1;
+    state.lastBonus = 0;
+
+    window.dispatchEvent(new CustomEvent('miami-midnight-run-end', {
+      detail: {
+        completed: true,
+        bonus
+      }
     }));
   }
 
   function stopMidnightRun() {
     if (state.phase === 'idle') return;
 
+    const completed = state.phase === 'clear';
+    const bonus = completed ? state.lastBonus : 0;
+
     state.phase = 'idle';
     state.freezeUntil = -Infinity;
     state.titleUntil = -Infinity;
+    state.startedAt = -Infinity;
+    state.endsAt = -Infinity;
+    state.clearUntil = -Infinity;
+    state.lastTickIndex = -1;
+    state.lastBonus = 0;
     state.freezeCaptured = false;
     window.miamiInputLocked = false;
+
+    window.dispatchEvent(new CustomEvent('miami-midnight-run-end', {
+      detail: {
+        completed,
+        bonus
+      }
+    }));
+  }
+
+  function updateMidnightTimer(now) {
+    if (state.phase !== 'run') return;
+
+    if (now >= state.endsAt) {
+      completeMidnightRun(now);
+      return;
+    }
+
+    const elapsed = now - state.startedAt;
+    const tickIndex = Math.floor(elapsed / TICK_MS);
+    const totalTicks = Math.ceil(RUN_MS / TICK_MS);
+
+    if (
+      tickIndex !== state.lastTickIndex &&
+      tickIndex >= 0 &&
+      tickIndex < totalTicks
+    ) {
+      state.lastTickIndex = tickIndex;
+      const remaining = Math.max(1, totalTicks - tickIndex);
+      window.dispatchEvent(new CustomEvent('miami-midnight-run-tick', {
+        detail: {
+          tickIndex,
+          remaining,
+          finalCountdown: remaining <= 5
+        }
+      }));
+    }
   }
 
   function blockTransitionKey(event) {
@@ -145,11 +254,26 @@
     }
 
     baseUpdateWithMidnightRun(dt);
+
+    const now = performance.now();
+    if (state.phase === 'run') {
+      updateMidnightTimer(now);
+    } else if (state.phase === 'clear' && now >= state.clearUntil) {
+      finishClear();
+    }
   };
 
-  function drawHeadlight(x, y, radius = 8) {
+  function midnightUrgency(now) {
+    if (state.phase !== 'run' || !Number.isFinite(state.endsAt)) return 0;
+    const remaining = Math.max(0, state.endsAt - now);
+    if (remaining > 5000) return 0;
+    return clamp(1 - remaining / 5000, 0, 1);
+  }
+
+  function drawHeadlight(x, y, radius = 8, urgency = 0) {
     const mobile = Boolean(window.miamiMobilePerformanceMode);
-    const glow = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    const liveRadius = radius + urgency * 3.5;
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, liveRadius);
 
     glow.addColorStop(0, 'rgba(255, 255, 255, 1)');
     glow.addColorStop(0.18, 'rgba(235, 248, 255, 0.98)');
@@ -160,24 +284,57 @@
     ctx.globalCompositeOperation = 'screen';
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.arc(x, y, liveRadius, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = '#ffffff';
     ctx.shadowColor = '#dff7ff';
-    ctx.shadowBlur = mobile ? 0 : 7;
+    ctx.shadowBlur = mobile ? 0 : 7 + urgency * 8;
     ctx.beginPath();
-    ctx.ellipse(x, y, 2.3, 1.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y, 2.3 + urgency * 0.6, 1.5 + urgency * 0.35, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
 
-  function drawCarHeadlights() {
+  function drawCarHeadlights(now) {
     // Match the approved car placement without repainting either body.
-    drawHeadlight(129, 554, 8);
-    drawHeadlight(169, 555, 8);
-    drawHeadlight(245, 537, 8);
-    drawHeadlight(290, 536, 8);
+    const urgency = midnightUrgency(now);
+    drawHeadlight(129, 554, 8, urgency);
+    drawHeadlight(169, 555, 8, urgency);
+    drawHeadlight(245, 537, 8, urgency);
+    drawHeadlight(290, 536, 8, urgency);
+  }
+
+  function drawFlipperGlare(now) {
+    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const urgency = midnightUrgency(now);
+
+    for (const flipper of flippers) {
+      const cos = Math.cos(flipper.angle);
+      const sin = Math.sin(flipper.angle);
+      const start = 10;
+      const end = Math.max(start + 4, flipper.length - 7);
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = 0.15 + urgency * 0.1 + (flipper.pressed ? 0.12 : 0);
+      ctx.strokeStyle = '#d9f8ff';
+      ctx.lineWidth = flipper.pressed ? 2.2 : 1.5;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = '#9eefff';
+      ctx.shadowBlur = mobile ? 0 : 5 + urgency * 7;
+      ctx.beginPath();
+      ctx.moveTo(
+        flipper.pivotX + cos * start,
+        flipper.pivotY + sin * start
+      );
+      ctx.lineTo(
+        flipper.pivotX + cos * end,
+        flipper.pivotY + sin * end
+      );
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   function drawMidnightBall() {
@@ -221,6 +378,86 @@
     ctx.restore();
   }
 
+  function drawMidnightTimer(now) {
+    if (state.phase !== 'run') return;
+
+    const remainingMs = Math.max(0, state.endsAt - now);
+    const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+    const finalCountdown = remainingSeconds <= 5;
+    const beatPhase = (remainingMs % 1000) / 1000;
+    const pulse = finalCountdown
+      ? 0.78 + 0.22 * Math.cos(beatPhase * Math.PI * 2)
+      : 1;
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.globalAlpha = 0.78;
+    ctx.font = '800 9px ui-monospace, monospace';
+    ctx.fillStyle = '#b8efff';
+    ctx.fillText('SURVIVE UNTIL DAWN', canvas.width / 2, 246);
+
+    ctx.globalAlpha = pulse;
+    ctx.font = '900 25px ui-monospace, monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = MIAMI_COLORS.cyan;
+    ctx.lineWidth = 1.2;
+    if (!window.miamiMobilePerformanceMode) {
+      ctx.shadowColor = finalCountdown ? '#ffffff' : MIAMI_COLORS.cyan;
+      ctx.shadowBlur = finalCountdown ? 13 : 7;
+    }
+
+    const timerText = `00:${String(remainingSeconds).padStart(2, '0')}`;
+    ctx.strokeText(timerText, canvas.width / 2, 272);
+    ctx.fillText(timerText, canvas.width / 2, 272);
+    ctx.restore();
+  }
+
+  function drawMidnightClear(now) {
+    baseDrawWithMidnightRun();
+
+    const remaining = Math.max(0, state.clearUntil - now);
+    const progress = clamp(1 - remaining / CLEAR_MS, 0, 1);
+    const textStrength = clamp(
+      Math.min(progress * 6, remaining / 220),
+      0,
+      1
+    );
+
+    ctx.save();
+    ctx.fillStyle = '#000000';
+    ctx.globalAlpha = 0.72 * (1 - progress);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const openingFlash = clamp(1 - progress * 5, 0, 1);
+    if (openingFlash > 0) {
+      ctx.fillStyle = '#e8fbff';
+      ctx.globalAlpha = openingFlash * 0.18;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    ctx.globalAlpha = textStrength;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '900 27px ui-monospace, monospace';
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = MIAMI_COLORS.cyan;
+    ctx.lineWidth = 1.4;
+    if (!window.miamiMobilePerformanceMode) {
+      ctx.shadowColor = MIAMI_COLORS.magenta;
+      ctx.shadowBlur = 16;
+    }
+    ctx.strokeText('MIDNIGHT CLEARED', canvas.width / 2, 224, 350);
+    ctx.fillText('MIDNIGHT CLEARED', canvas.width / 2, 224, 350);
+
+    ctx.font = '900 22px ui-monospace, monospace';
+    ctx.fillStyle = '#f4ffff';
+    ctx.strokeText('+50,000', canvas.width / 2, 258);
+    ctx.fillText('+50,000', canvas.width / 2, 258);
+    ctx.restore();
+  }
+
   function drawBlackout(now) {
     ctx.save();
     ctx.globalCompositeOperation = 'source-over';
@@ -233,8 +470,10 @@
       window.miamiDrawSunsetOnly();
     }
 
-    drawCarHeadlights();
+    drawCarHeadlights(now);
+    drawFlipperGlare(now);
     drawMidnightBall();
+    drawMidnightTimer(now);
     drawMidnightTitle(now);
   }
 
@@ -253,8 +492,15 @@
       return;
     }
 
+    const now = performance.now();
+
     if (state.phase === 'run') {
-      drawBlackout(performance.now());
+      drawBlackout(now);
+      return;
+    }
+
+    if (state.phase === 'clear') {
+      drawMidnightClear(now);
       return;
     }
 
