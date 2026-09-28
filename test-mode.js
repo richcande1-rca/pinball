@@ -186,6 +186,7 @@
     </div>
     <div class="miami-test-grid">
       <button type="button" data-action="ball">TEST BALL</button>
+      <button type="button" data-action="multiball">MULTIBALL</button>
       <button type="button" data-action="clock1">CLOCK #1</button>
       <button type="button" data-action="rush">NEON RUSH</button>
       <button type="button" data-action="clock2">CLOCK #2</button>
@@ -253,6 +254,38 @@
     }
   }
 
+  function startTestMultiball() {
+    if (gameOver) resetGame();
+
+    if (ball.ready) {
+      plunger.charge = 0.7;
+      launchBall();
+    }
+
+    const request = window.miamiRequestTwoBallMultiball;
+    const requested = typeof request === 'function' && request('ocean');
+    const lifecycle = window.miamiMultiballState;
+    const companionActive = Boolean(
+      window.miamiMultiballEngine?.state?.companion?.active
+    );
+
+    if (
+      requested &&
+      lifecycle?.phase === 'multiball' &&
+      companionActive
+    ) {
+      setStatus('MULTIBALL STARTED · REAL OCEAN PATH');
+      return;
+    }
+
+    if (requested) {
+      setStatus('MULTIBALL REQUESTED · CHECK LIFECYCLE');
+      return;
+    }
+
+    setStatus('MULTIBALL START FAILED');
+  }
+
   function exitTestMode() {
     panel.hidden = true;
     window.miamiTestModeActive = false;
@@ -266,6 +299,9 @@
     switch (action) {
       case 'ball':
         startTestBall();
+        break;
+      case 'multiball':
+        startTestMultiball();
         break;
       case 'clock1':
         cleanTestGame();
