@@ -496,19 +496,29 @@
   }
 
   function playNeonRushBeat({ remaining = 15, finalCountdown = false } = {}) {
-    // Audible clock tick layered over a restrained low pulse. This remains a
-    // machine SFX and does not alter or duck the music track.
-    const low = finalCountdown ? 142 : 124;
-    tone(low, finalCountdown ? 0.11 : 0.075, 0.05, {
+    // Deliberately clock-like click/tock. Keep it on the normal machine-SFX
+    // bus so Neon Rush never ducks or changes the music.
+    const alternate = remaining % 2 === 0;
+    const clickFrequency = finalCountdown
+      ? (alternate ? 2380 : 2080)
+      : (alternate ? 1780 : 1480);
+    const lowFrequency = finalCountdown ? 168 : 146;
+
+    tone(lowFrequency, finalCountdown ? 0.2 : 0.14, finalCountdown ? 0.09 : 0.075, {
       type: 'triangle',
-      endFrequency: low * 0.72
+      endFrequency: lowFrequency * 0.68
     });
 
-    tone(finalCountdown ? 1320 : 1080, finalCountdown ? 0.095 : 0.07, 0.028, {
+    tone(clickFrequency, finalCountdown ? 0.28 : 0.2, finalCountdown ? 0.07 : 0.055, {
       type: 'square',
-      endFrequency: finalCountdown ? 860 : 720
+      endFrequency: clickFrequency * 0.58
     });
-    noise(finalCountdown ? 0.055 : 0.04, 0.018, finalCountdown ? 4800 : 4200);
+
+    noise(
+      finalCountdown ? 0.16 : 0.11,
+      finalCountdown ? 0.032 : 0.026,
+      finalCountdown ? 5600 : 5000
+    );
   }
 
   function observeAudioEvents() {
