@@ -521,6 +521,31 @@
     );
   }
 
+  function playMidnightRunTick({ remaining = 20, finalCountdown = false } = {}) {
+    // Low, ominous machine pulse: deliberately distinct from Neon Rush's
+    // brighter click/tock and kept on the normal SFX bus.
+    const alternate = remaining % 2 === 0;
+    const low = alternate ? 92 : 84;
+    tone(low, finalCountdown ? 0.26 : 0.19, finalCountdown ? 0.16 : 0.13, {
+      type: 'triangle',
+      endFrequency: 58
+    });
+    tone(
+      finalCountdown ? (alternate ? 720 : 640) : (alternate ? 560 : 500),
+      finalCountdown ? 0.12 : 0.075,
+      finalCountdown ? 0.08 : 0.055,
+      { type: 'square', endFrequency: finalCountdown ? 410 : 330 }
+    );
+    noise(finalCountdown ? 0.08 : 0.045, 0.022, finalCountdown ? 3200 : 2500);
+  }
+
+  function playMidnightRunClear() {
+    tone(330, 0.22, 0.13, { type: 'triangle', endFrequency: 440 });
+    tone(495, 0.19, 0.17, { type: 'triangle', endFrequency: 660 });
+    tone(740, 0.16, 0.22, { type: 'triangle', endFrequency: 990 });
+    noise(0.12, 0.055, 4300);
+  }
+
   function observeAudioEvents() {
     sideBumpers.forEach((bumper, index) => {
       if (audioState.slings[index] && !bumper.armed) playSling(index);
@@ -578,6 +603,8 @@
   window.addEventListener('miami-spinner-tick', event => playSpinnerTick(event.detail));
   window.addEventListener('miami-spinner-exit', playSpinnerExit);
   window.addEventListener('miami-neon-rush-beat', event => playNeonRushBeat(event.detail));
+  window.addEventListener('miami-midnight-run-tick', event => playMidnightRunTick(event.detail));
+  window.addEventListener('miami-midnight-run-clear', playMidnightRunClear);
   window.addEventListener('miami-drain', playDrain);
 
   if (musicVolume && musicMute) {
