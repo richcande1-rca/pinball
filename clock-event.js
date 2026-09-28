@@ -132,6 +132,28 @@
     return true;
   };
 
+  window.miamiRearmClockForEncore = function miamiRearmClockForEncore() {
+    state.open = true;
+    state.completed = false;
+    state.remaining = pegs.length;
+    state.openedAt = performance.now();
+    state.stage = 1;
+
+    for (const peg of pegs) {
+      peg.dropped = false;
+      peg.flashStartedAt = -Infinity;
+    }
+
+    window.dispatchEvent(new CustomEvent('miami-clock-open', {
+      detail: {
+        encore: true,
+        clockPegs: pegs.length,
+        stage: state.stage
+      }
+    }));
+    return true;
+  };
+
   window.addEventListener('miami-impact', event => {
     const detail = event.detail || {};
     if (detail.type !== 'post') return;
