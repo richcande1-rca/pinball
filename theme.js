@@ -92,27 +92,6 @@ function getArtworkBounds() {
   };
 }
 
-function drawSunsetGlow(now) {
-  if (!miamiArtwork.complete || !miamiArtwork.naturalWidth) {
-    return;
-  }
-
-  const bounds = getArtworkBounds();
-  const pulse = 0.5 + 0.5 * Math.sin(now / 2700);
-  const centerX = bounds.x + bounds.width / 2;
-  const centerY = bounds.y + bounds.height / 2;
-  const radius = Math.max(bounds.width, bounds.height) * 0.76;
-  const glow = ctx.createRadialGradient(centerX, centerY, 12, centerX, centerY, radius);
-  glow.addColorStop(0, `rgba(255, 60, 172, ${0.14 + pulse * 0.05})`);
-  glow.addColorStop(0.55, `rgba(151, 66, 255, ${0.09 + pulse * 0.04})`);
-  glow.addColorStop(1, 'rgba(151, 66, 255, 0)');
-
-  ctx.save();
-  ctx.fillStyle = glow;
-  ctx.fillRect(bounds.x - 34, bounds.y - 34, bounds.width + 68, bounds.height + 68);
-  ctx.restore();
-}
-
 function drawMiamiArtwork() {
   if (miamiArtwork.complete && miamiArtwork.naturalWidth) {
     const bounds = getArtworkBounds();
@@ -320,33 +299,6 @@ function drawBallTrail(now) {
   ctx.restore();
 }
 
-function drawDecorativeDisplays(now) {
-  const inserts = [
-    { x: 210, y: 520, color: MIAMI_COLORS.lavender }
-  ];
-
-  inserts.forEach((insert, index) => {
-    const pulse = 0.5 + 0.5 * Math.sin(now / 900 + index * 2.1);
-    ctx.save();
-    ctx.globalAlpha = 0.45 + pulse * 0.5;
-    ctx.strokeStyle = insert.color;
-    ctx.lineWidth = 1.5 + pulse * 1.5;
-    ctx.shadowColor = insert.color;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (7 + pulse * 9);
-    ctx.beginPath();
-    ctx.arc(insert.x, insert.y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = insert.color;
-    ctx.fill();
-    ctx.stroke();
-    ctx.globalAlpha = 0.5 + pulse * 0.5;
-    ctx.fillStyle = '#f4ffff';
-    ctx.beginPath();
-    ctx.arc(insert.x, insert.y, 1.5 + pulse, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  });
-}
-
 drawTable = function drawMiamiTable() {
   const playfieldGradient = ctx.createLinearGradient(0, TABLE.top, 0, TABLE.bottom);
   playfieldGradient.addColorStop(0, '#090d20');
@@ -462,12 +414,8 @@ draw = function drawMiamiNightsFrame() {
   updateEffectTriggers(now);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawTable();
-  if (!mobilePerformanceMode) {
-    drawSunsetGlow(now);
-  }
   drawMiamiArtwork();
 
-  drawDecorativeDisplays(now);
   drawShooterLane();
   drawPassivePlayfieldGeometry();
   drawPlunger();
