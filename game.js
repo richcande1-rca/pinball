@@ -159,6 +159,11 @@ const underpass = {
   enteredAt: -Infinity
 };
 
+const underpassEntryGuides = [
+  { x1: 248, y1: 205, x2: 255, y2: 184, radius: 4 },
+  { x1: 292, y1: 205, x2: 285, y2: 184, radius: 4 }
+];
+
 // Boundary gaps line up with the five mouths above. The angled rails are
 // passive splitters: small differences in speed and contact angle accumulate
 // into different routes while polished walls prevent dead catches.
@@ -1597,6 +1602,10 @@ function update(dt) {
 
   for (const rail of upperLeftLoopRails) {
     resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.94);
+  }
+
+  for (const guide of underpassEntryGuides) {
+    resolveSegmentCollision(guide, { x: 0, y: 0 }, 0.92);
   }
 
   for (const [index, bumper] of popBumpers.entries()) {
