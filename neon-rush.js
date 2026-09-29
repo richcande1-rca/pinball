@@ -463,6 +463,13 @@
     if (stage === 1) scheduleRush();
   });
 
+  window.addEventListener('miami-drain', () => {
+    stopRush({ cashOut: false, completed: false });
+    state.bonusPot = 0;
+    state.lastCashout = 0;
+    state.cashoutFlashStartedAt = -Infinity;
+  });
+
   window.addEventListener('miami-impact', event => {
     if (!state.active) return;
     const detail = event.detail || {};
