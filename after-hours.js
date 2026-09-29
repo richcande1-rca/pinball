@@ -5,9 +5,10 @@
 // late-night look; completing all three hotel shots during the mode awards an
 // escalating HOTEL JACKPOT: 25K -> 35K -> 50K, then 50K for later sets.
 //
-// This mode is independent of the Clock / Neon Rush / Midnight story chain.
-// If Neon Rush or Midnight is active, AFTER HOURS waits or suspends cleanly
-// rather than competing for the same presentation layer.
+// This mode is fully independent of the Clock / Neon Rush / Midnight story
+// chain. It can qualify, run, score, and finish while any other mode is active.
+// Qualification and an active run survive ordinary drains; only GAME OVER or
+// NEW GAME/reset clears the subsystem.
 
 (() => {
   if (window.miamiAfterHoursInstalled) return;
@@ -33,25 +34,13 @@
     setHits: new Set(),
     jackpotTier: 0,
     lastJackpot: 0,
-    lastJackpotAt: -Infinity,
-    suspended: false
+    lastJackpotAt: -Infinity
   };
   window.miamiAfterHoursState = state;
 
   function resetCounts() {
     for (const key of HOTEL_KEYS) state.counts[key] = 0;
     state.qualified = false;
-  }
-
-  function majorModeBusy(now = performance.now()) {
-    const rush = window.miamiNeonRushState;
-    const rushPending = Number(rush?.pendingUntil) > now;
-    const rushBusy = Boolean(rush?.active || rushPending);
-
-    const midnightPhase = window.miamiMidnightRunState?.phase;
-    const midnightBusy = Boolean(midnightPhase && midnightPhase !== 'idle');
-
-    return rushBusy || midnightBusy;
   }
 
   function stopAfterHours({ resetQualification = true, completed = false } = {}) {
@@ -64,7 +53,6 @@
     state.jackpotTier = 0;
     state.lastJackpot = 0;
     state.lastJackpotAt = -Infinity;
-    state.suspended = false;
 
     if (resetQualification) resetCounts();
 
@@ -76,7 +64,7 @@
   }
 
   function startAfterHours() {
-    if (state.active || !state.qualified || gameOver || majorModeBusy()) {
+    if (state.active || !state.qualified || gameOver) {
       return false;
     }
 
@@ -88,7 +76,6 @@
     state.jackpotTier = 0;
     state.lastJackpot = 0;
     state.lastJackpotAt = -Infinity;
-    state.suspended = false;
 
     for (const key of HOTEL_KEYS) state.counts[key] = 0;
 
@@ -128,8 +115,6 @@
     const now = performance.now();
 
     if (state.active) {
-      if (state.suspended || majorModeBusy(now)) return;
-
       state.setHits.add(key);
       window.dispatchEvent(new CustomEvent('miami-after-hours-set-progress', {
         detail: {
@@ -170,14 +155,6 @@
   window.addEventListener('miami-neon-palms-hit', () => recordHotelVisit('neon'));
   window.addEventListener('miami-cafe-ocho-capture', () => recordHotelVisit('cafe'));
 
-  window.addEventListener('miami-drain', () => {
-    const modeWasActive = state.active;
-    stopAfterHours({
-      resetQualification: modeWasActive,
-      completed: false
-    });
-  });
-
   const baseResetGameWithAfterHours = resetGame;
   resetGame = function resetGameWithAfterHours() {
     stopAfterHours({ resetQualification: true, completed: false });
@@ -196,16 +173,22 @@
   update = function updateWithAfterHours(dt) {
     baseUpdateWithAfterHours(dt);
 
-    const now = performance.now();
+    if (gameOver) {
+      const hasQualificationProgress =
+        state.qualified ||
+        HOTEL_KEYS.some(key => state.counts[key] > 0);
+
+      if (state.active || hasQualificationProgress) {
+        stopAfterHours({ resetQualification: true, completed: false });
+      }
+      return;
+    }
 
     if (state.qualified && !state.active) {
       startAfterHours();
     }
 
     if (!state.active) return;
-
-    state.suspended = majorModeBusy(now);
-    if (state.suspended) return;
 
     state.remainingMs = Math.max(0, state.remainingMs - dt * 1000);
     if (state.remainingMs === 0) {
@@ -294,7 +277,7 @@
   }
 
   function drawAfterHours(now) {
-    if (!state.active || state.suspended || majorModeBusy(now)) return;
+    if (!state.active) return;
 
     ctx.save();
     ctx.fillStyle = 'rgba(1, 3, 8, 0.48)';
@@ -371,7 +354,7 @@
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
     instructions.append(document.createTextNode(
-      ' AFTER HOURS: complete REEF HOTEL, NEON PALMS, and CAFE OCHO three times each across the game; qualification progress survives drains. For 30 seconds, hit all three businesses to collect escalating 25K, 35K, then 50K HOTEL JACKPOTS.'
+      ' AFTER HOURS: complete REEF HOTEL, NEON PALMS, and CAFE OCHO three times each across the game. Qualification and an active 30-second run survive ordinary drains and run independently of other modes. Hit all three businesses to collect escalating 25K, 35K, then 50K HOTEL JACKPOTS; when the run ends, qualify it again.'
     ));
   }
 })();
