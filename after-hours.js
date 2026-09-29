@@ -1,6 +1,7 @@
 // Miami Nights: AFTER HOURS hotel-district mode.
 // Qualify by completing REEF HOTEL, NEON PALMS, and CAFE OCHO three times each
-// during the current ball. The 30-second mode dims the table into a smoky
+// across the current game. Qualification progress survives drains; the 30-second
+// mode itself does not. The mode dims the table into a smoky
 // late-night look; completing all three hotel shots during the mode awards an
 // escalating HOTEL JACKPOT: 25K -> 35K -> 50K, then 50K for later sets.
 //
@@ -170,7 +171,11 @@
   window.addEventListener('miami-cafe-ocho-capture', () => recordHotelVisit('cafe'));
 
   window.addEventListener('miami-drain', () => {
-    stopAfterHours({ resetQualification: true, completed: false });
+    const modeWasActive = state.active;
+    stopAfterHours({
+      resetQualification: modeWasActive,
+      completed: false
+    });
   });
 
   const baseResetGameWithAfterHours = resetGame;
@@ -366,7 +371,7 @@
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
     instructions.append(document.createTextNode(
-      ' AFTER HOURS: complete REEF HOTEL, NEON PALMS, and CAFE OCHO three times each in one ball. For 30 seconds, hit all three businesses to collect escalating 25K, 35K, then 50K HOTEL JACKPOTS.'
+      ' AFTER HOURS: complete REEF HOTEL, NEON PALMS, and CAFE OCHO three times each across the game; qualification progress survives drains. For 30 seconds, hit all three businesses to collect escalating 25K, 35K, then 50K HOTEL JACKPOTS.'
     ));
   }
 })();
