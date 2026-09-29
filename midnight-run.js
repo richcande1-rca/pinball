@@ -313,11 +313,6 @@
   window.addEventListener('miami-neon-rush-end', event => {
     if (!event.detail?.completed || gameOver) return;
 
-    if (state.completedRuns >= 1) {
-      beginMidnightTransition();
-      return;
-    }
-
     const reopen = window.miamiReopenClockForNextStage;
     if (typeof reopen === 'function') reopen();
   });
@@ -327,7 +322,13 @@
     beginMidnightTransition();
   });
 
-  window.addEventListener('miami-drain', () => stopMidnightRun());
+  window.addEventListener('miami-drain', () => {
+    stopMidnightRun({ rearmCompleted: false });
+    state.completedRuns = 0;
+    state.currentRun = 0;
+    state.automaticMultiball = false;
+    state.survivingBalls = 1;
+  });
 
   const baseResetGameWithMidnightRun = resetGame;
   resetGame = function resetGameWithMidnightRun() {
