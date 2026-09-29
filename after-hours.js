@@ -1,8 +1,8 @@
 // Miami Nights: AFTER HOURS hotel-district mode.
 // Qualify by completing REEF HOTEL, NEON PALMS, and CAFE OCHO three times each
-// across the current game. Qualification progress survives drains; the 30-second
-// mode itself does not. The mode dims the table into a smoky
-// late-night look; completing all three hotel shots during the mode awards an
+// across the current game. Qualification progress survives drains. During the
+// 30-second mode, the whole table breathes with a slow neon pulse; completing
+// all three hotel shots during the mode awards an
 // escalating HOTEL JACKPOT: 25K -> 35K -> 50K, then 50K for later sets.
 //
 // This mode is fully independent of the Clock / Neon Rush / Midnight story
@@ -223,69 +223,29 @@
     ctx.restore();
   }
 
-  function drawSmoke(now) {
-    const phase = now * 0.012;
-    const lanes = [
-      { y: 180, width: 150, height: 32, drift: 0 },
-      { y: 350, width: 185, height: 42, drift: 150 },
-      { y: 525, width: 165, height: 36, drift: 300 }
-    ];
+  function drawNeonPulse(now) {
+    // Cheap full-table breathing wash: no filters, gradients, or canvas-wide
+    // blur. Cyan and magenta trade intensity over a slow 1.8-second cycle.
+    const phase = (now % 1800) / 1800 * Math.PI * 2;
+    const breath = (Math.sin(phase) + 1) * 0.5;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(205, 220, 235, 0.075)';
-    for (const lane of lanes) {
-      const x = ((phase + lane.drift) % (canvas.width + 280)) - 140;
-      ctx.beginPath();
-      ctx.ellipse(x, lane.y, lane.width, lane.height, 0, 0, Math.PI * 2);
-      ctx.fill();
 
-      ctx.beginPath();
-      ctx.ellipse(
-        x - canvas.width - 140,
-        lane.y,
-        lane.width,
-        lane.height,
-        0,
-        0,
-        Math.PI * 2
-      );
-      ctx.fill();
-    }
-    ctx.restore();
-  }
+    ctx.globalAlpha = 0.025 + breath * 0.055;
+    ctx.fillStyle = MIAMI_COLORS.magenta;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  function drawHotelMarkers() {
-    const markers = [
-      { key: 'reef', x: 403, y: 316, accent: MIAMI_COLORS.cyan },
-      { key: 'neon', x: 404, y: 400, accent: MIAMI_COLORS.magenta },
-      { key: 'cafe', x: 403, y: 466, accent: MIAMI_COLORS.lavender }
-    ];
+    ctx.globalAlpha = 0.02 + (1 - breath) * 0.045;
+    ctx.fillStyle = MIAMI_COLORS.cyan;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.save();
-    ctx.lineWidth = 2;
-    for (const marker of markers) {
-      const hit = state.setHits.has(marker.key);
-      ctx.globalAlpha = hit ? 1 : 0.66;
-      ctx.strokeStyle = hit ? '#ffffff' : marker.accent;
-      ctx.shadowColor = marker.accent;
-      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (hit ? 12 : 5);
-      ctx.beginPath();
-      ctx.arc(marker.x, marker.y, hit ? 16 : 13, 0, Math.PI * 2);
-      ctx.stroke();
-    }
     ctx.restore();
   }
 
   function drawAfterHours(now) {
     if (!state.active) return;
 
-    ctx.save();
-    ctx.fillStyle = 'rgba(1, 3, 8, 0.48)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
-
-    drawSmoke(now);
-    drawHotelMarkers();
+    drawNeonPulse(now);
 
     const remainingSeconds = Math.max(
       0,
@@ -296,32 +256,20 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    ctx.globalAlpha = 0.88;
-    ctx.font = '900 11px ui-monospace, monospace';
-    ctx.fillStyle = '#d9e7ef';
-    ctx.fillText('AFTER HOURS', canvas.width / 2, 222);
-
-    ctx.font = '900 24px ui-monospace, monospace';
-    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.92;
+    ctx.font = '900 10px ui-monospace, monospace';
+    ctx.fillStyle = '#f4ffff';
     ctx.strokeStyle = MIAMI_COLORS.lavender;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1;
     if (!window.miamiMobilePerformanceMode) {
       ctx.shadowColor = MIAMI_COLORS.magenta;
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 5;
     }
-    const timerText = `00:${String(remainingSeconds).padStart(2, '0')}`;
-    ctx.strokeText(timerText, canvas.width / 2, 250);
-    ctx.fillText(timerText, canvas.width / 2, 250);
 
-    if (now < state.titleUntil) {
-      ctx.globalAlpha = Math.min(1, (state.titleUntil - now) / 240);
-      ctx.font = '900 30px ui-monospace, monospace';
-      ctx.fillStyle = '#f1f4f7';
-      ctx.strokeStyle = MIAMI_COLORS.cyan;
-      ctx.lineWidth = 1.5;
-      ctx.strokeText('AFTER HOURS', canvas.width / 2, 188, 340);
-      ctx.fillText('AFTER HOURS', canvas.width / 2, 188, 340);
-    }
+    const timerText =
+      `AFTER HOURS · 00:${String(remainingSeconds).padStart(2, '0')}`;
+    ctx.strokeText(timerText, canvas.width / 2, canvas.height - 104, 250);
+    ctx.fillText(timerText, canvas.width / 2, canvas.height - 104, 250);
 
     const jackpotAge = now - state.lastJackpotAt;
     if (jackpotAge >= 0 && jackpotAge < JACKPOT_FLASH_MS) {
@@ -331,7 +279,12 @@
       ctx.fillStyle = '#ffffff';
       ctx.strokeStyle = MIAMI_COLORS.magenta;
       ctx.lineWidth = 1.2;
-      const text = `HOTEL JACKPOT +${state.lastJackpot.toLocaleString('en-US')}`;
+      if (!window.miamiMobilePerformanceMode) {
+        ctx.shadowColor = MIAMI_COLORS.cyan;
+        ctx.shadowBlur = 8;
+      }
+      const text =
+        `HOTEL JACKPOT +${state.lastJackpot.toLocaleString('en-US')}`;
       ctx.strokeText(text, canvas.width / 2, 286, 360);
       ctx.fillText(text, canvas.width / 2, 286, 360);
     }
