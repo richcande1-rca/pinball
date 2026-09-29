@@ -482,10 +482,6 @@
       resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.94);
     }
 
-    for (const guide of underpassEntryGuides) {
-      resolveSegmentCollision(guide, { x: 0, y: 0 }, 0.92);
-    }
-
     for (const [index, bumper] of popBumpers.entries()) {
       collideWithPopBumper(bumper, index);
     }

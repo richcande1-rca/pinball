@@ -32,7 +32,7 @@
         });
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=20260928-antitrap1">
+  <link rel="stylesheet" href="style.css?v=20260928-noguides1">
 </head>
 <body>
   <section id="intro-screen" class="intro-screen" aria-label="Miami Nights title screen">
@@ -105,7 +105,7 @@
     <details class="help-bar">
       <summary>
         <span class="help-label">Instructions</span>
-        <span class="build-number">Build 20260928-ANTITRAP1</span>
+        <span class="build-number">Build 20260928-NOGUIDES1</span>
       </summary>
       <p class="instruction-content">
         Flippers: <kbd>Z</kbd> and <kbd>/</kbd> (or <kbd>←</kbd> and <kbd>→</kbd>).
@@ -126,14 +126,11 @@
     </details>
   </main>
 
-  <script src="intro.js?v=20260928-antitrap1"></script>
-  <script src="game.js?v=20260928-antitrap1"></script>
+  <script src="intro.js?v=20260928-noguides1"></script>
+  <script src="game.js?v=20260928-noguides1"></script>
   <script>
-    // Tuck the scoop immediately beneath Ocean Drive and keep its playfield
-    // guides above the established launch trajectory.
+    // Tuck the scoop immediately beneath Ocean Drive.
     underpass.entry.y = 90;
-    Object.assign(underpassEntryGuides[0], { y1: 100, y2: 78 });
-    Object.assign(underpassEntryGuides[1], { y1: 100, y2: 78 });
 
     // Two larger, softer powered pops flank the scoop approach. They use the
     // existing pop-bumper collision/scoring rules, but their wider spacing and
@@ -1003,7 +1000,7 @@
       drawCompactSideExit(underpass.outlets[4], MIAMI_COLORS.cyan);
     };
   </script>
-  <script src="theme.js?v=20260928-antitrap1"></script>
+  <script src="theme.js?v=20260928-noguides1"></script>
   <script>
     const upperWallNeons = [
       { x1: 214, y1: 38, x2: 239, y2: 38, accent: 'cyan', flashStartedAt: -Infinity },
@@ -1105,7 +1102,7 @@
       baseDrawBallWithUnderpassMouths();
     };
   </script>
-  <script src="audio.js?v=20260928-antitrap1"></script>
+  <script src="audio.js?v=20260928-noguides1"></script>
   <script>
     const musicMuteControl = document.getElementById('music-mute');
     if (musicMuteControl) {
