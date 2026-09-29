@@ -222,6 +222,7 @@
   }
 
   function drawClockPolish() {
+    if (clockState.mode === 'ambush') return;
     const now = performance.now();
 
     if (clockState.open && !clockState.completed) {
@@ -285,6 +286,7 @@
   }
 
   function drawClockCallout() {
+    if (clockState.mode === 'ambush') return;
     const now = performance.now();
     if (now >= callout.until) return;
 
@@ -306,7 +308,8 @@
     drawClockCallout();
   };
 
-  window.addEventListener('miami-clock-open', () => {
+  window.addEventListener('miami-clock-open', event => {
+    if (event.detail?.mode === 'ambush') return;
     openedAt = performance.now();
     completedAt = -Infinity;
     dropped.fill(false);
@@ -315,6 +318,7 @@
 
   window.addEventListener('miami-clock-peg-hit', event => {
     const detail = event.detail || {};
+    if (detail.mode === 'ambush') return;
     const pegIndex = Number(detail.pegIndex);
     if (pegIndex >= 0 && pegIndex < dropped.length) dropped[pegIndex] = true;
 
@@ -332,7 +336,8 @@
     }
   });
 
-  window.addEventListener('miami-clock-complete', () => {
+  window.addEventListener('miami-clock-complete', event => {
+    if (event.detail?.mode === 'ambush') return;
     completedAt = performance.now();
     score += COMPLETE_BONUS;
     syncStatusDisplay();
