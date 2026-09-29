@@ -1,8 +1,9 @@
 // Miami Nights: AFTER HOURS hotel-district mode.
 // Qualify by completing REEF HOTEL, NEON PALMS, and CAFE OCHO three times each
 // across the current game. Qualification progress survives drains. During the
-// 30-second mode, the whole table breathes with a slow neon pulse; completing
-// all three hotel shots during the mode awards an
+// 30-second mode, only the table's cyan/magenta/lavender neon breathes with a
+// slow pulse; the sunset/background remains untouched. Completing all three
+// hotel shots during the mode awards an
 // escalating HOTEL JACKPOT: 25K -> 35K -> 50K, then 50K for later sets.
 //
 // This mode is fully independent of the Clock / Neon Rush / Midnight story
@@ -223,29 +224,45 @@
     ctx.restore();
   }
 
-  function drawNeonPulse(now) {
-    // Cheap full-table breathing wash: no filters, gradients, or canvas-wide
-    // blur. Cyan and magenta trade intensity over a slow 1.8-second cycle.
+  const baseNeonPalette = {
+    cyan: MIAMI_COLORS.cyan,
+    magenta: MIAMI_COLORS.magenta,
+    lavender: MIAMI_COLORS.lavender
+  };
+
+  const NEON_PULSE_STEPS = 64;
+  const neonPulsePalette = Array.from({ length: NEON_PULSE_STEPS }, (_, index) => {
+    const phase = index / (NEON_PULSE_STEPS - 1);
+    const alpha = 0.58 + phase * 0.42;
+    return {
+      cyan: `rgba(34, 223, 243, ${alpha})`,
+      magenta: `rgba(255, 60, 172, ${alpha})`,
+      lavender: `rgba(201, 184, 255, ${alpha})`
+    };
+  });
+
+  function applyNeonPulse(now) {
     const phase = (now % 1800) / 1800 * Math.PI * 2;
     const breath = (Math.sin(phase) + 1) * 0.5;
+    const index = Math.min(
+      NEON_PULSE_STEPS - 1,
+      Math.round(breath * (NEON_PULSE_STEPS - 1))
+    );
+    const palette = neonPulsePalette[index];
 
-    ctx.save();
+    MIAMI_COLORS.cyan = palette.cyan;
+    MIAMI_COLORS.magenta = palette.magenta;
+    MIAMI_COLORS.lavender = palette.lavender;
+  }
 
-    ctx.globalAlpha = 0.025 + breath * 0.055;
-    ctx.fillStyle = MIAMI_COLORS.magenta;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.globalAlpha = 0.02 + (1 - breath) * 0.045;
-    ctx.fillStyle = MIAMI_COLORS.cyan;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.restore();
+  function restoreNeonPalette() {
+    MIAMI_COLORS.cyan = baseNeonPalette.cyan;
+    MIAMI_COLORS.magenta = baseNeonPalette.magenta;
+    MIAMI_COLORS.lavender = baseNeonPalette.lavender;
   }
 
   function drawAfterHours(now) {
     if (!state.active) return;
-
-    drawNeonPulse(now);
 
     const remainingSeconds = Math.max(
       0,
@@ -294,14 +311,21 @@
 
   const baseDrawWithAfterHours = draw;
   draw = function drawWithAfterHours() {
-    baseDrawWithAfterHours();
-
     const now = performance.now();
+
     if (state.active) {
+      applyNeonPulse(now);
+      try {
+        baseDrawWithAfterHours();
+      } finally {
+        restoreNeonPalette();
+      }
       drawAfterHours(now);
-    } else {
-      drawQualificationProgress();
+      return;
     }
+
+    baseDrawWithAfterHours();
+    drawQualificationProgress();
   };
 
   const instructions = document.querySelector('.instruction-content');
