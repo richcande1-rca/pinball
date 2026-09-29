@@ -290,7 +290,20 @@ const upperLeftLoopInnerPoints = [
 ];
 
 const upperLeftLoopInnerRails = makeRailSegments(upperLeftLoopInnerPoints);
+
+// Invisible anti-trap guard across the accidental outside lane between the
+// cabinet wall and the loop's outer rail. It is collision-only: the visible
+// neon loop geometry remains unchanged.
+const upperLeftOutsideGuard = {
+  x1: 32,
+  y1: 212,
+  x2: 74,
+  y2: 188,
+  radius: 4
+};
+
 const upperLeftLoopRails = [
+  upperLeftOutsideGuard,
   ...makeRailSegments(upperLeftLoopOuterPoints),
   ...upperLeftLoopInnerRails.filter((rail, index) => index !== 8)
 ];
