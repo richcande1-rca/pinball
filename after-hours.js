@@ -127,7 +127,7 @@
     const now = performance.now();
 
     if (state.active) {
-      if (state.suspended) return;
+      if (state.suspended || majorModeBusy(now)) return;
 
       state.setHits.add(key);
       window.dispatchEvent(new CustomEvent('miami-after-hours-set-progress', {
