@@ -46,7 +46,11 @@
   });
 
   function resetLivePegs() {
-    resetLivePegs();
+    state.remaining = pegs.length;
+    for (const peg of pegs) {
+      peg.dropped = false;
+      peg.flashStartedAt = -Infinity;
+    }
   }
 
   function captureClockForAmbush() {
