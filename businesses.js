@@ -11,6 +11,8 @@
     targetValue: 400,
     completionValue: 2500,
     completed: false,
+    rearmRemaining: 0,
+    rearmDelay: 2.5,
     flashStartedAt: -Infinity
   };
 
@@ -47,6 +49,7 @@
       target.flashStartedAt = -Infinity;
     }
     reefHotel.completed = false;
+    reefHotel.rearmRemaining = 0;
     reefHotel.flashStartedAt = -Infinity;
 
     neonPalms.angle = 0;
@@ -118,6 +121,7 @@
 
       if (!reefHotel.completed && reefHotel.targets.every(candidate => candidate.lit)) {
         reefHotel.completed = true;
+        reefHotel.rearmRemaining = reefHotel.rearmDelay;
         reefHotel.flashStartedAt = performance.now();
         awardBusinessPoints(reefHotel.completionValue);
       }
@@ -169,6 +173,19 @@
     window.dispatchEvent(new CustomEvent('miami-neon-palms-hit', {
       detail: { speed, direction }
     }));
+  }
+
+  function updateReefHotelRearm(dt) {
+    if (!reefHotel.completed || reefHotel.rearmRemaining <= 0) return;
+
+    reefHotel.rearmRemaining = Math.max(0, reefHotel.rearmRemaining - dt);
+    if (reefHotel.rearmRemaining > 0) return;
+
+    reefHotel.completed = false;
+    for (const target of reefHotel.targets) {
+      target.lit = false;
+      target.flashStartedAt = -Infinity;
+    }
   }
 
   function updateNeonPalms(dt) {
@@ -241,6 +258,7 @@
   const baseUpdateWithBusinesses = update;
   update = function updateWithOceanDriveBusinesses(dt) {
     if (!gameOver) {
+      updateReefHotelRearm(dt);
       updateNeonPalms(dt);
     }
 

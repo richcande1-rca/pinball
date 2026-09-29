@@ -161,6 +161,7 @@ const MIAMI_FEATURE_SCRIPTS = [
   'sunset-gradient-glow.js',
   'palm-ring.js',
   'strategy-rules.js',
+  'after-hours.js',
   'captive-repeat.js',
   'high-scores.js',
   'reverse-loop.js',

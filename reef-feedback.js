@@ -52,6 +52,7 @@
     window.dispatchEvent(new CustomEvent('miami-reef-complete', {
       detail: { award: completionAward }
     }));
+    reefHits.clear();
   });
 
   window.addEventListener('miami-drain', resetReefFeedback);
