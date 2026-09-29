@@ -8,7 +8,6 @@
 // Tactical helpers:
 //   center drop bank -> 15s captive-hit 2X value
 //   captive-side pair -> next eligible captive hit counts as two progress hits
-//   upper-right pair -> spots one hotel-district step for the current ball
 
 (() => {
   if (window.miamiStrategyRulesInstalled) return;
@@ -35,7 +34,6 @@
     oceanHotNextAward: OCEAN_HOT_VALUES[0],
     circlePassesThisBall: 0,
     hotelProgressThisBall: 0,
-    hotelSpottedThisBall: false,
     captiveScoreBoostRemaining: 0,
     captiveProgressBoostArmed: false
   };
@@ -43,7 +41,6 @@
 
   const hotelBusinessesThisBall = new Set();
   const captiveSideHits = new Set();
-  const upperRightHits = new Set();
   const pendingAwards = [];
 
   function tableScoreMultiplier() {
@@ -116,12 +113,10 @@
   function resetPerBallStrategy() {
     state.circlePassesThisBall = 0;
     state.hotelProgressThisBall = 0;
-    state.hotelSpottedThisBall = false;
     state.captiveScoreBoostRemaining = 0;
     state.captiveProgressBoostArmed = false;
     hotelBusinessesThisBall.clear();
     captiveSideHits.clear();
-    upperRightHits.clear();
   }
 
   function resetStrategyForNewGame() {
@@ -138,17 +133,15 @@
   }
 
   function updateHotelProgress() {
-    const spottedCredit = state.hotelSpottedThisBall ? 1 : 0;
     state.hotelProgressThisBall = Math.min(
       3,
-      hotelBusinessesThisBall.size + spottedCredit
+      hotelBusinessesThisBall.size
     );
 
     window.dispatchEvent(new CustomEvent('miami-hotel-progress', {
       detail: {
         progress: state.hotelProgressThisBall,
-        total: 3,
-        spotted: state.hotelSpottedThisBall
+        total: 3
       }
     }));
 
@@ -271,21 +264,6 @@
       return;
     }
 
-    if (detail.group === 'upper-right') {
-      if (state.features.hotels || state.hotelSpottedThisBall) return;
-      upperRightHits.add(groupIndex);
-      if (upperRightHits.size >= 2) {
-        upperRightHits.clear();
-        state.hotelSpottedThisBall = true;
-        updateHotelProgress();
-        window.dispatchEvent(new CustomEvent('miami-hotel-spotted', {
-          detail: {
-            progress: state.hotelProgressThisBall,
-            total: 3
-          }
-        }));
-      }
-    }
   });
 
   window.addEventListener('miami-impact', event => {
@@ -554,7 +532,7 @@
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
     instructions.append(document.createTextNode(
-      ' Strategy: completing OCEAN DRIVE starts 2-ball multiball and lights O. When that multiball ends, OCEAN DRIVE re-arms so another full letter build can earn another 2-ball multiball. Three circle passes and the hotel district light C/H; O/C/H remain live during Ocean Drive multiball. All three light CAPTIVE READY, which starts another 2-ball multiball on the next solid captive hit. Multiball is capped at two live balls. Completed OCEAN DRIVE stays HOT for 2500, 5000, 7500, then 10000 per additional pass. The center drop bank gives 15 seconds of 2X captive-hit value; the two captive-side standups make the next eligible captive hit count as two progress hits; the upper-right pair spots one hotel-district step for that ball.'
+      ' Strategy: completing OCEAN DRIVE starts 2-ball multiball and lights O. When that multiball ends, OCEAN DRIVE re-arms so another full letter build can earn another 2-ball multiball. Three circle passes and the hotel district light C/H; O/C/H remain live during Ocean Drive multiball. All three light CAPTIVE READY, which starts another 2-ball multiball on the next solid captive hit. Multiball is capped at two live balls. Completed OCEAN DRIVE stays HOT for 2500, 5000, 7500, then 10000 per additional pass. The center drop bank gives 15 seconds of 2X captive-hit value; the two captive-side standups make the next eligible captive hit count as two progress hits.'
     ));
   }
 })();
