@@ -151,6 +151,14 @@
     underpass.enteredAt = -Infinity;
     ballHasEnteredPlayfield = true;
     shooterRoute = 'released';
+
+    window.dispatchEvent(new CustomEvent('miami-underpass-trip-complete', {
+      detail: {
+        sourceIndex: trip.sourceIndex,
+        exitIndex: trip.exitIndex,
+        primaryEntry: trip.sourceIndex === 0
+      }
+    }));
     return false;
   };
 

@@ -25,8 +25,10 @@
     completed: false,
     remaining: 6,
     openedAt: -Infinity,
-    stage: 0
+    stage: 0,
+    mode: 'normal'
   };
+  let ambushSavedClock = null;
   window.miamiClockEventState = state;
 
   const pegs = PEG_LAMP_INDICES.map((lampIndex, pegIndex) => {
@@ -43,6 +45,90 @@
     };
   });
 
+  function resetLivePegs() {
+    state.remaining = pegs.length;
+    for (const peg of pegs) {
+      peg.dropped = false;
+      peg.flashStartedAt = -Infinity;
+    }
+  }
+
+  function captureClockForAmbush() {
+    return {
+      state: {
+        open: state.open,
+        completed: state.completed,
+        remaining: state.remaining,
+        openedAt: state.openedAt,
+        stage: state.stage,
+        mode: state.mode
+      },
+      upperBarrierHits: [...upperBarrierHits],
+      lowerBarrierHits: [...lowerBarrierHits],
+      pegs: pegs.map(peg => ({
+        dropped: peg.dropped,
+        flashStartedAt: peg.flashStartedAt
+      })),
+      pendingOpenDetail: null
+    };
+  }
+
+  function restoreClockAfterAmbush(snapshot) {
+    Object.assign(state, snapshot.state);
+
+    upperBarrierHits.clear();
+    for (const value of snapshot.upperBarrierHits) upperBarrierHits.add(value);
+
+    lowerBarrierHits.clear();
+    for (const value of snapshot.lowerBarrierHits) lowerBarrierHits.add(value);
+
+    for (let index = 0; index < pegs.length; index += 1) {
+      pegs[index].dropped = Boolean(snapshot.pegs[index]?.dropped);
+      pegs[index].flashStartedAt =
+        snapshot.pegs[index]?.flashStartedAt ?? -Infinity;
+    }
+  }
+
+  function resetSavedNormalClockForDrain() {
+    if (!ambushSavedClock) return;
+
+    ambushSavedClock.state.open = false;
+    ambushSavedClock.state.completed = false;
+    ambushSavedClock.state.remaining = pegs.length;
+    ambushSavedClock.state.openedAt = -Infinity;
+    ambushSavedClock.state.stage = 0;
+    ambushSavedClock.state.mode = 'normal';
+    ambushSavedClock.upperBarrierHits = [];
+    ambushSavedClock.lowerBarrierHits = [];
+    ambushSavedClock.pegs = pegs.map(() => ({
+      dropped: false,
+      flashStartedAt: -Infinity
+    }));
+    ambushSavedClock.pendingOpenDetail = null;
+  }
+
+  function reopenSavedNormalClock(stage, detail = {}) {
+    if (!ambushSavedClock) return false;
+
+    ambushSavedClock.state.open = true;
+    ambushSavedClock.state.completed = false;
+    ambushSavedClock.state.remaining = pegs.length;
+    ambushSavedClock.state.openedAt = performance.now();
+    ambushSavedClock.state.stage = stage;
+    ambushSavedClock.state.mode = 'normal';
+    ambushSavedClock.pegs = pegs.map(() => ({
+      dropped: false,
+      flashStartedAt: -Infinity
+    }));
+    ambushSavedClock.pendingOpenDetail = {
+      ...detail,
+      clockPegs: pegs.length,
+      stage,
+      mode: 'normal'
+    };
+    return true;
+  }
+
   function resetClockEvent() {
     const wasOpen = state.open;
     state.open = false;
@@ -50,6 +136,8 @@
     state.remaining = pegs.length;
     state.openedAt = -Infinity;
     state.stage = 0;
+    state.mode = 'normal';
+    ambushSavedClock = null;
     upperBarrierHits.clear();
     lowerBarrierHits.clear();
 
@@ -72,6 +160,7 @@
     state.remaining = pegs.length;
     state.openedAt = performance.now();
     state.stage = 1;
+    state.mode = 'normal';
     for (const peg of pegs) peg.dropped = false;
 
     window.dispatchEvent(new CustomEvent('miami-clock-open', {
@@ -80,7 +169,8 @@
         lowerBarriers: lowerBarrierHits.size,
         totalBarriers: 6,
         clockPegs: pegs.length,
-        stage: state.stage
+        stage: state.stage,
+        mode: state.mode
       }
     }));
   }
@@ -93,64 +183,128 @@
     state.remaining = pegs.length;
     state.openedAt = performance.now();
     state.stage = Number(stage) === 2 ? 2 : 1;
+    state.mode = 'normal';
 
-    for (const peg of pegs) {
-      peg.dropped = false;
-      peg.flashStartedAt = -Infinity;
-    }
+    resetLivePegs();
 
     window.dispatchEvent(new CustomEvent('miami-clock-open', {
       detail: {
         testMode: true,
         clockPegs: pegs.length,
-        stage: state.stage
+        stage: state.stage,
+        mode: state.mode
       }
     }));
     return true;
   };
 
   window.miamiReopenClockForNextStage = function miamiReopenClockForNextStage() {
+    if (state.mode === 'ambush') {
+      const saved = ambushSavedClock?.state;
+      if (!saved?.open || !saved.completed || saved.stage !== 1) return false;
+      return reopenSavedNormalClock(2, { reopened: true });
+    }
+
     if (!state.open || !state.completed || state.stage !== 1) return false;
 
     state.completed = false;
     state.remaining = pegs.length;
     state.openedAt = performance.now();
     state.stage = 2;
+    state.mode = 'normal';
 
-    for (const peg of pegs) {
-      peg.dropped = false;
-      peg.flashStartedAt = -Infinity;
-    }
+    resetLivePegs();
 
     window.dispatchEvent(new CustomEvent('miami-clock-open', {
       detail: {
         reopened: true,
         clockPegs: pegs.length,
-        stage: state.stage
+        stage: state.stage,
+        mode: state.mode
       }
     }));
     return true;
   };
 
   window.miamiRearmClockForEncore = function miamiRearmClockForEncore() {
+    if (state.mode === 'ambush') {
+      return reopenSavedNormalClock(1, { encore: true });
+    }
+
     state.open = true;
     state.completed = false;
     state.remaining = pegs.length;
     state.openedAt = performance.now();
     state.stage = 1;
+    state.mode = 'normal';
 
-    for (const peg of pegs) {
-      peg.dropped = false;
-      peg.flashStartedAt = -Infinity;
-    }
+    resetLivePegs();
 
     window.dispatchEvent(new CustomEvent('miami-clock-open', {
       detail: {
         encore: true,
         clockPegs: pegs.length,
-        stage: state.stage
+        stage: state.stage,
+        mode: state.mode
       }
     }));
+    return true;
+  };
+
+  window.miamiOpenClockForAmbush = function miamiOpenClockForAmbush() {
+    if (state.mode === 'ambush') return false;
+
+    ambushSavedClock = captureClockForAmbush();
+
+    state.open = true;
+    state.completed = false;
+    state.remaining = pegs.length;
+    state.openedAt = performance.now();
+    state.stage = 99;
+    state.mode = 'ambush';
+    resetLivePegs();
+
+    window.dispatchEvent(new CustomEvent('miami-clock-open', {
+      detail: {
+        ambush: true,
+        clockPegs: pegs.length,
+        stage: state.stage,
+        mode: state.mode
+      }
+    }));
+    return true;
+  };
+
+  window.miamiCloseClockForAmbush = function miamiCloseClockForAmbush() {
+    if (state.mode !== 'ambush') return false;
+
+    const snapshot = ambushSavedClock;
+    ambushSavedClock = null;
+
+    if (snapshot) {
+      restoreClockAfterAmbush(snapshot);
+    } else {
+      state.open = false;
+      state.completed = false;
+      state.remaining = pegs.length;
+      state.openedAt = -Infinity;
+      state.stage = 0;
+      state.mode = 'normal';
+      resetLivePegs();
+    }
+
+    window.dispatchEvent(new CustomEvent('miami-clock-close', {
+      detail: {
+        mode: 'ambush',
+        restoredNormalClock: Boolean(snapshot)
+      }
+    }));
+
+    if (snapshot?.pendingOpenDetail) {
+      window.dispatchEvent(new CustomEvent('miami-clock-open', {
+        detail: snapshot.pendingOpenDetail
+      }));
+    }
     return true;
   };
 
@@ -160,6 +314,7 @@
 
     const impactIndex = Number(detail.index);
     if (impactIndex >= 11 && impactIndex <= 13) {
+      if (state.mode === 'ambush') return;
       upperBarrierHits.add(impactIndex - 11);
       maybeOpenClock();
     }
@@ -171,6 +326,7 @@
 
     const groupIndex = Number(detail.groupIndex);
     if (groupIndex < 0 || groupIndex > 2) return;
+    if (state.mode === 'ambush') return;
     lowerBarrierHits.add(groupIndex);
     maybeOpenClock();
   });
@@ -254,7 +410,9 @@
           lampIndex: peg.lampIndex,
           x: peg.x,
           y: peg.y,
-          remaining: state.remaining
+          remaining: state.remaining,
+          stage: state.stage,
+          mode: state.mode
         }
       }));
 
@@ -263,7 +421,8 @@
         window.dispatchEvent(new CustomEvent('miami-clock-complete', {
           detail: {
             pegsKnockedDown: pegs.length,
-            stage: state.stage
+            stage: state.stage,
+            mode: state.mode
           }
         }));
       }
@@ -382,7 +541,13 @@
     drawClockPegs();
   };
 
-  window.addEventListener('miami-drain', resetClockEvent);
+  window.addEventListener('miami-drain', () => {
+    if (state.mode === 'ambush') {
+      resetSavedNormalClockForDrain();
+      return;
+    }
+    resetClockEvent();
+  });
 
   const baseResetGameWithClockEvent = resetGame;
   resetGame = function resetGameWithClockEvent() {

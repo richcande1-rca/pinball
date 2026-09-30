@@ -171,7 +171,8 @@ const MIAMI_FEATURE_SCRIPTS = [
   'neon-rush.js',
   'attract-mode.js',
   'midnight-run.js',
-  'test-mode.js'
+  'test-mode.js',
+  'ambush.js'
 ];
 
 (() => {

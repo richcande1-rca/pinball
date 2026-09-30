@@ -242,6 +242,14 @@
   });
 
   function applyNeonPulse(now) {
+    const ambushOverride = window.miamiAmbushPaletteOverride;
+    if (ambushOverride) {
+      MIAMI_COLORS.cyan = ambushOverride.cyan;
+      MIAMI_COLORS.magenta = ambushOverride.magenta;
+      MIAMI_COLORS.lavender = ambushOverride.lavender;
+      return;
+    }
+
     const phase = (now % 1800) / 1800 * Math.PI * 2;
     const breath = (Math.sin(phase) + 1) * 0.5;
     const index = Math.min(
