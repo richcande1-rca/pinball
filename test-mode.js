@@ -190,6 +190,7 @@
       <button type="button" data-action="clock1">CLOCK #1</button>
       <button type="button" data-action="rush">NEON RUSH</button>
       <button type="button" data-action="afterhours">AFTER HOURS</button>
+      <button type="button" data-action="ambush">AMBUSH</button>
       <button type="button" data-action="clock2">CLOCK #2</button>
       <button type="button" data-action="midnight">MIDNIGHT RUN</button>
       <button type="button" data-action="reset">RESET GAME</button>
@@ -323,6 +324,13 @@
         if (typeof window.miamiTestStartAfterHours === 'function' &&
             window.miamiTestStartAfterHours()) {
           setStatus('AFTER HOURS STARTED');
+        }
+        break;
+      case 'ambush':
+        prepareTimedMode();
+        if (typeof window.miamiTestStartAmbush === 'function' &&
+            window.miamiTestStartAmbush()) {
+          setStatus('AMBUSH STARTED');
         }
         break;
       case 'clock2':
