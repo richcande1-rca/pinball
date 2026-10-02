@@ -509,6 +509,10 @@
       resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
     }
 
+    if (typeof window.miamiCollideWithPayphone === 'function') {
+      window.miamiCollideWithPayphone();
+    }
+
     resolvePeerSafeRecoveryRailCollisions();
 
     // Match the normal live-ball recovery feed: a peer returning down the
