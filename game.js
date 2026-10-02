@@ -91,7 +91,7 @@ const keys = {
 };
 
 const FLIPPER_CHARGE = {
-  duration: 1,
+  duration: 0.4,
   contactSpeed: 55,
   heldDecayRate: 2.4,
   minimum: 0.08,
