@@ -434,15 +434,22 @@
     return true;
   }
 
+  window.miamiCollideWithOpenClockPegs = function miamiCollideWithOpenClockPegs(
+    now = performance.now()
+  ) {
+    if (!state.open || state.completed || !liveBallOnMainPlayfield()) return false;
+
+    let collided = false;
+    for (let index = 0; index < pegs.length; index += 1) {
+      if (collideWithClockPeg(pegs[index], index, now)) collided = true;
+    }
+    return collided;
+  };
+
   const baseUpdateWithClockEvent = update;
   update = function updateWithClockEvent(dt) {
     baseUpdateWithClockEvent(dt);
-    if (!state.open || state.completed || !liveBallOnMainPlayfield()) return;
-
-    const now = performance.now();
-    for (let index = 0; index < pegs.length; index += 1) {
-      collideWithClockPeg(pegs[index], index, now);
-    }
+    window.miamiCollideWithOpenClockPegs();
   };
 
   function drawClockPegs() {
