@@ -378,10 +378,9 @@
       ball.vy += impulse * ny;
     }
 
-    if (
-      incomingNormalSpeed > 0 &&
-      (state.mode === 'ambush' || incomingNormalSpeed >= 35)
-    ) {
+    // A live Clock peg is a physical target: any actual ball contact counts.
+    // Velocity and approach direction affect only the bounce, never hit credit.
+    if (distance < contactDistance) {
       const jitter = (Math.random() - 0.5) * 0.18;
       const cos = Math.cos(jitter);
       const sin = Math.sin(jitter);
