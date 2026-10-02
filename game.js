@@ -138,10 +138,10 @@ const lowerGuides = [
 ];
 
 const payphone = {
-  x: 320,
-  y: 516,
-  width: 28,
-  height: 38,
+  x: 374,
+  y: 620,
+  width: 20,
+  height: 32,
   angle: -0.08,
   radius: 4,
   restitution: 0.93,
