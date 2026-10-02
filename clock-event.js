@@ -378,7 +378,10 @@
       ball.vy += impulse * ny;
     }
 
-    if (incomingNormalSpeed >= 35) {
+    if (
+      incomingNormalSpeed > 0 &&
+      (state.mode === 'ambush' || incomingNormalSpeed >= 35)
+    ) {
       const jitter = (Math.random() - 0.5) * 0.18;
       const cos = Math.cos(jitter);
       const sin = Math.sin(jitter);
