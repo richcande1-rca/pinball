@@ -578,6 +578,31 @@
     }));
   }
 
+
+  function savePeerDrainForGodMode(peer, xOffset = 0) {
+    if (window.miamiGodModeActive !== true) return false;
+
+    peer.ball.x = clamp(
+      (TABLE.left + TABLE.right) / 2 + xOffset,
+      TABLE.left + peer.ball.radius + 2,
+      SHOOTER.dividerX - peer.ball.radius - 2
+    );
+    peer.ball.y = clamp(
+      TABLE.top + 105,
+      TABLE.top + peer.ball.radius + 2,
+      TABLE.bottom - 120
+    );
+    peer.ball.vx = xOffset <= 0 ? 55 : -55;
+    peer.ball.vy = 175;
+    peer.ball.ready = false;
+    resetPeerRoute(peer);
+
+    if (typeof window.miamiGodModeRegisterSave === 'function') {
+      window.miamiGodModeRegisterSave(peer.id);
+    }
+    return true;
+  }
+
   function stepCompanion(dt) {
     if (!companion.active || gameOver) return;
 
@@ -587,7 +612,7 @@
       drained = ball.y - ball.radius > canvas.height;
     });
 
-    if (drained) finishPeerDrain();
+    if (drained && !savePeerDrainForGodMode(companion, -22)) finishPeerDrain();
   }
 
   function stepStackedCompanion(dt) {
@@ -599,7 +624,9 @@
       drained = ball.y - ball.radius > canvas.height;
     });
 
-    if (drained) finishStackedPeerDrain();
+    if (drained && !savePeerDrainForGodMode(stackedCompanion, 22)) {
+      finishStackedPeerDrain();
+    }
   }
 
   function resetPeerRoute(peer) {
