@@ -490,6 +490,13 @@
       collideWithPopBumper(bumper, index);
     }
 
+    // Clock pegs are shared physical playfield geometry. The peer is temporarily
+    // installed as the global ball inside withCompanionContext(), so reuse the
+    // exact Clock collision routine instead of maintaining duplicate physics.
+    if (typeof window.miamiCollideWithOpenClockPegs === 'function') {
+      window.miamiCollideWithOpenClockPegs();
+    }
+
     // MB1 intentionally leaves the single-ball capture devices (magnet/cafe)
     // under their existing owner. They become peer-aware in the activation step;
     // a dormant engine must not create two simultaneous owners of one lock.
