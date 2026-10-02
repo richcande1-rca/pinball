@@ -420,6 +420,7 @@ draw = function drawMiamiNightsFrame() {
   drawPlunger();
   drawSideBumpers();
   drawLowerGuides();
+  drawPayphone();
   drawLowerApron();
   drawFlippers();
 
