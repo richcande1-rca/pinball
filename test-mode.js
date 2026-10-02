@@ -191,6 +191,7 @@
       <button type="button" data-action="rush">NEON RUSH</button>
       <button type="button" data-action="afterhours">AFTER HOURS</button>
       <button type="button" data-action="ambush">AMBUSH</button>
+      <button type="button" data-action="god">GOD MODE</button>
       <button type="button" data-action="clock2">CLOCK #2</button>
       <button type="button" data-action="midnight">MIDNIGHT RUN</button>
       <button type="button" data-action="reset">RESET GAME</button>
@@ -331,6 +332,13 @@
         if (typeof window.miamiTestStartAmbush === 'function' &&
             window.miamiTestStartAmbush()) {
           setStatus('AMBUSH STARTED');
+        }
+        break;
+      case 'god':
+        prepareTimedMode();
+        if (typeof window.miamiTestStartGodMode === 'function' &&
+            window.miamiTestStartGodMode()) {
+          setStatus('GOD MODE STARTED');
         }
         break;
       case 'clock2':

@@ -73,6 +73,11 @@
 
   window.miamiGodModeRegisterSave = registerSave;
 
+  window.miamiTestStartGodMode = function miamiTestStartGodMode() {
+    if (!window.miamiTestModeActive) return false;
+    return startGodMode();
+  };
+
   window.addEventListener('miami-ambush-success', () => {
     state.ambushClears += 1;
     if (state.ambushClears < REQUIRED_AMBUSH_CLEARS) return;
