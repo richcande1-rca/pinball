@@ -94,10 +94,8 @@ const FLIPPER_CHARGE = {
   duration: 1,
   contactSpeed: 55,
   heldDecayRate: 2.4,
-  latchHoldDuration: 1.5,
-  latchFadeDuration: 2,
   minimum: 0.08,
-  punchWindow: 0.16,
+  releaseClearance: 14,
   basePunch: 90,
   fullPunch: 390
 };
@@ -122,10 +120,7 @@ function makeFlipper(side) {
     cradleContact: false,
     cradleCharge: 0,
     storedCharge: 0,
-    storedHoldRemaining: 0,
-    storedDecayRate: 0,
     pendingPunch: 0,
-    punchRemaining: 0,
     coilFlashStartedAt: -Infinity
   };
 }
@@ -563,10 +558,7 @@ function resetPlayfieldForBall() {
     flipper.cradleContact = false;
     flipper.cradleCharge = 0;
     flipper.storedCharge = 0;
-    flipper.storedHoldRemaining = 0;
-    flipper.storedDecayRate = 0;
     flipper.pendingPunch = 0;
-    flipper.punchRemaining = 0;
     flipper.coilFlashStartedAt = -Infinity;
   }
 
@@ -712,30 +704,19 @@ function updateFlipper(flipper, dt) {
   flipper.cradleContact = false;
 
   if (flipper.justReleased) {
-    if (flipper.cradleCharge >= FLIPPER_CHARGE.minimum) {
-      flipper.storedCharge = flipper.cradleCharge;
-      flipper.storedHoldRemaining = FLIPPER_CHARGE.latchHoldDuration;
-      flipper.storedDecayRate =
-        flipper.cradleCharge / FLIPPER_CHARGE.latchFadeDuration;
-    } else {
-      flipper.storedCharge = 0;
-      flipper.storedHoldRemaining = 0;
-      flipper.storedDecayRate = 0;
-    }
+    flipper.storedCharge =
+      flipper.cradleCharge >= FLIPPER_CHARGE.minimum
+        ? flipper.cradleCharge
+        : 0;
     flipper.cradleCharge = 0;
   }
 
   if (flipper.justPressed) {
-    if (flipper.storedCharge >= FLIPPER_CHARGE.minimum) {
-      flipper.pendingPunch = flipper.storedCharge;
-      flipper.punchRemaining = FLIPPER_CHARGE.punchWindow;
-    } else {
-      flipper.pendingPunch = 0;
-      flipper.punchRemaining = 0;
-    }
+    flipper.pendingPunch =
+      flipper.storedCharge >= FLIPPER_CHARGE.minimum
+        ? flipper.storedCharge
+        : 0;
     flipper.storedCharge = 0;
-    flipper.storedHoldRemaining = 0;
-    flipper.storedDecayRate = 0;
   }
 
   if (nextPressed && !flipper.justPressed) {
@@ -750,27 +731,6 @@ function updateFlipper(flipper, dt) {
         0,
         flipper.cradleCharge - FLIPPER_CHARGE.heldDecayRate * dt
       );
-    }
-  }
-
-  if (!nextPressed && !flipper.justReleased && flipper.storedCharge > 0) {
-    if (flipper.storedHoldRemaining > 0) {
-      flipper.storedHoldRemaining = Math.max(
-        0,
-        flipper.storedHoldRemaining - dt
-      );
-    } else {
-      flipper.storedCharge = Math.max(
-        0,
-        flipper.storedCharge - flipper.storedDecayRate * dt
-      );
-    }
-  }
-
-  if (flipper.pendingPunch > 0 && !flipper.justPressed) {
-    flipper.punchRemaining = Math.max(0, flipper.punchRemaining - dt);
-    if (flipper.punchRemaining === 0) {
-      flipper.pendingPunch = 0;
     }
   }
 
@@ -850,12 +810,22 @@ function collideWithFlipper(flipper) {
     heldStill &&
     Math.hypot(ball.vx, ball.vy) < FLIPPER_CHARGE.contactSpeed;
 
+  // A released cradle keeps its stored charge only while the ball remains on
+  // that lowered bat. Re-flipping transfers the charge to this one rising
+  // stroke; contact fires it, while a completed miss discards it.
+  if (
+    !flipper.pressed &&
+    flipper.storedCharge >= FLIPPER_CHARGE.minimum &&
+    distance > contactDistance + FLIPPER_CHARGE.releaseClearance
+  ) {
+    flipper.storedCharge = 0;
+  }
+
   const chargedStrike =
     touching &&
     !heldStill &&
     ball.y <= closest.y + 3 &&
-    flipper.pendingPunch >= FLIPPER_CHARGE.minimum &&
-    flipper.punchRemaining > 0;
+    flipper.pendingPunch >= FLIPPER_CHARGE.minimum;
 
   if (chargedStrike) {
     const sx = segment.x2 - segment.x1;
@@ -876,7 +846,6 @@ function collideWithFlipper(flipper) {
     ball.vy += punchY * punchSpeed;
 
     flipper.pendingPunch = 0;
-    flipper.punchRemaining = 0;
     flipper.coilFlashStartedAt = performance.now();
 
     window.dispatchEvent(new CustomEvent('miami-coil-punch', {
@@ -886,6 +855,9 @@ function collideWithFlipper(flipper) {
         speed: punchSpeed
       }
     }));
+  } else if (flipper.pendingPunch > 0 && heldStill) {
+    // The powered stroke reached full extension without contacting the ball.
+    flipper.pendingPunch = 0;
   }
 
   // Let gravity move the ball freely along a held flipper.
