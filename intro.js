@@ -172,7 +172,8 @@ const MIAMI_FEATURE_SCRIPTS = [
   'attract-mode.js',
   'midnight-run.js',
   'test-mode.js',
-  'ambush.js'
+  'ambush.js',
+  'god-mode.js'
 ];
 
 (() => {
