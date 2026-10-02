@@ -137,6 +137,47 @@ const lowerGuides = [
   { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 }
 ];
 
+const payphone = {
+  x: 334,
+  y: 526,
+  width: 28,
+  height: 38,
+  angle: -0.08,
+  radius: 4,
+  restitution: 0.93,
+  flashStartedAt: -Infinity
+};
+
+function makePayphoneRails(phone) {
+  const halfWidth = phone.width / 2;
+  const halfHeight = phone.height / 2;
+  const cos = Math.cos(phone.angle);
+  const sin = Math.sin(phone.angle);
+  const localCorners = [
+    { x: -halfWidth, y: -halfHeight },
+    { x: halfWidth, y: -halfHeight },
+    { x: halfWidth, y: halfHeight },
+    { x: -halfWidth, y: halfHeight }
+  ];
+  const corners = localCorners.map(point => ({
+    x: phone.x + point.x * cos - point.y * sin,
+    y: phone.y + point.x * sin + point.y * cos
+  }));
+
+  return corners.map((point, index) => {
+    const next = corners[(index + 1) % corners.length];
+    return {
+      x1: point.x,
+      y1: point.y,
+      x2: next.x,
+      y2: next.y,
+      radius: phone.radius
+    };
+  });
+}
+
+const payphoneRails = makePayphoneRails(payphone);
+
 // A second, hidden physical layer sits beneath the open playfield. The ball
 // keeps its live velocity when it crosses the scoop, then rolls and rebounds
 // through one shared chamber. Five real gaps in the chamber walls are the
@@ -915,6 +956,30 @@ function collideWithSideBumper(bumper) {
   return touching;
 }
 
+function collideWithPayphone() {
+  let touched = false;
+
+  for (const rail of payphoneRails) {
+    if (
+      resolveSegmentCollision(
+        rail,
+        { x: 0, y: 0 },
+        payphone.restitution
+      )
+    ) {
+      touched = true;
+    }
+  }
+
+  if (touched) {
+    payphone.flashStartedAt = performance.now();
+  }
+
+  return touched;
+}
+
+window.miamiCollideWithPayphone = collideWithPayphone;
+
 function collideWithPopBumper(bumper, index) {
   let dx = ball.x - bumper.x;
   let dy = ball.y - bumper.y;
@@ -1594,6 +1659,8 @@ function update(dt) {
     resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
   }
 
+  collideWithPayphone();
+
   for (const bumper of sideBumpers) {
     collideWithSideBumper(bumper);
   }
@@ -1812,6 +1879,78 @@ function drawLowerGuides() {
   for (const guide of lowerGuides) {
     drawNeonSegment(guide);
   }
+}
+
+function drawPayphone() {
+  const hitStrength = clamp(
+    1 - (performance.now() - payphone.flashStartedAt) / 180,
+    0,
+    1
+  );
+  const halfWidth = payphone.width / 2;
+  const halfHeight = payphone.height / 2;
+
+  ctx.save();
+  ctx.translate(payphone.x, payphone.y);
+  ctx.rotate(payphone.angle);
+
+  ctx.fillStyle = '#0d1322';
+  ctx.strokeStyle = MIAMI_COLORS.structure;
+  ctx.lineWidth = 5;
+  ctx.fillRect(-halfWidth, -halfHeight, payphone.width, payphone.height);
+  ctx.strokeRect(-halfWidth, -halfHeight, payphone.width, payphone.height);
+
+  ctx.strokeStyle = hitStrength > 0 ? '#f4ffff' : MIAMI_COLORS.magenta;
+  ctx.lineWidth = 1.7;
+  ctx.shadowColor = MIAMI_COLORS.magenta;
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (6 + hitStrength * 12);
+  ctx.strokeRect(
+    -halfWidth + 1.5,
+    -halfHeight + 1.5,
+    payphone.width - 3,
+    payphone.height - 3
+  );
+
+  ctx.fillStyle = '#07111d';
+  ctx.strokeStyle = MIAMI_COLORS.cyan;
+  ctx.lineWidth = 1;
+  ctx.shadowColor = MIAMI_COLORS.cyan;
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (4 + hitStrength * 10);
+  ctx.fillRect(-10.5, -15.5, 21, 8);
+  ctx.strokeRect(-10.5, -15.5, 21, 8);
+
+  ctx.fillStyle = '#eaffff';
+  ctx.font = '700 5px ui-monospace, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('PHONE', 0, -11.4);
+
+  // Tiny handset + keypad: readable as a payphone without turning the table
+  // into a separate 3D scene.
+  ctx.strokeStyle = MIAMI_COLORS.cyan;
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-7.2, -4.5);
+  ctx.quadraticCurveTo(-9.5, 1.5, -6.6, 7.5);
+  ctx.stroke();
+
+  ctx.fillStyle = MIAMI_COLORS.lavender;
+  ctx.shadowBlur = 0;
+  for (let row = 0; row < 3; row += 1) {
+    for (let col = 0; col < 2; col += 1) {
+      ctx.fillRect(1.5 + col * 3.3, -2 + row * 3.2, 1.5, 1.5);
+    }
+  }
+
+  ctx.strokeStyle = hitStrength > 0 ? '#f4ffff' : MIAMI_COLORS.magenta;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(-8, 13);
+  ctx.lineTo(8, 13);
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 const upperLeftLoopLaneGlow = ctx.createLinearGradient(40, 0, 220, 0);
@@ -2412,6 +2551,7 @@ function draw() {
   drawPlunger();
   drawSideBumpers();
   drawLowerGuides();
+  drawPayphone();
   drawLowerApron();
   drawFlippers();
   drawBall();
