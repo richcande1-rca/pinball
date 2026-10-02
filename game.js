@@ -138,7 +138,7 @@ const lowerGuides = [
 ];
 
 const payphone = {
-  x: 374,
+  x: 382,
   y: 620,
   width: 20,
   height: 32,
