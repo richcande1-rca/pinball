@@ -8,6 +8,7 @@
   const AWARD_VISUAL_HOLD_MS = 900;
   let extraBallsEarnedThisGame = captiveExtraBallAwarded ? 1 : 0;
   let awardVisualHoldUntil = -Infinity;
+  let awardCountedThisBall = false;
 
   function renderRepeatableBallPips() {
     const slotCount = Math.max(
@@ -55,10 +56,12 @@
     if (detail.type !== 'post' || Number(detail.index) !== 8) return;
 
     if (
+      !awardCountedThisBall &&
       captiveExtraBallAwarded &&
       captiveHitProgress >= CAPTIVE_EXTRA_BALL_HITS
     ) {
       extraBallsEarnedThisGame += 1;
+      awardCountedThisBall = true;
       awardVisualHoldUntil = performance.now() + AWARD_VISUAL_HOLD_MS;
 
       // One captive extra ball is available per live ball. Keep the completed
@@ -72,12 +75,14 @@
     captiveExtraBallAwarded = false;
     captiveExtraBallFlashStartedAt = -Infinity;
     awardVisualHoldUntil = -Infinity;
+    awardCountedThisBall = false;
   });
 
   const baseResetGameWithRepeatableExtraBall = resetGame;
   resetGame = function resetGameWithRepeatableExtraBall() {
     extraBallsEarnedThisGame = 0;
     awardVisualHoldUntil = -Infinity;
+    awardCountedThisBall = false;
     baseResetGameWithRepeatableExtraBall();
     renderRepeatableBallPips();
   };
