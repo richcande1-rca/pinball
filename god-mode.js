@@ -1,6 +1,6 @@
 // Miami Nights: GOD MODE.
-// Clear three AMBUSH modes in one game to earn 20 seconds where drains do not
-// consume a ball and all positive scoring is tripled. Saved balls return
+// Clear three AMBUSH modes in one game to earn 30 seconds where drains do not
+// consume a ball and all positive scoring is quintupled. Saved balls return
 // immediately and current mode progress stays intact. The reward is repeatable
 // every three successful AMBUSH clears.
 
@@ -9,7 +9,7 @@
   window.miamiGodModeInstalled = true;
 
   const REQUIRED_AMBUSH_CLEARS = 3;
-  const DURATION_MS = 20000;
+  const DURATION_MS = 30000;
   const INTRO_MS = 1300;
   const SAVE_FLASH_MS = 650;
   const END_FLASH_MS = 1100;
@@ -101,10 +101,10 @@
 
   const baseUpdateWithGodMode = update;
   update = function updateWithGodMode(dt) {
-    const tripleScoring = state.active && !gameOver;
+    const godScoring = state.active && !gameOver;
     const scoreBeforeUpdate = score;
 
-    if (tripleScoring) {
+    if (godScoring) {
       state.remainingMs = Math.max(
         0,
         state.remainingMs - Math.max(0, Number(dt) || 0) * 1000
@@ -114,10 +114,10 @@
 
     baseUpdateWithGodMode(dt);
 
-    if (tripleScoring) {
+    if (godScoring) {
       const positiveGain = Math.max(0, score - scoreBeforeUpdate);
       if (positiveGain > 0) {
-        score += positiveGain * 2;
+        score += positiveGain * 4;
 
         // PRESSURE tracks score deltas across updates. Mark the GOD MODE bonus
         // as already processed so it is not halved again on the next frame.
@@ -153,7 +153,7 @@
     if (!state.active) return;
 
     const seconds = Math.max(0, Math.ceil(state.remainingMs / 1000));
-    const label = `GOD MODE · 3X · 00:${String(seconds).padStart(2, '0')}`;
+    const label = `GOD MODE · 5X · 00:${String(seconds).padStart(2, '0')}`;
     const width = 178;
     const height = 22;
     const x = canvas.width / 2 - width / 2;
@@ -187,7 +187,7 @@
       ctx.font = '900 34px system-ui, sans-serif';
       ctx.fillText('GOD MODE', canvas.width / 2, canvas.height * 0.34);
       ctx.font = '800 12px ui-monospace, monospace';
-      ctx.fillText('20 SECONDS · NO DRAIN · 3X', canvas.width / 2, canvas.height * 0.34 + 28);
+      ctx.fillText('30 SECONDS · NO DRAIN · 5X', canvas.width / 2, canvas.height * 0.34 + 28);
     }
 
     if (now < state.saveFlashUntil) {
@@ -244,7 +244,7 @@
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
     instructions.append(document.createTextNode(
-      ' GOD MODE: clear AMBUSH three times in one game to earn 20 seconds with no drains and 3X scoring on all positive points. Saved balls return immediately and mode progress stays intact.'
+      ' GOD MODE: clear AMBUSH three times in one game to earn 30 seconds with no drains and 5X scoring on all positive points. Saved balls return immediately and mode progress stays intact.'
     ));
   }
 })();
