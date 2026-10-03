@@ -501,7 +501,12 @@
     drawOceanHotChase();
   };
 
-  window.addEventListener('miami-drain', resetPerBallStrategy);
+  window.addEventListener('miami-drain', () => {
+    resetPerBallStrategy();
+    if (typeof oceanDriveLettersLit !== 'undefined') {
+      oceanDriveLettersLit = 0;
+    }
+  });
 
   const baseResetGameWithStrategy = resetGame;
   resetGame = function resetGameWithStrategy() {
