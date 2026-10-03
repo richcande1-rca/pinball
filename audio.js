@@ -490,6 +490,30 @@
     noise(0.045, 0.055, 3200);
   }
 
+  function playPayphoneHit({ luckyBreak = false } = {}) {
+    // Metallic cabinet strike plus a short two-tone telephone bell.
+    noise(luckyBreak ? 0.24 : 0.17, 0.04, 1850);
+    tone(780, luckyBreak ? 0.24 : 0.17, 0.11, {
+      type: 'square',
+      endFrequency: 690
+    });
+    tone(1040, luckyBreak ? 0.22 : 0.15, 0.14, {
+      type: 'triangle',
+      endFrequency: 910
+    });
+
+    if (luckyBreak) {
+      tone(1320, 0.2, 0.18, {
+        type: 'triangle',
+        endFrequency: 1760
+      });
+      tone(1760, 0.14, 0.22, {
+        type: 'triangle',
+        endFrequency: 2340
+      });
+    }
+  }
+
   function playDrain() {
     tone(105, 0.34, 0.18, { type: 'triangle', endFrequency: 52 });
     noise(0.09, 0.055, 480);
@@ -593,6 +617,7 @@
   window.addEventListener('miami-flipper', event => playFlipper(event.detail.index));
   window.addEventListener('miami-pop-bumper', event => playPopBumper(event.detail));
   window.addEventListener('miami-impact', event => playImpact(event.detail));
+  window.addEventListener('miami-payphone-hit', event => playPayphoneHit(event.detail));
   window.addEventListener('miami-magnet-capture', playMagnetCapture);
   window.addEventListener('miami-magnet-eject', playMagnetEject);
   window.addEventListener('miami-loop-enter', playLoopEnter);
