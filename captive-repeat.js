@@ -1,5 +1,5 @@
-// Miami Nights: make the five-hit captive-ball extra-ball award repeatable.
-// Existing scoring, captive physics and award presentation remain unchanged.
+// Miami Nights: make the five-hit captive-ball extra-ball award repeatable across balls.
+// Each live ball can earn it once; scoring, captive physics and award presentation stay unchanged.
 
 (() => {
   if (window.miamiCaptiveRepeatInstalled) return;
@@ -32,9 +32,8 @@
     renderRepeatableBallPips();
   };
 
-  // Keep the completed five-lamp look on screen briefly after an award without
-  // holding the gameplay counter at five. Hits during this visual celebration
-  // already count toward the next five-hit cycle.
+  // Keep the completed five-lamp look on screen briefly after an award. The
+  // completed state stays locked for the rest of the live ball and resets on drain.
   const baseDrawCaptiveBallAssemblyWithRepeatableCycle = drawCaptiveBallAssembly;
   drawCaptiveBallAssembly = function drawCaptiveBallAssemblyWithRepeatableCycle() {
     if (performance.now() >= awardVisualHoldUntil) {
