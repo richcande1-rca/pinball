@@ -159,13 +159,13 @@
   }
 
   function drawDiscoWash(now) {
-    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const mobile = Boolean(window.miamiReducedRenderEffects);
     const wave = 0.5 + 0.5 * Math.sin(now / 260);
     const inverse = 1 - wave;
     const baseAlpha = mobile ? 0.028 : 0.045;
 
     ctx.save();
-    ctx.globalCompositeOperation = 'screen';
+    ctx.globalCompositeOperation = mobile ? 'source-over' : 'screen';
 
     ctx.globalAlpha = baseAlpha + wave * (mobile ? 0.025 : 0.04);
     ctx.fillStyle = MIAMI_COLORS.magenta;
@@ -179,14 +179,14 @@
   }
 
   function drawDiscoRays(now) {
-    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const mobile = Boolean(window.miamiReducedRenderEffects);
     const elapsed = now - state.startedAt;
     const rotation = elapsed / 820;
     const rayCount = mobile ? 4 : DISCO_RAY_COUNT;
     const reach = 520;
 
     ctx.save();
-    ctx.globalCompositeOperation = 'screen';
+    ctx.globalCompositeOperation = mobile ? 'source-over' : 'screen';
     ctx.lineCap = 'round';
 
     for (let index = 0; index < rayCount; index += 1) {
@@ -215,7 +215,7 @@
   }
 
   function drawDiscoRings(now) {
-    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const mobile = Boolean(window.miamiReducedRenderEffects);
     const elapsed = now - state.startedAt;
 
     for (let index = 0; index < DISCO_RING_COUNT; index += 1) {
@@ -249,7 +249,7 @@
     const age = now - state.startedAt;
     if (age < 0 || age > 1150) return;
 
-    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const mobile = Boolean(window.miamiReducedRenderEffects);
     const progress = age / 1150;
     const strength = 1 - progress;
 
@@ -282,7 +282,7 @@
     const litCount = Math.max(1, Math.ceil((1 - progress) * CLOCK_LAMPS));
     const runner = Math.floor((now - state.startedAt) / 90) % CLOCK_LAMPS;
     const runner2 = (runner + 6) % CLOCK_LAMPS;
-    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const mobile = Boolean(window.miamiReducedRenderEffects);
 
     for (let index = 0; index < CLOCK_LAMPS; index += 1) {
       const angle = -Math.PI / 2 + index * Math.PI * 2 / CLOCK_LAMPS;
@@ -338,7 +338,7 @@
   }
 
   function drawRushPerimeter(now) {
-    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const mobile = Boolean(window.miamiReducedRenderEffects);
     const elapsed = now - state.startedAt;
     const beatPhase = (elapsed % BEAT_MS) / BEAT_MS;
     const beatFlash = 1 - clamp(beatPhase / 0.24, 0, 1);
@@ -385,7 +385,7 @@
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5 + strength * 2.5;
     ctx.shadowColor = strength > 0.5 ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 13;
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : 13;
     ctx.beginPath();
     ctx.arc(
       state.lastImpactX,
@@ -404,7 +404,7 @@
 
     const progress = age / 1800;
     const strength = 1 - progress;
-    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const mobile = Boolean(window.miamiReducedRenderEffects);
 
     ctx.save();
     ctx.globalAlpha = clamp(strength * 1.25, 0, 1);
