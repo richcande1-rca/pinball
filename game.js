@@ -65,7 +65,7 @@ const ball = {
 const gravity = 760;      // px/s², straight down the playfield
 const wallRestitution = 0.82;
 const rollingDrag = 0.9992;
-const ZERO_SURFACE_VELOCITY = Object.freeze(ZERO_SURFACE_VELOCITY);
+const ZERO_SURFACE_VELOCITY = Object.freeze({ x: 0, y: 0 });
 
 const TOTAL_BALLS = 3;
 let score = 0;
