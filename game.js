@@ -137,6 +137,10 @@ const lowerGuides = [
   { x1: 355, y1: 590, x2: 348, y2: 640, radius: 4 }
 ];
 
+const PAYPHONE_HIT_POINTS = 5000;
+const PAYPHONE_LUCKY_BREAK_HITS = 3;
+const PAYPHONE_LUCKY_BREAK_BONUS = 25000;
+
 const payphone = {
   x: 382,
   y: 620,
@@ -145,7 +149,9 @@ const payphone = {
   angle: -0.08,
   radius: 4,
   restitution: 0.93,
-  flashStartedAt: -Infinity
+  calls: 0,
+  flashStartedAt: -Infinity,
+  luckyBreakStartedAt: -Infinity
 };
 
 function makePayphoneRails(phone) {
@@ -177,6 +183,7 @@ function makePayphoneRails(phone) {
 }
 
 const payphoneRails = makePayphoneRails(payphone);
+const payphoneContacts = new Set();
 
 // A second, hidden physical layer sits beneath the open playfield. The ball
 // keeps its live velocity when it crosses the scoop, then rolls and rebounds
@@ -631,6 +638,10 @@ function resetGame() {
   gameOver = false;
   magneticTarget.flashStartedAt = -Infinity;
   loopRamp.flashStartedAt = -Infinity;
+  payphone.calls = 0;
+  payphone.flashStartedAt = -Infinity;
+  payphone.luckyBreakStartedAt = -Infinity;
+  payphoneContacts.clear();
   resetPlayfieldForBall();
   parkBallAtPlunger();
   syncStatusDisplay();
@@ -956,7 +967,34 @@ function collideWithSideBumper(bumper) {
   return touching;
 }
 
-function collideWithPayphone() {
+function registerPayphoneHit(contactKey) {
+  const now = performance.now();
+  const callNumber = payphone.calls + 1;
+  const luckyBreak = callNumber >= PAYPHONE_LUCKY_BREAK_HITS;
+  const bonus = luckyBreak ? PAYPHONE_LUCKY_BREAK_BONUS : 0;
+  const totalPoints = PAYPHONE_HIT_POINTS + bonus;
+
+  payphone.calls = luckyBreak ? 0 : callNumber;
+  payphone.flashStartedAt = now;
+  if (luckyBreak) payphone.luckyBreakStartedAt = now;
+
+  score += totalPoints;
+  syncStatusDisplay();
+
+  window.dispatchEvent(new CustomEvent('miami-payphone-hit', {
+    detail: {
+      contactKey,
+      callNumber,
+      callsRemaining: PAYPHONE_LUCKY_BREAK_HITS - payphone.calls,
+      points: PAYPHONE_HIT_POINTS,
+      bonus,
+      totalPoints,
+      luckyBreak
+    }
+  }));
+}
+
+function collideWithPayphone(contactKey = 'table-ball') {
   let touched = false;
 
   for (const rail of payphoneRails) {
@@ -972,7 +1010,12 @@ function collideWithPayphone() {
   }
 
   if (touched) {
-    payphone.flashStartedAt = performance.now();
+    if (!payphoneContacts.has(contactKey)) {
+      payphoneContacts.add(contactKey);
+      registerPayphoneHit(contactKey);
+    }
+  } else {
+    payphoneContacts.delete(contactKey);
   }
 
   return touched;
@@ -1882,8 +1925,14 @@ function drawLowerGuides() {
 }
 
 function drawPayphone() {
+  const now = performance.now();
   const hitStrength = clamp(
-    1 - (performance.now() - payphone.flashStartedAt) / 180,
+    1 - (now - payphone.flashStartedAt) / 180,
+    0,
+    1
+  );
+  const luckyStrength = clamp(
+    1 - (now - payphone.luckyBreakStartedAt) / 900,
     0,
     1
   );
@@ -1919,11 +1968,24 @@ function drawPayphone() {
   ctx.fillRect(-10.5, -15.5, 21, 8);
   ctx.strokeRect(-10.5, -15.5, 21, 8);
 
+  if (luckyStrength > 0) {
+    ctx.strokeStyle = '#fff3b0';
+    ctx.lineWidth = 1.2;
+    ctx.shadowColor = '#fff3b0';
+    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (8 + luckyStrength * 12);
+    ctx.strokeRect(
+      -halfWidth - 2.5 * luckyStrength,
+      -halfHeight - 2.5 * luckyStrength,
+      payphone.width + 5 * luckyStrength,
+      payphone.height + 5 * luckyStrength
+    );
+  }
+
   ctx.fillStyle = '#eaffff';
   ctx.font = '700 5px ui-monospace, monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('PHONE', 0, -11.4);
+  ctx.fillText(luckyStrength > 0 ? 'LUCKY!' : 'PHONE', 0, -11.4);
 
   // Tiny handset + keypad: readable as a payphone without turning the table
   // into a separate 3D scene.
@@ -1949,6 +2011,11 @@ function drawPayphone() {
   ctx.moveTo(-8, 13);
   ctx.lineTo(8, 13);
   ctx.stroke();
+
+  ctx.fillStyle = luckyStrength > 0 ? '#fff3b0' : '#eaffff';
+  ctx.font = '700 3.2px ui-monospace, monospace';
+  ctx.shadowBlur = 0;
+  ctx.fillText(`CALL ${payphone.calls}/${PAYPHONE_LUCKY_BREAK_HITS}`, 0, 10.6);
 
   ctx.restore();
 }
