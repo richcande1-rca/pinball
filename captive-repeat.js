@@ -61,13 +61,17 @@
       extraBallsEarnedThisGame += 1;
       awardVisualHoldUntil = performance.now() + AWARD_VISUAL_HOLD_MS;
 
-      // The award has already been granted and announced by the established
-      // captive/feedback logic. Re-arm the rules immediately so the very next
-      // legitimate captive hit becomes hit #1 of the next cycle.
-      captiveHitProgress = 0;
-      captiveExtraBallAwarded = false;
+      // One captive extra ball is available per live ball. Keep the completed
+      // five-hit state locked until a real drain starts the next ball.
       syncStatusDisplay();
     }
+  });
+
+  window.addEventListener('miami-drain', () => {
+    captiveHitProgress = 0;
+    captiveExtraBallAwarded = false;
+    captiveExtraBallFlashStartedAt = -Infinity;
+    awardVisualHoldUntil = -Infinity;
   });
 
   const baseResetGameWithRepeatableExtraBall = resetGame;
