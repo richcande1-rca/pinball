@@ -1,5 +1,5 @@
-// Miami Nights: make the five-hit captive-ball extra-ball award repeatable.
-// Existing scoring, captive physics and award presentation remain unchanged.
+// Miami Nights: make the five-hit captive-ball extra-ball award repeatable across balls.
+// Each live ball can earn it once; scoring, captive physics and award presentation stay unchanged.
 
 (() => {
   if (window.miamiCaptiveRepeatInstalled) return;
@@ -8,6 +8,7 @@
   const AWARD_VISUAL_HOLD_MS = 900;
   let extraBallsEarnedThisGame = captiveExtraBallAwarded ? 1 : 0;
   let awardVisualHoldUntil = -Infinity;
+  let awardCountedThisBall = false;
 
   function renderRepeatableBallPips() {
     const slotCount = Math.max(
@@ -31,9 +32,8 @@
     renderRepeatableBallPips();
   };
 
-  // Keep the completed five-lamp look on screen briefly after an award without
-  // holding the gameplay counter at five. Hits during this visual celebration
-  // already count toward the next five-hit cycle.
+  // Keep the completed five-lamp look on screen briefly after an award. The
+  // completed state stays locked for the rest of the live ball and resets on drain.
   const baseDrawCaptiveBallAssemblyWithRepeatableCycle = drawCaptiveBallAssembly;
   drawCaptiveBallAssembly = function drawCaptiveBallAssemblyWithRepeatableCycle() {
     if (performance.now() >= awardVisualHoldUntil) {
@@ -55,25 +55,33 @@
     if (detail.type !== 'post' || Number(detail.index) !== 8) return;
 
     if (
+      !awardCountedThisBall &&
       captiveExtraBallAwarded &&
       captiveHitProgress >= CAPTIVE_EXTRA_BALL_HITS
     ) {
       extraBallsEarnedThisGame += 1;
+      awardCountedThisBall = true;
       awardVisualHoldUntil = performance.now() + AWARD_VISUAL_HOLD_MS;
 
-      // The award has already been granted and announced by the established
-      // captive/feedback logic. Re-arm the rules immediately so the very next
-      // legitimate captive hit becomes hit #1 of the next cycle.
-      captiveHitProgress = 0;
-      captiveExtraBallAwarded = false;
+      // One captive extra ball is available per live ball. Keep the completed
+      // five-hit state locked until a real drain starts the next ball.
       syncStatusDisplay();
     }
+  });
+
+  window.addEventListener('miami-drain', () => {
+    captiveHitProgress = 0;
+    captiveExtraBallAwarded = false;
+    captiveExtraBallFlashStartedAt = -Infinity;
+    awardVisualHoldUntil = -Infinity;
+    awardCountedThisBall = false;
   });
 
   const baseResetGameWithRepeatableExtraBall = resetGame;
   resetGame = function resetGameWithRepeatableExtraBall() {
     extraBallsEarnedThisGame = 0;
     awardVisualHoldUntil = -Infinity;
+    awardCountedThisBall = false;
     baseResetGameWithRepeatableExtraBall();
     renderRepeatableBallPips();
   };
