@@ -365,18 +365,36 @@
     return clamp(1 - remaining / 5000, 0, 1);
   }
 
-  function drawHeadlight(x, y, radius = 8, urgency = 0) {
-    const mobile = Boolean(window.miamiMobilePerformanceMode);
-    const liveRadius = radius + urgency * 3.5;
-    const glow = ctx.createRadialGradient(x, y, 0, x, y, liveRadius);
+  const HEADLIGHT_GRADIENT_STEPS = 8;
+  const headlightGradientCache = new Map();
 
+  function cachedHeadlightGlow(x, y, radius, urgency) {
+    const step = Math.round(
+      clamp(urgency, 0, 1) * (HEADLIGHT_GRADIENT_STEPS - 1)
+    );
+    const key = `${x}:${y}:${radius}:${step}`;
+    const cached = headlightGradientCache.get(key);
+    if (cached) return cached;
+
+    const steppedUrgency = step / (HEADLIGHT_GRADIENT_STEPS - 1);
+    const liveRadius = radius + steppedUrgency * 3.5;
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, liveRadius);
     glow.addColorStop(0, 'rgba(255, 255, 255, 1)');
     glow.addColorStop(0.18, 'rgba(235, 248, 255, 0.98)');
     glow.addColorStop(0.45, 'rgba(180, 224, 255, 0.46)');
     glow.addColorStop(1, 'rgba(90, 170, 255, 0)');
 
+    const entry = { glow, liveRadius };
+    headlightGradientCache.set(key, entry);
+    return entry;
+  }
+
+  function drawHeadlight(x, y, radius = 8, urgency = 0) {
+    const mobile = Boolean(window.miamiReducedRenderEffects);
+    const { glow, liveRadius } = cachedHeadlightGlow(x, y, radius, urgency);
+
     ctx.save();
-    ctx.globalCompositeOperation = 'screen';
+    ctx.globalCompositeOperation = mobile ? 'source-over' : 'screen';
     ctx.fillStyle = glow;
     ctx.beginPath();
     ctx.arc(x, y, liveRadius, 0, Math.PI * 2);
@@ -401,7 +419,7 @@
   }
 
   function drawFlipperGlare(now) {
-    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const mobile = Boolean(window.miamiReducedRenderEffects);
     const urgency = midnightUrgency(now);
 
     for (const flipper of flippers) {
@@ -411,7 +429,7 @@
       const end = Math.max(start + 4, flipper.length - 7);
 
       ctx.save();
-      ctx.globalCompositeOperation = 'screen';
+      ctx.globalCompositeOperation = mobile ? 'source-over' : 'screen';
       ctx.globalAlpha = 0.15 + urgency * 0.1 + (flipper.pressed ? 0.12 : 0);
       ctx.strokeStyle = '#d9f8ff';
       ctx.lineWidth = flipper.pressed ? 2.2 : 1.5;
@@ -446,7 +464,7 @@
     ctx.save();
     ctx.fillStyle = '#f7fbff';
     ctx.shadowColor = '#ffffff';
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 5;
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : 5;
     ctx.beginPath();
     ctx.arc(
       ballState.x,
@@ -485,7 +503,7 @@
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = MIAMI_COLORS.cyan;
     ctx.lineWidth = 1.6;
-    if (!window.miamiMobilePerformanceMode) {
+    if (!window.miamiReducedRenderEffects) {
       ctx.shadowColor = MIAMI_COLORS.magenta;
       ctx.shadowBlur = 14;
     }
@@ -519,7 +537,7 @@
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = MIAMI_COLORS.cyan;
     ctx.lineWidth = 1.2;
-    if (!window.miamiMobilePerformanceMode) {
+    if (!window.miamiReducedRenderEffects) {
       ctx.shadowColor = finalCountdown ? '#ffffff' : MIAMI_COLORS.cyan;
       ctx.shadowBlur = finalCountdown ? 13 : 7;
     }
@@ -560,7 +578,7 @@
     ctx.fillStyle = '#ffffff';
     ctx.strokeStyle = MIAMI_COLORS.cyan;
     ctx.lineWidth = 1.4;
-    if (!window.miamiMobilePerformanceMode) {
+    if (!window.miamiReducedRenderEffects) {
       ctx.shadowColor = MIAMI_COLORS.magenta;
       ctx.shadowBlur = 16;
     }
