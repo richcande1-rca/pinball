@@ -65,6 +65,7 @@ const ball = {
 const gravity = 760;      // px/s², straight down the playfield
 const wallRestitution = 0.82;
 const rollingDrag = 0.9992;
+const ZERO_SURFACE_VELOCITY = Object.freeze({ x: 0, y: 0 });
 
 const TOTAL_BALLS = 3;
 let score = 0;
@@ -185,10 +186,9 @@ function makePayphoneRails(phone) {
 const payphoneRails = makePayphoneRails(payphone);
 const payphoneContacts = new Set();
 
-// A second, hidden physical layer sits beneath the open playfield. The ball
-// keeps its live velocity when it crosses the scoop, then rolls and rebounds
-// through one shared chamber. Five real gaps in the chamber walls are the
-// outlets; there is no selected destination and no scripted ejection.
+// The visible mouths define the underpass interface. Hidden travel is an
+// intentionally cheap transport state: preserve entry speed, wait briefly,
+// then eject through a plausible outlet instead of simulating invisible rails.
 const underpass = {
   active: false,
   entry: { x: 270, y: 190, radius: 17 },
@@ -202,36 +202,19 @@ const underpass = {
   enteredAt: -Infinity
 };
 
+const underpassRandomizer = {
+  exitIndex: 0,
+  travelRemaining: 0,
+  entrySpeed: 0
+};
+
 const underpassEntryGuides = [
   { x1: 248, y1: 205, x2: 255, y2: 184, radius: 4 },
   { x1: 292, y1: 205, x2: 285, y2: 184, radius: 4 }
 ];
 
-// Boundary gaps line up with the five mouths above. The angled rails are
-// passive splitters: small differences in speed and contact angle accumulate
-// into different routes while polished walls prevent dead catches.
-const underpassRails = [
-  { x1: 52, y1: 180, x2: 74, y2: 180, radius: 4 },
-  { x1: 110, y1: 180, x2: 160, y2: 180, radius: 4 },
-  { x1: 196, y1: 180, x2: 395, y2: 180, radius: 4 },
-  { x1: 395, y1: 180, x2: 395, y2: 212, radius: 4 },
-  { x1: 395, y1: 248, x2: 395, y2: 508, radius: 4 },
-  { x1: 395, y1: 544, x2: 395, y2: 565, radius: 4 },
-  // The peaked floor continuously rolls a slowing ball toward one of the two
-  // low side outlets instead of allowing it to settle on a flat rail.
-  { x1: 395, y1: 545, x2: 230, y2: 500, radius: 4 },
-  { x1: 230, y1: 500, x2: 52, y2: 565, radius: 4 },
-  { x1: 52, y1: 565, x2: 52, y2: 563, radius: 4 },
-  { x1: 52, y1: 527, x2: 52, y2: 180, radius: 4 },
-  { x1: 218, y1: 215, x2: 242, y2: 241, radius: 5 },
-  { x1: 318, y1: 214, x2: 296, y2: 240, radius: 5 },
-  { x1: 116, y1: 270, x2: 198, y2: 292, radius: 5 },
-  { x1: 350, y1: 288, x2: 286, y2: 318, radius: 5 },
-  { x1: 178, y1: 350, x2: 254, y2: 384, radius: 5 },
-  { x1: 335, y1: 415, x2: 272, y2: 458, radius: 5 },
-  { x1: 90, y1: 470, x2: 168, y2: 440, radius: 5 },
-  { x1: 194, y1: 520, x2: 254, y2: 486, radius: 5 }
-];
+// Hidden tunnel rails were retired once the underpass became a transport
+// abstraction. The player-visible mouths and entry guides remain physical.
 
 function makeRailSegments(points, radius = 4) {
   return points.slice(0, -1).map((point, index) => ({
@@ -693,18 +676,38 @@ function closestPointOnSegment(px, py, x1, y1, x2, y2) {
   };
 }
 
-function resolveSegmentCollision(segment, surfaceVelocity = { x: 0, y: 0 }, restitution = 0.9, extraKick = 0) {
-  const closest = closestPointOnSegment(
-    ball.x,
-    ball.y,
-    segment.x1,
-    segment.y1,
-    segment.x2,
-    segment.y2
+function ballNearSegment(segment, padding = 12) {
+  const reach = ball.radius + segment.radius + padding;
+  return (
+    ball.x >= Math.min(segment.x1, segment.x2) - reach &&
+    ball.x <= Math.max(segment.x1, segment.x2) + reach &&
+    ball.y >= Math.min(segment.y1, segment.y2) - reach &&
+    ball.y <= Math.max(segment.y1, segment.y2) + reach
   );
+}
 
-  let nx = ball.x - closest.x;
-  let ny = ball.y - closest.y;
+function resolveSegmentCollision(segment, surfaceVelocity = ZERO_SURFACE_VELOCITY, restitution = 0.9, extraKick = 0) {
+  // Inline the closest-point calculation here. This is one of the hottest
+  // paths in the 240 Hz loop, so avoid allocating a temporary point object for
+  // every rail/flipper collision test.
+  const sx = segment.x2 - segment.x1;
+  const sy = segment.y2 - segment.y1;
+  const lengthSq = sx * sx + sy * sy;
+  let closestX = segment.x1;
+  let closestY = segment.y1;
+
+  if (lengthSq !== 0) {
+    const t = clamp(
+      ((ball.x - segment.x1) * sx + (ball.y - segment.y1) * sy) / lengthSq,
+      0,
+      1
+    );
+    closestX += sx * t;
+    closestY += sy * t;
+  }
+
+  let nx = ball.x - closestX;
+  let ny = ball.y - closestY;
   let distance = Math.hypot(nx, ny);
   const minDistance = ball.radius + segment.radius;
 
@@ -713,8 +716,6 @@ function resolveSegmentCollision(segment, surfaceVelocity = { x: 0, y: 0 }, rest
   }
 
   if (distance < 0.0001) {
-    const sx = segment.x2 - segment.x1;
-    const sy = segment.y2 - segment.y1;
     const sl = Math.hypot(sx, sy) || 1;
     nx = -sy / sl;
     ny = sx / sl;
@@ -800,13 +801,22 @@ function updateFlipper(flipper, dt) {
 }
 
 function getFlipperSegment(flipper) {
-  return {
+  // Reuse one segment per flipper rather than manufacturing a new object on
+  // every physics and draw call.
+  const segment = flipper.segment || (flipper.segment = {
     x1: flipper.pivotX,
     y1: flipper.pivotY,
-    x2: flipper.pivotX + Math.cos(flipper.angle) * flipper.length,
-    y2: flipper.pivotY + Math.sin(flipper.angle) * flipper.length,
+    x2: flipper.pivotX,
+    y2: flipper.pivotY,
     radius: flipper.radius
-  };
+  });
+
+  segment.x1 = flipper.pivotX;
+  segment.y1 = flipper.pivotY;
+  segment.x2 = flipper.pivotX + Math.cos(flipper.angle) * flipper.length;
+  segment.y2 = flipper.pivotY + Math.sin(flipper.angle) * flipper.length;
+  segment.radius = flipper.radius;
+  return segment;
 }
 
 function collideWithFlipper(flipper) {
@@ -955,7 +965,7 @@ function collideWithSideBumper(bumper) {
   const restitution = incomingNormalSpeed < 60 ? 0 : 0.68;
   const touching = resolveSegmentCollision(
     bumper,
-    { x: 0, y: 0 },
+    ZERO_SURFACE_VELOCITY,
     restitution,
     shouldKick ? bumper.kick : 0
   );
@@ -1001,7 +1011,7 @@ function collideWithPayphone(contactKey = 'table-ball') {
     if (
       resolveSegmentCollision(
         rail,
-        { x: 0, y: 0 },
+        ZERO_SURFACE_VELOCITY,
         payphone.restitution
       )
     ) {
@@ -1130,7 +1140,7 @@ function collideWithDropTarget(target, index) {
   const incomingNormalSpeed = -(ball.vx * nx + ball.vy * ny);
   const touching = resolveSegmentCollision(
     target,
-    { x: 0, y: 0 },
+    ZERO_SURFACE_VELOCITY,
     incomingNormalSpeed < 45 ? 0.18 : 0.52
   );
 
@@ -1495,44 +1505,55 @@ function tryEnterUnderpass() {
   ) {
     underpass.active = true;
     underpass.enteredAt = performance.now();
+    underpassRandomizer.exitIndex = Math.floor(
+      Math.random() * underpass.outlets.length
+    );
+    underpassRandomizer.travelRemaining = 0.4 + Math.random() * 0.5;
+    underpassRandomizer.entrySpeed = Math.hypot(ball.vx, ball.vy);
     return true;
   }
 
   return false;
 }
 
-function underpassOutletReached(outlet) {
-  const close = Math.hypot(ball.x - outlet.x, ball.y - outlet.y) <= outlet.radius;
-  if (!close || performance.now() - underpass.enteredAt < 180) return false;
-
-  if (outlet.edge === 'top') return ball.y <= outlet.y && ball.vy < 0;
-  if (outlet.edge === 'right') return ball.x >= outlet.x && ball.vx > 0;
-  return ball.x <= outlet.x && ball.vx < 0;
-}
-
 function updateUnderpass(dt) {
   if (!underpass.active) return false;
 
-  ball.vy += gravity * dt;
-  ball.x += ball.vx * dt;
-  ball.y += ball.vy * dt;
-  ball.vx *= rollingDrag;
-  ball.vy *= rollingDrag;
+  underpassRandomizer.travelRemaining = Math.max(
+    0,
+    underpassRandomizer.travelRemaining - dt
+  );
 
-  for (const rail of underpassRails) {
-    resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.97);
+  if (underpassRandomizer.travelRemaining > 0) {
+    ball.x = -100;
+    ball.y = -100;
+    ball.vx = 0;
+    ball.vy = 0;
+    return true;
   }
 
-  for (const outlet of underpass.outlets) {
-    if (underpassOutletReached(outlet)) {
-      underpass.active = false;
-      ballHasEnteredPlayfield = true;
-      shooterRoute = 'released';
-      return false;
-    }
-  }
+  const outlet = underpass.outlets[underpassRandomizer.exitIndex];
+  const baseAngle = outlet.edge === 'top'
+    ? -Math.PI / 2
+    : outlet.edge === 'right'
+      ? 0
+      : Math.PI;
+  const angle = baseAngle + (Math.random() * 2 - 1) * 16 * Math.PI / 180;
+  const exitSpeed = clamp(
+    underpassRandomizer.entrySpeed * (0.82 + Math.random() * 0.2),
+    180,
+    760
+  );
+  const clearance = ball.radius + 5;
 
-  return true;
+  ball.x = outlet.x + Math.cos(baseAngle) * clearance;
+  ball.y = outlet.y + Math.sin(baseAngle) * clearance;
+  ball.vx = Math.cos(angle) * exitSpeed;
+  ball.vy = Math.sin(angle) * exitSpeed;
+  underpass.active = false;
+  ballHasEnteredPlayfield = true;
+  shooterRoute = 'released';
+  return false;
 }
 
 function update(dt) {
@@ -1609,7 +1630,9 @@ function update(dt) {
   }
 
   for (const rail of shooterDividerRails) {
-    resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.86);
+    if (ballNearSegment(rail, 10)) {
+      resolveSegmentCollision(rail, ZERO_SURFACE_VELOCITY, 0.86);
+    }
   }
 
   // Once a live ball crosses into the shooter lane, the lower return gate
@@ -1631,7 +1654,7 @@ function update(dt) {
     ball.vy < 0 &&
     ball.x > SHOOTER.dividerX
   ) {
-    resolveSegmentCollision(shooterDiverter, { x: 0, y: 0 }, 0.88);
+    resolveSegmentCollision(shooterDiverter, ZERO_SURFACE_VELOCITY, 0.88);
   }
 
   if (
@@ -1645,7 +1668,9 @@ function update(dt) {
   for (const rail of coastalOrbitRails) {
     // The polished orbit loses very little energy, allowing a properly charged
     // launch to sweep through both corners instead of stalling across the top.
-    resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.98);
+    if (ballNearSegment(rail, 14)) {
+      resolveSegmentCollision(rail, ZERO_SURFACE_VELOCITY, 0.98);
+    }
   }
 
   // The short ramp ejects into open play at an exact 33-degree down-left
@@ -1681,35 +1706,64 @@ function update(dt) {
   }
 
   for (const rail of upperLeftLoopRails) {
-    resolveSegmentCollision(rail, { x: 0, y: 0 }, 0.94);
+    if (ballNearSegment(rail, 14)) {
+      resolveSegmentCollision(rail, ZERO_SURFACE_VELOCITY, 0.94);
+    }
   }
 
   for (const guide of underpassEntryGuides) {
-    resolveSegmentCollision(guide, { x: 0, y: 0 }, 0.92);
+    if (ballNearSegment(guide, 14)) {
+      resolveSegmentCollision(guide, ZERO_SURFACE_VELOCITY, 0.92);
+    }
   }
 
-  for (const [index, bumper] of popBumpers.entries()) {
-    collideWithPopBumper(bumper, index);
+  for (let index = 0; index < popBumpers.length; index += 1) {
+    const bumper = popBumpers[index];
+    const reach = ball.radius + bumper.radius + 16;
+    if (
+      Math.abs(ball.x - bumper.x) <= reach &&
+      Math.abs(ball.y - bumper.y) <= reach
+    ) {
+      collideWithPopBumper(bumper, index);
+    }
   }
 
   collideWithMagneticTarget(magneticTarget, dt);
 
-  for (const [index, target] of dropTargets.entries()) {
-    collideWithDropTarget(target, index);
+  for (let index = 0; index < dropTargets.length; index += 1) {
+    const target = dropTargets[index];
+    if (ballNearSegment(target, 14)) {
+      collideWithDropTarget(target, index);
+    }
   }
 
   for (const guide of lowerGuides) {
-    resolveSegmentCollision(guide, { x: 0, y: 0 }, wallRestitution);
+    if (ballNearSegment(guide, 14)) {
+      resolveSegmentCollision(guide, ZERO_SURFACE_VELOCITY, wallRestitution);
+    }
   }
 
-  collideWithPayphone();
+  const payphoneReach = ball.radius + Math.max(payphone.width, payphone.height);
+  if (
+    payphoneContacts.size > 0 ||
+    (
+      Math.abs(ball.x - payphone.x) <= payphoneReach &&
+      Math.abs(ball.y - payphone.y) <= payphoneReach
+    )
+  ) {
+    collideWithPayphone();
+  }
 
   for (const bumper of sideBumpers) {
-    collideWithSideBumper(bumper);
+    if (!bumper.armed || ballNearSegment(bumper, 40)) {
+      collideWithSideBumper(bumper);
+    }
   }
 
-  for (const flipper of flippers) {
-    collideWithFlipper(flipper);
+  if (ball.y >= 520) {
+    for (const flipper of flippers) {
+      collideWithFlipper(flipper);
+    }
   }
 
   // A launch that never reached the playfield is not a drain. The plunger

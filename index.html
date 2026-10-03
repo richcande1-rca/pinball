@@ -127,7 +127,7 @@
   </main>
 
   <script src="intro.js?v=20261002-god1"></script>
-  <script src="game.js?v=20261003-phone2"></script>
+  <script src="game.js?v=20261003-eff1"></script>
   <script>
     // Tuck the scoop immediately beneath Ocean Drive and keep its playfield
     // guides above the established launch trajectory.
@@ -185,64 +185,8 @@
       edge: 'right'
     });
 
-    const underpassRandomizer = {
-      exitIndex: 0,
-      travelRemaining: 0,
-      entrySpeed: 0
-    };
-
-    const baseTryEnterUnderpass = tryEnterUnderpass;
-    tryEnterUnderpass = function tryEnterUnderpassRandomized() {
-      const entered = baseTryEnterUnderpass();
-      if (!entered) return false;
-
-      underpassRandomizer.exitIndex = Math.floor(
-        Math.random() * underpass.outlets.length
-      );
-      underpassRandomizer.travelRemaining = 0.4 + Math.random() * 0.5;
-      underpassRandomizer.entrySpeed = Math.hypot(ball.vx, ball.vy);
-      return true;
-    };
-
-    updateUnderpass = function updateUnderpassRandomized(dt) {
-      if (!underpass.active) return false;
-
-      underpassRandomizer.travelRemaining = Math.max(
-        0,
-        underpassRandomizer.travelRemaining - dt
-      );
-
-      if (underpassRandomizer.travelRemaining > 0) {
-        ball.x = -100;
-        ball.y = -100;
-        ball.vx = 0;
-        ball.vy = 0;
-        return true;
-      }
-
-      const outlet = underpass.outlets[underpassRandomizer.exitIndex];
-      const baseAngle = outlet.edge === 'top'
-        ? -Math.PI / 2
-        : outlet.edge === 'right'
-          ? 0
-          : Math.PI;
-      const angle = baseAngle + (Math.random() * 2 - 1) * 16 * Math.PI / 180;
-      const exitSpeed = clamp(
-        underpassRandomizer.entrySpeed * (0.82 + Math.random() * 0.2),
-        180,
-        760
-      );
-      const clearance = ball.radius + 5;
-
-      ball.x = outlet.x + Math.cos(baseAngle) * clearance;
-      ball.y = outlet.y + Math.sin(baseAngle) * clearance;
-      ball.vx = Math.cos(angle) * exitSpeed;
-      ball.vy = Math.sin(angle) * exitSpeed;
-      underpass.active = false;
-      ballHasEnteredPlayfield = true;
-      shooterRoute = 'released';
-      return false;
-    };
+    // Hidden underpass travel now lives in game.js as the core transport
+    // abstraction; keep only the visible mouth/layout tuning here.
 
     const centerStandupTargets = [
       { x1: 122, y1: 278, x2: 166, y2: 278, radius: 4.5, value: 300, accent: 'cyan', hit: false, flashStartedAt: -Infinity },
