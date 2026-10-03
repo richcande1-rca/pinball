@@ -286,7 +286,7 @@
     ctx.fillStyle = '#f4ffff';
     ctx.strokeStyle = MIAMI_COLORS.lavender;
     ctx.lineWidth = 1;
-    if (!window.miamiMobilePerformanceMode) {
+    if (!window.miamiReducedRenderEffects) {
       ctx.shadowColor = MIAMI_COLORS.magenta;
       ctx.shadowBlur = 5;
     }
@@ -304,7 +304,7 @@
       ctx.fillStyle = '#ffffff';
       ctx.strokeStyle = MIAMI_COLORS.magenta;
       ctx.lineWidth = 1.2;
-      if (!window.miamiMobilePerformanceMode) {
+      if (!window.miamiReducedRenderEffects) {
         ctx.shadowColor = MIAMI_COLORS.cyan;
         ctx.shadowBlur = 8;
       }

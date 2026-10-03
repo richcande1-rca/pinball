@@ -347,11 +347,11 @@
     ctx.strokeStyle = accent;
     ctx.lineWidth = 1.4;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 8;
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : 8;
     ctx.fillRect(x, y, width, height);
     ctx.strokeRect(x, y, width, height);
 
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 5;
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : 5;
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -370,7 +370,7 @@
   function drawTargetPressure(now) {
     if (!state.active) return;
 
-    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const mobile = Boolean(window.miamiReducedRenderEffects);
     const pulse = 0.5 + 0.5 * Math.sin(now / 78);
 
     for (let pegIndex = 0; pegIndex < PEG_LAMP_INDICES.length; pegIndex += 1) {
@@ -441,7 +441,7 @@
       ctx.strokeStyle = 'rgba(1, 4, 10, 0.92)';
       ctx.lineWidth = 3;
       ctx.shadowColor = MIAMI_COLORS.magenta;
-      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 8;
+      ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : 8;
       const x = underpass.entry.x;
       const y = underpass.entry.y - 19;
       ctx.strokeText(state.progressText, x, y);
