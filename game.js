@@ -91,7 +91,7 @@ const keys = {
 };
 
 const FLIPPER_CHARGE = {
-  duration: 0.4,
+  duration: 0.1,
   contactSpeed: 55,
   heldDecayRate: 2.4,
   minimum: 0.08,
@@ -1927,7 +1927,7 @@ function drawLowerGuides() {
 function drawPayphone() {
   const now = performance.now();
   const hitStrength = clamp(
-    1 - (now - payphone.flashStartedAt) / 180,
+    1 - (now - payphone.flashStartedAt) / 500,
     0,
     1
   );
@@ -1943,9 +1943,11 @@ function drawPayphone() {
   ctx.translate(payphone.x, payphone.y);
   ctx.rotate(payphone.angle);
 
-  ctx.fillStyle = '#0d1322';
-  ctx.strokeStyle = MIAMI_COLORS.structure;
+  ctx.fillStyle = hitStrength > 0 ? '#17394b' : '#0d1322';
+  ctx.strokeStyle = hitStrength > 0 ? '#f4ffff' : MIAMI_COLORS.structure;
   ctx.lineWidth = 5;
+  ctx.shadowColor = hitStrength > 0 ? MIAMI_COLORS.cyan : 'transparent';
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : hitStrength * 18;
   ctx.fillRect(-halfWidth, -halfHeight, payphone.width, payphone.height);
   ctx.strokeRect(-halfWidth, -halfHeight, payphone.width, payphone.height);
 
@@ -1960,11 +1962,11 @@ function drawPayphone() {
     payphone.height - 3
   );
 
-  ctx.fillStyle = '#07111d';
-  ctx.strokeStyle = MIAMI_COLORS.cyan;
+  ctx.fillStyle = hitStrength > 0 ? '#15546a' : '#07111d';
+  ctx.strokeStyle = hitStrength > 0 ? '#f4ffff' : MIAMI_COLORS.cyan;
   ctx.lineWidth = 1;
   ctx.shadowColor = MIAMI_COLORS.cyan;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (4 + hitStrength * 10);
+  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (4 + hitStrength * 18);
   ctx.fillRect(-10.5, -15.5, 21, 8);
   ctx.strokeRect(-10.5, -15.5, 21, 8);
 
