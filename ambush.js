@@ -1,6 +1,6 @@
 // Miami Nights: AMBUSH standalone underpass/clock mode.
 // Five completed trips that ENTER through the main upper underpass qualify the
-// mode across drains. AMBUSH borrows the six physical Clock pegs for 20 seconds
+// mode across drains. AMBUSH borrows the six physical Clock pegs for 25 seconds
 // without advancing the normal Clock / Neon Rush / Midnight story chain.
 //
 // Scoring climbs 5K -> 10K -> 15K -> 20K -> 25K -> 25K. On timeout, every
@@ -12,7 +12,7 @@
   window.miamiAmbushInstalled = true;
 
   const QUALIFY_TRIPS = 5;
-  const DURATION_MS = 20000;
+  const DURATION_MS = 25000;
   const FAIL_EFFECT_MS = 10000;
   const MISS_PENALTY = 10000;
   const HIT_AWARDS = [5000, 10000, 15000, 20000, 25000, 25000];
@@ -119,7 +119,7 @@
     state.hitFlashUntil = -Infinity;
     state.resultUntil = now + 1450;
     state.resultTop = 'AMBUSH!';
-    state.resultBottom = '20 SECONDS • HIT ALL 6';
+    state.resultBottom = '25 SECONDS • HIT ALL 6';
 
     window.dispatchEvent(new CustomEvent('miami-ambush-start', {
       detail: {
@@ -529,7 +529,7 @@
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
     instructions.append(document.createTextNode(
-      ' AMBUSH: complete five trips entering through the main upper underpass; progress survives drains. You then have 20 seconds to knock down all six Clock pegs. Hits climb from 5K to 25K. A timeout loses 10K per uncleared peg and rotates BLACKOUT, PRESSURE, and SABOTAGE consequences.'
+      ' AMBUSH: complete five trips entering through the main upper underpass; progress survives drains. You then have 25 seconds to knock down all six Clock pegs. Hits climb from 5K to 25K. A timeout loses 10K per uncleared peg and rotates BLACKOUT, PRESSURE, and SABOTAGE consequences.'
     ));
   }
 })();
