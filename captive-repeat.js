@@ -32,8 +32,8 @@
     renderRepeatableBallPips();
   };
 
-  // Keep the completed five-lamp look on screen briefly after an award. The
-  // completed state stays locked for the rest of the live ball and resets on drain.
+  // Keep the completed five-lamp look on screen briefly after an award, then
+  // clear progress to 0/5 while the per-ball award flag stays locked until drain.
   const baseDrawCaptiveBallAssemblyWithRepeatableCycle = drawCaptiveBallAssembly;
   drawCaptiveBallAssembly = function drawCaptiveBallAssemblyWithRepeatableCycle() {
     if (performance.now() >= awardVisualHoldUntil) {
@@ -63,8 +63,10 @@
       awardCountedThisBall = true;
       awardVisualHoldUntil = performance.now() + AWARD_VISUAL_HOLD_MS;
 
-      // One captive extra ball is available per live ball. Keep the completed
-      // five-hit state locked until a real drain starts the next ball.
+      // One captive extra ball is available per live ball. Clear the visible
+      // progress so the captive stays available for CAPTIVE READY multiball,
+      // but leave captiveExtraBallAwarded true until the next real drain.
+      captiveHitProgress = 0;
       syncStatusDisplay();
     }
   });
