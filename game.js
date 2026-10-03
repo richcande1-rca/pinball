@@ -13,6 +13,11 @@ const miamiMobilePerformanceMode =
   window.matchMedia('(max-width: 768px)').matches;
 window.miamiMobilePerformanceMode = miamiMobilePerformanceMode;
 
+const miamiReducedRenderEffects =
+  miamiMobilePerformanceMode ||
+  /\bCrOS\b/.test(navigator.userAgent);
+window.miamiReducedRenderEffects = miamiReducedRenderEffects;
+
 let miamiFpsReadout = null;
 if (miamiMobilePerformanceMode) {
   miamiFpsReadout = document.createElement('div');
@@ -1807,7 +1812,7 @@ function drawNeonSegment(segment, accent = MIAMI_COLORS.cyan, bodyWidth = 6, acc
   ctx.strokeStyle = accent;
   ctx.lineWidth = accentWidth;
   ctx.shadowColor = accent;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (4);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (4);
   ctx.beginPath();
   ctx.moveTo(segment.x1, segment.y1);
   ctx.lineTo(segment.x2, segment.y2);
@@ -1847,7 +1852,7 @@ function drawSmoothNeonRail(points, accent) {
   ctx.strokeStyle = accent;
   ctx.lineWidth = 2.25;
   ctx.shadowColor = accent;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (7);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (7);
   ctx.beginPath();
   traceSmoothRail(points);
   ctx.stroke();
@@ -1903,7 +1908,7 @@ function drawTable() {
   ctx.strokeStyle = MIAMI_COLORS.cyan;
   ctx.lineWidth = 1;
   ctx.shadowColor = MIAMI_COLORS.cyan;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (3);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (3);
   ctx.stroke();
   ctx.restore();
 }
@@ -1958,7 +1963,7 @@ function drawPlunger() {
   ctx.strokeStyle = MIAMI_COLORS.cyan;
   ctx.lineWidth = 1;
   ctx.shadowColor = MIAMI_COLORS.cyan;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (3);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (3);
   ctx.beginPath();
   ctx.moveTo(plunger.x - 12, plunger.topY - 2);
   ctx.lineTo(plunger.x + 12, plunger.topY - 2);
@@ -2001,14 +2006,14 @@ function drawPayphone() {
   ctx.strokeStyle = hitStrength > 0 ? '#f4ffff' : MIAMI_COLORS.structure;
   ctx.lineWidth = 5;
   ctx.shadowColor = hitStrength > 0 ? MIAMI_COLORS.cyan : 'transparent';
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : hitStrength * 18;
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : hitStrength * 18;
   ctx.fillRect(-halfWidth, -halfHeight, payphone.width, payphone.height);
   ctx.strokeRect(-halfWidth, -halfHeight, payphone.width, payphone.height);
 
   ctx.strokeStyle = hitStrength > 0 ? '#f4ffff' : MIAMI_COLORS.magenta;
   ctx.lineWidth = 1.7;
   ctx.shadowColor = MIAMI_COLORS.magenta;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (6 + hitStrength * 12);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (6 + hitStrength * 12);
   ctx.strokeRect(
     -halfWidth + 1.5,
     -halfHeight + 1.5,
@@ -2020,7 +2025,7 @@ function drawPayphone() {
   ctx.strokeStyle = hitStrength > 0 ? '#f4ffff' : MIAMI_COLORS.cyan;
   ctx.lineWidth = 1;
   ctx.shadowColor = MIAMI_COLORS.cyan;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (4 + hitStrength * 18);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (4 + hitStrength * 18);
   ctx.fillRect(-10.5, -15.5, 21, 8);
   ctx.strokeRect(-10.5, -15.5, 21, 8);
 
@@ -2028,7 +2033,7 @@ function drawPayphone() {
     ctx.strokeStyle = '#fff3b0';
     ctx.lineWidth = 1.2;
     ctx.shadowColor = '#fff3b0';
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (8 + luckyStrength * 12);
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (8 + luckyStrength * 12);
     ctx.strokeRect(
       -halfWidth - 2.5 * luckyStrength,
       -halfHeight - 2.5 * luckyStrength,
@@ -2103,7 +2108,7 @@ function drawUpperLeftLoopRamp() {
     ctx.globalAlpha = active ? 0.72 : 0.9;
     ctx.strokeStyle = '#f4ffff';
     ctx.shadowColor = active ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (active ? 18 : 24);
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (active ? 18 : 24);
     ctx.lineWidth = active ? 4 : 6;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -2117,7 +2122,7 @@ function drawUpperLeftLoopRamp() {
   ctx.font = '700 8px ui-monospace, monospace';
   ctx.fillStyle = flashing ? '#f4ffff' : MIAMI_COLORS.lavender;
   ctx.shadowColor = flashing ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (flashing ? 14 : 5);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (flashing ? 14 : 5);
   ctx.fillText('LOOP', 130, 112);
   ctx.fillStyle = flashing ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
   ctx.fillText('2500', 130, 125);
@@ -2138,7 +2143,7 @@ function drawMagneticTarget() {
   ctx.translate(magneticTarget.x, magneticTarget.y);
   ctx.fillStyle = '#02040b';
   ctx.shadowColor = '#000';
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (10);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (10);
   ctx.beginPath();
   ctx.arc(0, 0, 22, 0, Math.PI * 2);
   ctx.fill();
@@ -2154,7 +2159,7 @@ function drawMagneticTarget() {
     ctx.strokeStyle = ring.color;
     ctx.lineWidth = holding ? 2.4 + heldProgress * 1.6 : 2;
     ctx.shadowColor = ring.color;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (6 + pulse * 13);
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (6 + pulse * 13);
     ctx.beginPath();
     ctx.arc(
       0, 0,
@@ -2167,7 +2172,7 @@ function drawMagneticTarget() {
   ctx.globalAlpha = 1;
   ctx.fillStyle = recentFlash ? '#f4ffff' : MIAMI_COLORS.lavender;
   ctx.shadowColor = recentFlash ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (recentFlash ? 18 : 6);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (recentFlash ? 18 : 6);
   ctx.beginPath();
   ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
   ctx.fill();
@@ -2199,7 +2204,7 @@ function drawPopBumpers() {
     ctx.globalAlpha = 0.12 + idlePulse * 0.08 + flashStrength * 0.3;
     ctx.fillStyle = accent;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (18 + flashStrength * 20);
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (18 + flashStrength * 20);
     ctx.beginPath();
     ctx.arc(0, 0, 12 + flashStrength * 1.5, 0, Math.PI * 2);
     ctx.fill();
@@ -2216,7 +2221,7 @@ function drawPopBumpers() {
     ctx.strokeStyle = flashing ? '#f4ffff' : accent;
     ctx.lineWidth = flashing ? 2 : 1.25;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (8 + idlePulse * 5 + flashStrength * 22);
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (8 + idlePulse * 5 + flashStrength * 22);
     ctx.beginPath();
     ctx.arc(0, 0, 8, 0, Math.PI * 2);
     ctx.stroke();
@@ -2233,7 +2238,7 @@ function drawPopBumpers() {
     ctx.globalAlpha = 1;
     ctx.fillStyle = flashing ? '#ffffff' : accent;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (flashing ? 18 : 7);
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (flashing ? 18 : 7);
     ctx.beginPath();
     ctx.arc(0, 0, 2.25 + flashStrength, 0, Math.PI * 2);
     ctx.fill();
@@ -2243,7 +2248,7 @@ function drawPopBumpers() {
       ctx.strokeStyle = accent;
       ctx.lineWidth = 2;
       ctx.shadowColor = accent;
-      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (16);
+      ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (16);
       ctx.beginPath();
       ctx.arc(0, 0, 10 + (1 - flashStrength) * 6, 0, Math.PI * 2);
       ctx.stroke();
@@ -2252,7 +2257,7 @@ function drawPopBumpers() {
       ctx.fillStyle = '#f4ffff';
       ctx.font = '700 8px ui-monospace, monospace';
       ctx.shadowColor = accent;
-      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (10);
+      ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (10);
       ctx.fillText(`+${bumper.lastPoints}`, 0, -27 - (1 - flashStrength) * 7);
     }
 
@@ -2293,7 +2298,7 @@ function drawDropTargets() {
     ctx.fillStyle = hitFlash > 0 ? '#f4ffff' : '#07101d';
     ctx.strokeStyle = hitFlash > 0 ? '#ffffff' : accent;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (7 + hitFlash * 22 + completionFlash * 12);
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (7 + hitFlash * 22 + completionFlash * 12);
     ctx.lineWidth = 2;
     ctx.fillRect(-5, -11, 10, 22);
     ctx.strokeRect(-5, -11, 10, 22);
@@ -2310,7 +2315,7 @@ function drawDropTargets() {
       ctx.globalAlpha = hitFlash;
       ctx.strokeStyle = accent;
       ctx.shadowColor = accent;
-      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (18);
+      ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (18);
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(centerX, centerY, 12 + (1 - hitFlash) * 14, 0, Math.PI * 2);
@@ -2324,7 +2329,7 @@ function drawDropTargets() {
   ctx.font = '700 7px ui-monospace, monospace';
   ctx.fillStyle = completionFlash > 0 ? '#f4ffff' : MIAMI_COLORS.lavender;
   ctx.shadowColor = completionFlash > 0 ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (5 + completionFlash * 20);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (5 + completionFlash * 20);
   if (completionFlash > 0) {
     ctx.fillText('305 +3000', 77, 491);
   }
@@ -2388,7 +2393,7 @@ function drawOceanRamp() {
   ctx.shadowColor = completionFlash > 0
     ? '#ffffff'
     : 'rgba(34, 223, 243, 0.42)';
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (10 + completionFlash * 20);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (10 + completionFlash * 20);
   ctx.beginPath();
   traceSmoothRail(oceanRampPath);
   ctx.stroke();
@@ -2411,7 +2416,7 @@ function drawOceanRamp() {
     ctx.shadowColor = oceanRamp.active
       ? MIAMI_COLORS.cyan
       : MIAMI_COLORS.magenta;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (18);
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (18);
     ctx.lineWidth = 3.5;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -2445,7 +2450,7 @@ function drawOceanRamp() {
   ctx.fillStyle = impactFlash > 0 ? '#f4ffff' : '#09101d';
   ctx.strokeStyle = impactFlash > 0 ? '#ffffff' : MIAMI_COLORS.cyan;
   ctx.shadowColor = impactFlash > 0 ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (8 + impactFlash * 22);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (8 + impactFlash * 22);
   ctx.lineWidth = 2;
   ctx.fillRect(-5, -17, 10, 34);
   ctx.strokeRect(-5, -17, 10, 34);
@@ -2454,7 +2459,7 @@ function drawOceanRamp() {
   ctx.save();
   ctx.fillStyle = '#f4ffff';
   ctx.shadowColor = MIAMI_COLORS.magenta;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (6 + tickFlash * 16);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (6 + tickFlash * 16);
   ctx.beginPath();
   ctx.arc(
     spinnerPoint.x,
@@ -2480,7 +2485,7 @@ function drawOceanRamp() {
   ctx.font = '700 7px ui-monospace, monospace';
   ctx.fillStyle = tickFlash > 0 ? '#f4ffff' : MIAMI_COLORS.lavender;
   ctx.shadowColor = tickFlash > 0 ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (5 + tickFlash * 14);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (5 + tickFlash * 14);
   ctx.fillText('OCEAN DRIVE', 0, 2.5);
   ctx.restore();
 
@@ -2490,7 +2495,7 @@ function drawOceanRamp() {
     ctx.font = '700 7px ui-monospace, monospace';
     ctx.fillStyle = '#f4ffff';
     ctx.shadowColor = MIAMI_COLORS.cyan;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (14);
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (14);
     ctx.fillText(
       `+${oceanSpinner.lastPoints}`,
       spinnerPoint.x - 18,
@@ -2523,7 +2528,7 @@ function drawTunnelMouth(mouth, accent, rotation = 0) {
   ctx.strokeStyle = accent;
   ctx.lineWidth = 2;
   ctx.shadowColor = accent;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : 6;
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : 6;
   ctx.beginPath();
   ctx.arc(0, 0, 17, Math.PI, Math.PI * 2);
   ctx.stroke();
@@ -2566,7 +2571,7 @@ function drawLowerApron() {
   ctx.strokeStyle = MIAMI_COLORS.magenta;
   ctx.lineWidth = 1;
   ctx.shadowColor = MIAMI_COLORS.magenta;
-  ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (3);
+  ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (3);
   ctx.beginPath();
   ctx.moveTo(32, 666);
   ctx.lineTo(62, 666);
@@ -2618,14 +2623,14 @@ function drawFlippers() {
       ctx.strokeStyle = accent;
       ctx.lineWidth = 10 + glowEnergy * 5;
       ctx.shadowColor = accent;
-      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (7 + glowEnergy * 28);
+      ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (7 + glowEnergy * 28);
       ctx.stroke();
 
       ctx.globalAlpha = 0.12 + glowEnergy * 0.82;
       ctx.strokeStyle = '#f8ffff';
       ctx.lineWidth = 3 + glowEnergy * 5;
       ctx.shadowColor = '#ffffff';
-      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (4 + glowEnergy * 18);
+      ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (4 + glowEnergy * 18);
       ctx.stroke();
       ctx.restore();
     }
@@ -2634,7 +2639,7 @@ function drawFlippers() {
     ctx.strokeStyle = glowEnergy > 0.9 ? '#f8ffff' : accent;
     ctx.lineWidth = 2;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (4 + glowEnergy * 15);
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (4 + glowEnergy * 15);
     ctx.stroke();
     ctx.restore();
 
@@ -2646,7 +2651,7 @@ function drawFlippers() {
     ctx.strokeStyle = glowEnergy > 0.9 ? '#f8ffff' : accent;
     ctx.lineWidth = 1.5 + glowEnergy;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (3 + glowEnergy * 10);
+    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : (3 + glowEnergy * 10);
     ctx.stroke();
   }
 }
