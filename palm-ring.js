@@ -269,7 +269,7 @@
 
   function drawPalmRing() {
     const now = performance.now();
-    const mobile = Boolean(window.miamiMobilePerformanceMode);
+    const mobile = Boolean(window.miamiReducedRenderEffects);
     const eventActive = now < override.until;
 
     // Socket housings never animate, so draw all twelve in one fill/stroke pass.
