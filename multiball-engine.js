@@ -390,7 +390,7 @@
     }
   }
 
-  function stepCompanionLoosePlay(dt) {
+  function stepCompanionLoosePlay(dt, payphoneContactKey = 'peer-ball') {
     // Mirror DIVERTZONE1's check-before/check-after ordering so a descending
     // peer cannot cross into the recovery-route state before seeing the rail.
     resolvePeerSafeRecoveryRailCollisions();
@@ -510,7 +510,7 @@
     }
 
     if (typeof window.miamiCollideWithPayphone === 'function') {
-      window.miamiCollideWithPayphone();
+      window.miamiCollideWithPayphone(payphoneContactKey);
     }
 
     resolvePeerSafeRecoveryRailCollisions();
@@ -619,7 +619,7 @@
 
     let drained = false;
     withCompanionContext(() => {
-      stepCompanionLoosePlay(dt);
+      stepCompanionLoosePlay(dt, companion.id);
       drained = ball.y - ball.radius > canvas.height;
     });
 
@@ -631,7 +631,7 @@
 
     let drained = false;
     withStackedCompanionContext(() => {
-      stepCompanionLoosePlay(dt);
+      stepCompanionLoosePlay(dt, stackedCompanion.id);
       drained = ball.y - ball.radius > canvas.height;
     });
 
