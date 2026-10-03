@@ -402,6 +402,31 @@
     );
   });
 
+  window.addEventListener('miami-payphone-hit', event => {
+    const detail = event.detail || {};
+    const totalPoints = Math.max(0, Number(detail.totalPoints) || 0);
+
+    if (detail.luckyBreak) {
+      flashDisplays(
+        'LUCKY BREAK!',
+        '+' + totalPoints.toLocaleString(),
+        1800,
+        'cyan',
+        'magenta',
+        120
+      );
+      return;
+    }
+
+    flashDisplays(
+      'PAYPHONE',
+      'CALL ' + (detail.callNumber || 1) + '/3 • +5,000',
+      950,
+      'magenta',
+      'cyan'
+    );
+  });
+
   // Reuse existing impact events for presentation-only mode announcements.
   // No score, collision or timing values are changed here.
   window.addEventListener('miami-impact', event => {
