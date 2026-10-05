@@ -2967,7 +2967,21 @@ launchButton.addEventListener('keyup', (event) => {
   }
 });
 
+function shouldIgnoreGameKeyboardEvent(event) {
+  const target = event?.target;
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target?.isContentEditable ||
+    Boolean(target?.closest?.('#miami-world-scores'))
+  );
+}
+window.miamiShouldIgnoreGameKeyboardEvent = shouldIgnoreGameKeyboardEvent;
+
 window.addEventListener('keydown', (event) => {
+  if (shouldIgnoreGameKeyboardEvent(event)) return;
+
   if (setKeyState(event.code, true)) {
     event.preventDefault();
   }
@@ -2986,6 +3000,8 @@ window.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('keyup', (event) => {
+  if (shouldIgnoreGameKeyboardEvent(event)) return;
+
   if (setKeyState(event.code, false)) {
     event.preventDefault();
   }

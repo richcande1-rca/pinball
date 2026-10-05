@@ -280,6 +280,7 @@
   }
 
   function blockTransitionKey(event) {
+    if (window.miamiShouldIgnoreGameKeyboardEvent?.(event)) return;
     if (!transitionFrozen() || !blockedKeys.has(event.code)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
