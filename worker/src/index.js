@@ -54,17 +54,38 @@ function cleanBuild(value) {
     .slice(0, 40);
 }
 
+async function getLegacyRecords(env) {
+  try {
+    const result = await env.DB.prepare(
+      `SELECT initials, score, build, created_at AS createdAt, note
+       FROM pinball_legacy_records
+       ORDER BY score DESC, created_at ASC
+       LIMIT ?`
+    ).bind(BOARD_LIMIT).all();
+
+    return result.results || [];
+  } catch (error) {
+    // Legacy history is optional for fresh/local databases.
+    if (String(error).toLowerCase().includes('no such table')) return [];
+    throw error;
+  }
+}
+
 async function getBoard(request, env) {
-  const result = await env.DB.prepare(
-    `SELECT initials, score, build, created_at AS createdAt
-     FROM pinball_entries
-     ORDER BY score DESC, created_at ASC
-     LIMIT ?`
-  ).bind(BOARD_LIMIT).all();
+  const [result, legacyRecords] = await Promise.all([
+    env.DB.prepare(
+      `SELECT initials, score, build, created_at AS createdAt
+       FROM pinball_entries
+       ORDER BY score DESC, created_at ASC
+       LIMIT ?`
+    ).bind(BOARD_LIMIT).all(),
+    getLegacyRecords(env)
+  ]);
 
   return jsonResponse(request, {
     ok: true,
-    entries: result.results || []
+    entries: result.results || [],
+    legacyRecords
   });
 }
 
