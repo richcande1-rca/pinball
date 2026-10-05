@@ -1,4 +1,4 @@
-const BOARD_LIMIT = 20;
+const BOARD_LIMIT = 10;
 const MAX_SCORE = 999999999;
 const ALLOWED_ORIGINS = new Set([
   'https://richcande1-rca.github.io',
