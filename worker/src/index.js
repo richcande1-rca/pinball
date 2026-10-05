@@ -2,6 +2,8 @@ const BOARD_LIMIT = 20;
 const MAX_SCORE = 999999999;
 const ALLOWED_ORIGINS = new Set([
   'https://richcande1-rca.github.io',
+  'https://html-classic.itch.zone',
+  'https://html.itch.zone',
   'http://localhost:8787',
   'http://127.0.0.1:8787'
 ]);
