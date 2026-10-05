@@ -6,7 +6,7 @@
   window.miamiWorldHighScoresInstalled = true;
 
   const API_URL = 'https://pinball.rich-gothic.workers.dev/api/board';
-  const BOARD_LIMIT = 20;
+  const BOARD_LIMIT = 10;
   const INITIALS_KEY = 'miami-nights-world-initials-v1';
 
   let boardOpen = false;
