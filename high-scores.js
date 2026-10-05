@@ -6,7 +6,7 @@
   window.miamiWorldHighScoresInstalled = true;
 
   const API_URL = 'https://pinball.rich-gothic.workers.dev/api/board';
-  const BOARD_LIMIT = 20;
+  const BOARD_LIMIT = 10;
   const INITIALS_KEY = 'miami-nights-world-initials-v1';
 
   let boardOpen = false;
@@ -17,7 +17,7 @@
 
   const stylesheet = document.createElement('link');
   stylesheet.rel = 'stylesheet';
-  stylesheet.href = 'high-scores.css?v=20260906-world1';
+  stylesheet.href = 'high-scores.css?v=20261004-legacy1';
   document.head.appendChild(stylesheet);
 
   const helpBar = document.querySelector('.help-bar');
@@ -63,6 +63,10 @@
       </form>
 
       <div id="miami-world-scores-list" class="miami-world-scores-list" aria-live="polite"></div>
+      <section id="miami-world-legacy" class="miami-world-legacy" aria-label="Legacy records" hidden>
+        <p class="miami-world-legacy-title">LEGACY RECORD</p>
+        <div id="miami-world-legacy-list" class="miami-world-legacy-list"></div>
+      </section>
       <button id="miami-world-scores-refresh" class="miami-world-scores-refresh" type="button">REFRESH WORLD BOARD</button>
     </div>
   `;
@@ -71,6 +75,8 @@
   const closeButton = overlay.querySelector('#miami-world-scores-close');
   const refreshButton = overlay.querySelector('#miami-world-scores-refresh');
   const list = overlay.querySelector('#miami-world-scores-list');
+  const legacy = overlay.querySelector('#miami-world-legacy');
+  const legacyList = overlay.querySelector('#miami-world-legacy-list');
   const note = overlay.querySelector('#miami-world-scores-note');
   const form = overlay.querySelector('#miami-world-score-form');
   const scoreValue = overlay.querySelector('#miami-world-score-value');
@@ -116,11 +122,44 @@
     list.appendChild(row);
   }
 
-  function renderBoard(entries) {
+  function renderLegacyRecords(records) {
+    const entries = Array.isArray(records) ? records.slice(0, BOARD_LIMIT) : [];
+    legacyList.replaceChildren();
+    legacy.hidden = entries.length === 0;
+
+    entries.forEach(entry => {
+      const row = document.createElement('div');
+      row.className = 'miami-world-legacy-row';
+
+      const main = document.createElement('div');
+      main.className = 'miami-world-legacy-main';
+
+      const initials = document.createElement('strong');
+      initials.className = 'miami-world-legacy-name';
+      initials.textContent = String(entry.initials || '---').slice(0, 3).toUpperCase();
+
+      const points = document.createElement('span');
+      points.className = 'miami-world-legacy-points';
+      points.textContent = formatScore(entry.score);
+
+      const detail = document.createElement('p');
+      detail.className = 'miami-world-legacy-detail';
+      const noteText = String(entry.note || 'Legacy record').trim();
+      const buildText = String(entry.build || '').trim();
+      detail.textContent = buildText ? `${noteText} · ${buildText}` : noteText;
+
+      main.append(initials, points);
+      row.append(main, detail);
+      legacyList.appendChild(row);
+    });
+  }
+
+  function renderBoard(entries, legacyRecords = []) {
     leaderboard = Array.isArray(entries) ? entries.slice(0, BOARD_LIMIT) : [];
     leaderboardLoaded = true;
     list.replaceChildren();
     note.textContent = `Worldwide Top ${BOARD_LIMIT}`;
+    renderLegacyRecords(legacyRecords);
 
     if (!leaderboard.length) {
       renderMessage('No scores yet. First player owns Miami.');
@@ -158,7 +197,7 @@
     if (!response.ok || !body.ok || !Array.isArray(body.entries)) {
       throw new Error(body.error || `World board returned ${response.status}.`);
     }
-    renderBoard(body.entries);
+    renderBoard(body.entries, body.legacyRecords);
     return body.entries;
   }
 
@@ -251,7 +290,7 @@
       submittedThisGame = true;
       pendingGameOverScore = null;
       form.hidden = true;
-      renderBoard(body.entries);
+      renderBoard(body.entries, body.legacyRecords);
       note.textContent = 'SCORE POSTED WORLDWIDE';
     } catch (error) {
       status.textContent = 'Could not reach the world board. Try again.';
