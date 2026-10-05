@@ -288,6 +288,7 @@
   const musicMuteShortcutButton = document.getElementById('music-mute');
   if (musicMuteShortcutButton) {
     window.addEventListener('keydown', event => {
+      if (window.miamiShouldIgnoreGameKeyboardEvent?.(event)) return;
       if (
         event.code !== 'KeyM' ||
         event.repeat ||
