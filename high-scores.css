@@ -260,6 +260,56 @@
   color: #ff9bd2;
 }
 
+.miami-world-legacy {
+  margin-top: 0.7rem;
+  padding: 0.65rem 0.7rem 0.55rem;
+  border: 1px solid rgba(255, 60, 172, 0.42);
+  border-radius: 5px;
+  background: linear-gradient(90deg, rgba(255, 60, 172, 0.08), rgba(34, 223, 243, 0.045));
+}
+
+.miami-world-legacy-title {
+  margin: 0 0 0.4rem;
+  color: #c9b8ff;
+  font: 800 0.62rem ui-monospace, monospace;
+  letter-spacing: 0.14em;
+}
+
+.miami-world-legacy-row + .miami-world-legacy-row {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(114, 91, 158, 0.22);
+}
+
+.miami-world-legacy-main {
+  display: grid;
+  grid-template-columns: 4rem 1fr;
+  align-items: center;
+  gap: 0.45rem;
+  font: 800 0.76rem ui-monospace, monospace;
+}
+
+.miami-world-legacy-name {
+  color: #f4ffff;
+  letter-spacing: 0.12em;
+  text-shadow:
+    0 0 6px rgba(255, 60, 172, 0.72),
+    0 0 8px rgba(34, 223, 243, 0.5);
+}
+
+.miami-world-legacy-points {
+  justify-self: end;
+  color: #f1efff;
+  font-weight: 900;
+}
+
+.miami-world-legacy-detail {
+  margin: 0.3rem 0 0;
+  color: #8f9cbd;
+  font: 600 0.58rem ui-monospace, monospace;
+  line-height: 1.35;
+}
+
 .miami-world-scores-refresh {
   width: 100%;
   margin-top: 0.75rem;
