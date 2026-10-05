@@ -607,6 +607,7 @@
     tryFileThemePlayback();
   }, { passive: true });
   window.addEventListener('keydown', event => {
+    if (window.miamiShouldIgnoreGameKeyboardEvent?.(event)) return;
     if (event.code === 'KeyR') audioState.manualResetPending = true;
   }, { passive: true });
   window.addEventListener('pointerdown', () => {
