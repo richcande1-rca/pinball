@@ -372,25 +372,25 @@
     if (distance >= contactDistance) {
       if (sweepLengthSq <= 0) return false;
 
-      // Speculatively test only the next fixed-step path. This closes the rare
-      // high-speed tunneling gap without adding substeps or whole-table CCD.
-      const toPegX = peg.x - ball.x;
-      const toPegY = peg.y - ball.y;
-      const t = clamp(
-        (toPegX * sweepDx + toPegY * sweepDy) / sweepLengthSq,
-        0,
-        1
-      );
-      if (t <= 0) return false;
+      // Speculatively test only the next fixed-step path. Solve the moving
+      // ball center against the peg's expanded radius and use the first actual
+      // contact point, so the bounce normal remains physically meaningful.
+      const startDx = ball.x - peg.x;
+      const startDy = ball.y - peg.y;
+      const b = startDx * sweepDx + startDy * sweepDy;
+      if (b >= 0) return false;
 
-      const closestX = ball.x + sweepDx * t;
-      const closestY = ball.y + sweepDy * t;
-      dx = closestX - peg.x;
-      dy = closestY - peg.y;
-      const sweptDistanceSq = dx * dx + dy * dy;
-      if (sweptDistanceSq >= contactDistance * contactDistance) return false;
+      const radiusSq = contactDistance * contactDistance;
+      const c = startDx * startDx + startDy * startDy - radiusSq;
+      const discriminant = b * b - sweepLengthSq * c;
+      if (discriminant < 0) return false;
 
-      distance = Math.sqrt(Math.max(sweptDistanceSq, 0.000001));
+      const t = (-b - Math.sqrt(discriminant)) / sweepLengthSq;
+      if (t < 0 || t > 1) return false;
+
+      dx = startDx + sweepDx * t;
+      dy = startDy + sweepDy * t;
+      distance = contactDistance;
       sweptContact = true;
     }
 
