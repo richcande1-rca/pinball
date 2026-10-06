@@ -17,6 +17,10 @@
   const PEG_KICK = 300;
   const PEG_RESTITUTION = 0.90;
   const OPEN_REVEAL_MS = 760;
+  // Only enable swept/predictive peg checks when a single 240 Hz physics step
+  // is unusually long. Normal-speed play keeps the existing cheap overlap test.
+  const CLOCK_SWEEP_MIN_STEP = 10;
+  const CLOCK_SWEEP_MIN_STEP_SQ = CLOCK_SWEEP_MIN_STEP * CLOCK_SWEEP_MIN_STEP;
 
   const upperBarrierHits = new Set();
   const lowerBarrierHits = new Set();
@@ -346,7 +350,14 @@
       magneticTarget.state !== 'holding';
   }
 
-  function collideWithClockPeg(peg, pegIndex, now) {
+  function collideWithClockPeg(
+    peg,
+    pegIndex,
+    now,
+    sweepDx = 0,
+    sweepDy = 0,
+    sweepLengthSq = 0
+  ) {
     if (peg.dropped) return false;
 
     const rise = pegRise(pegIndex, now);
@@ -356,7 +367,32 @@
     let dy = ball.y - peg.y;
     let distance = Math.hypot(dx, dy);
     const contactDistance = ball.radius + peg.radius;
-    if (distance >= contactDistance) return false;
+    let sweptContact = false;
+
+    if (distance >= contactDistance) {
+      if (sweepLengthSq <= 0) return false;
+
+      // Speculatively test only the next fixed-step path. This closes the rare
+      // high-speed tunneling gap without adding substeps or whole-table CCD.
+      const toPegX = peg.x - ball.x;
+      const toPegY = peg.y - ball.y;
+      const t = clamp(
+        (toPegX * sweepDx + toPegY * sweepDy) / sweepLengthSq,
+        0,
+        1
+      );
+      if (t <= 0) return false;
+
+      const closestX = ball.x + sweepDx * t;
+      const closestY = ball.y + sweepDy * t;
+      dx = closestX - peg.x;
+      dy = closestY - peg.y;
+      const sweptDistanceSq = dx * dx + dy * dy;
+      if (sweptDistanceSq >= contactDistance * contactDistance) return false;
+
+      distance = Math.sqrt(Math.max(sweptDistanceSq, 0.000001));
+      sweptContact = true;
+    }
 
     if (distance < 0.0001) {
       const escapeAngle = -Math.PI / 2 + pegIndex * Math.PI * 2 / pegs.length;
@@ -368,9 +404,15 @@
     const nx = dx / distance;
     const ny = dy / distance;
     const incomingNormalSpeed = -(ball.vx * nx + ball.vy * ny);
-    const overlap = contactDistance - distance;
-    ball.x += nx * overlap;
-    ball.y += ny * overlap;
+
+    // Normal contacts separate any overlap immediately. A swept contact is
+    // predicted just ahead of the current position, so changing velocity now
+    // is enough to prevent tunneling without moving the ball an extra step.
+    if (!sweptContact) {
+      const overlap = contactDistance - distance;
+      ball.x += nx * overlap;
+      ball.y += ny * overlap;
+    }
 
     if (incomingNormalSpeed > 0) {
       const impulse = (1 + PEG_RESTITUTION) * incomingNormalSpeed;
@@ -378,69 +420,83 @@
       ball.vy += impulse * ny;
     }
 
-    // A live Clock peg is a physical target: any actual ball contact counts.
+    // A live Clock peg is a physical target: any actual or swept contact counts.
     // Velocity and approach direction affect only the bounce, never hit credit.
-    if (distance < contactDistance) {
-      const jitter = (Math.random() - 0.5) * 0.18;
-      const cos = Math.cos(jitter);
-      const sin = Math.sin(jitter);
-      const kickX = nx * cos - ny * sin;
-      const kickY = nx * sin + ny * cos;
+    const jitter = (Math.random() - 0.5) * 0.18;
+    const cos = Math.cos(jitter);
+    const sin = Math.sin(jitter);
+    const kickX = nx * cos - ny * sin;
+    const kickY = nx * sin + ny * cos;
 
-      ball.vx += kickX * peg.kick;
-      ball.vy += kickY * peg.kick;
-      peg.dropped = true;
-      peg.flashStartedAt = now;
-      state.remaining = pegs.reduce(
-        (remaining, candidate) => remaining + (candidate.dropped ? 0 : 1),
-        0
-      );
+    ball.vx += kickX * peg.kick;
+    ball.vy += kickY * peg.kick;
+    peg.dropped = true;
+    peg.flashStartedAt = now;
+    state.remaining = pegs.reduce(
+      (remaining, candidate) => remaining + (candidate.dropped ? 0 : 1),
+      0
+    );
 
-      window.dispatchEvent(new CustomEvent('miami-impact', {
+    window.dispatchEvent(new CustomEvent('miami-impact', {
+      detail: {
+        type: 'post',
+        strength: clamp((incomingNormalSpeed + peg.kick * 0.45) / 650, 0.2, 1),
+        x: peg.x,
+        y: peg.y,
+        index: 60 + pegIndex
+      }
+    }));
+
+    window.dispatchEvent(new CustomEvent('miami-clock-peg-hit', {
+      detail: {
+        pegIndex,
+        lampIndex: peg.lampIndex,
+        x: peg.x,
+        y: peg.y,
+        remaining: state.remaining,
+        stage: state.stage,
+        mode: state.mode
+      }
+    }));
+
+    if (state.remaining === 0 && !state.completed) {
+      state.completed = true;
+      window.dispatchEvent(new CustomEvent('miami-clock-complete', {
         detail: {
-          type: 'post',
-          strength: clamp((incomingNormalSpeed + peg.kick * 0.45) / 650, 0.2, 1),
-          x: peg.x,
-          y: peg.y,
-          index: 60 + pegIndex
-        }
-      }));
-
-      window.dispatchEvent(new CustomEvent('miami-clock-peg-hit', {
-        detail: {
-          pegIndex,
-          lampIndex: peg.lampIndex,
-          x: peg.x,
-          y: peg.y,
-          remaining: state.remaining,
+          pegsKnockedDown: pegs.length,
           stage: state.stage,
           mode: state.mode
         }
       }));
-
-      if (state.remaining === 0 && !state.completed) {
-        state.completed = true;
-        window.dispatchEvent(new CustomEvent('miami-clock-complete', {
-          detail: {
-            pegsKnockedDown: pegs.length,
-            stage: state.stage,
-            mode: state.mode
-          }
-        }));
-      }
     }
 
     return true;
   }
 
   window.miamiCollideWithOpenClockPegs = function miamiCollideWithOpenClockPegs(
-    now = performance.now()
+    now = performance.now(),
+    dt = 1 / 240
   ) {
     if (!state.open || state.completed || !liveBallOnMainPlayfield()) return false;
 
+    const sweepDx = ball.vx * dt;
+    const sweepDy = ball.vy * dt;
+    const stepDistanceSq = sweepDx * sweepDx + sweepDy * sweepDy;
+    const sweepLengthSq =
+      stepDistanceSq >= CLOCK_SWEEP_MIN_STEP_SQ ? stepDistanceSq : 0;
+
     let collided = false;
     for (let index = 0; index < pegs.length; index += 1) {
-      if (collideWithClockPeg(pegs[index], index, now)) collided = true;
+      if (
+        collideWithClockPeg(
+          pegs[index],
+          index,
+          now,
+          sweepDx,
+          sweepDy,
+          sweepLengthSq
+        )
+      ) collided = true;
     }
     return collided;
   };
@@ -448,7 +504,7 @@
   const baseUpdateWithClockEvent = update;
   update = function updateWithClockEvent(dt) {
     baseUpdateWithClockEvent(dt);
-    window.miamiCollideWithOpenClockPegs();
+    window.miamiCollideWithOpenClockPegs(performance.now(), dt);
   };
 
   function drawClockPegs() {
