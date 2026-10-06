@@ -148,7 +148,7 @@ const PAYPHONE_LUCKY_BREAK_HITS = 3;
 const PAYPHONE_LUCKY_BREAK_BONUS = 25000;
 
 const payphone = {
-  x: 382,
+  x: 390,
   y: 620,
   width: 20,
   height: 32,
