@@ -194,6 +194,7 @@
       <button type="button" data-action="god">GOD MODE</button>
       <button type="button" data-action="clock2">CLOCK #2</button>
       <button type="button" data-action="midnight">MIDNIGHT RUN</button>
+      <button type="button" data-action="difficulty">EASY MODE: OFF</button>
       <button type="button" data-action="reset">RESET GAME</button>
       <button type="button" class="miami-test-exit" data-action="exit">EXIT TEST</button>
     </div>
@@ -206,8 +207,17 @@
   const error = gate.querySelector('.miami-test-error');
   const status = panel.querySelector('.miami-test-status');
 
+  const difficultyButton = panel.querySelector('[data-action="difficulty"]');
+
   function setStatus(message) {
     status.textContent = message;
+  }
+
+  function syncDifficultyButton() {
+    if (!difficultyButton) return;
+    const easy = window.miamiDifficultyMode === 'easy';
+    difficultyButton.textContent = easy ? 'EASY MODE: ON' : 'EASY MODE: OFF';
+    difficultyButton.setAttribute('aria-pressed', String(easy));
   }
 
   function closeGate() {
@@ -232,6 +242,7 @@
     window.miamiTestModeActive = true;
     closeGate();
     panel.hidden = false;
+    syncDifficultyButton();
     setStatus('SERVICE MODE READY · WORLD SCORES DISABLED');
     window.dispatchEvent(new CustomEvent('miami-test-mode-change', {
       detail: { active: true }
@@ -291,6 +302,9 @@
 
   function exitTestMode() {
     panel.hidden = true;
+    if (typeof window.miamiSetDifficultyMode === 'function') {
+      window.miamiSetDifficultyMode('hard');
+    }
     window.miamiTestModeActive = false;
     resetGame();
     window.dispatchEvent(new CustomEvent('miami-test-mode-change', {
@@ -355,6 +369,18 @@
           setStatus('MIDNIGHT RUN TRANSITION STARTED');
         }
         break;
+      case 'difficulty': {
+        const nextMode = window.miamiDifficultyMode === 'easy' ? 'hard' : 'easy';
+        const changed = typeof window.miamiSetDifficultyMode === 'function' &&
+          window.miamiSetDifficultyMode(nextMode);
+        syncDifficultyButton();
+        setStatus(changed
+          ? (nextMode === 'easy'
+              ? 'EASY TEST GEOMETRY · CENTER POST ON'
+              : 'HARD TEST GEOMETRY · CENTER POST OFF')
+          : 'DIFFICULTY CHANGE UNAVAILABLE');
+        break;
+      }
       case 'reset':
         resetGame();
         setStatus('GAME RESET · TEST MODE STILL ACTIVE');
@@ -401,6 +427,9 @@
     handleAction(button.dataset.action);
     button.blur();
   });
+
+  window.addEventListener('miami-difficulty-change', syncDifficultyButton);
+  syncDifficultyButton();
 
   buildNumber.setAttribute('role', 'button');
   buildNumber.setAttribute('tabindex', '0');
