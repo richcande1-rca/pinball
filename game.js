@@ -254,7 +254,9 @@ const coastalOrbitInnerPoints = [
   // magnetic target and the inner orbit rail at low speed.
   { x: 413, y: 99 },
   { x: 422, y: 126 },
-  { x: 413, y: 151 },
+  // Pull this bend left/up so the ground-level channel under OCEAN DRIVE
+  // cannot form a shallow shelf against the outer orbit wall.
+  { x: 406, y: 148 },
   { x: 396, y: 158 }
 ];
 
