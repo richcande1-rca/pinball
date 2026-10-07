@@ -3012,13 +3012,15 @@ window.addEventListener('keyup', (event) => {
   }
 });
 
-function releaseAllControls() {
-  keyboardFlipperCodes.left.clear();
-  keyboardFlipperCodes.right.clear();
-  buttonFlipperPointers.left.clear();
-  buttonFlipperPointers.right.clear();
-  syncFlipperInput('left');
-  syncFlipperInput('right');
+function releaseAllControls({ preserveFlippers = false } = {}) {
+  if (!preserveFlippers) {
+    keyboardFlipperCodes.left.clear();
+    keyboardFlipperCodes.right.clear();
+    buttonFlipperPointers.left.clear();
+    buttonFlipperPointers.right.clear();
+    syncFlipperInput('left');
+    syncFlipperInput('right');
+  }
 
   activeLaunchPointer = null;
   launchKeyHeld = false;
