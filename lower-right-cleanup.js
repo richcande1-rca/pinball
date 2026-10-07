@@ -18,7 +18,7 @@
     Object.assign(leftFlipper, {
       pivotX: PLAYFIELD_CENTER - 95,
       pivotY: 620,
-      length: 74,
+      length: 79,
       restAngle: 0.34,
       activeAngle: -0.48,
       angle: 0.34,
@@ -30,7 +30,7 @@
     Object.assign(rightFlipper, {
       pivotX: PLAYFIELD_CENTER + 95,
       pivotY: 620,
-      length: 74,
+      length: 79,
       restAngle: Math.PI - 0.34,
       activeAngle: Math.PI + 0.48,
       angle: Math.PI - 0.34,
