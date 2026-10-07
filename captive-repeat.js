@@ -1,11 +1,13 @@
-// Miami Nights: make the five-hit captive-ball extra-ball award repeatable.
-// Every completed five-hit cycle can earn another extra ball, even on the same live ball.
+// Miami Nights: allow up to two five-hit captive-ball extra-ball awards per live ball.
+// The first award resets the five-hit ladder; the second locks awards until drain.
 
 (() => {
   if (window.miamiCaptiveRepeatInstalled) return;
   window.miamiCaptiveRepeatInstalled = true;
 
+  const MAX_EXTRA_BALLS_PER_LIVE_BALL = 2;
   let extraBallsEarnedThisGame = captiveExtraBallAwarded ? 1 : 0;
+  let extraBallsEarnedThisLiveBall = captiveExtraBallAwarded ? 1 : 0;
 
   function renderRepeatableBallPips() {
     const slotCount = Math.max(
@@ -38,15 +40,26 @@
       captiveHitProgress >= CAPTIVE_EXTRA_BALL_HITS
     ) {
       extraBallsEarnedThisGame += 1;
-      // Start a fresh five-hit cycle immediately. CAPTIVE READY multiball stays
-      // independent, while another extra ball can now be earned on this same ball.
-      captiveHitProgress = 0;
-      captiveExtraBallAwarded = false;
+      extraBallsEarnedThisLiveBall += 1;
+
+      if (extraBallsEarnedThisLiveBall < MAX_EXTRA_BALLS_PER_LIVE_BALL) {
+        // First award: start a fresh five-hit cycle immediately. CAPTIVE READY
+        // multiball stays independent.
+        captiveHitProgress = 0;
+        captiveExtraBallAwarded = false;
+      } else {
+        // Second award: leave the ladder complete and award flag locked so
+        // further captive hits cannot create more extra balls before drain.
+        captiveHitProgress = CAPTIVE_EXTRA_BALL_HITS;
+        captiveExtraBallAwarded = true;
+      }
+
       syncStatusDisplay();
     }
   });
 
   window.addEventListener('miami-drain', () => {
+    extraBallsEarnedThisLiveBall = 0;
     captiveHitProgress = 0;
     captiveExtraBallAwarded = false;
     captiveExtraBallFlashStartedAt = -Infinity;
@@ -55,6 +68,7 @@
   const baseResetGameWithRepeatableExtraBall = resetGame;
   resetGame = function resetGameWithRepeatableExtraBall() {
     extraBallsEarnedThisGame = 0;
+    extraBallsEarnedThisLiveBall = 0;
     baseResetGameWithRepeatableExtraBall();
     renderRepeatableBallPips();
   };
