@@ -5,12 +5,8 @@
   const EASY_MODE = 'easy';
   const HARD_MODE = 'hard';
 
-  if (
-    window.miamiDifficultyMode !== EASY_MODE &&
-    window.miamiDifficultyMode !== HARD_MODE
-  ) {
-    window.miamiDifficultyMode = EASY_MODE;
-  }
+  // Production play is permanently HARD. EASY exists only as a service/test aid.
+  window.miamiDifficultyMode = HARD_MODE;
 
   const centerPost = {
     x: PLAYFIELD_CENTER,
@@ -20,7 +16,8 @@
   };
 
   function centerPostEnabled() {
-    return window.miamiDifficultyMode !== HARD_MODE;
+    return Boolean(window.miamiTestModeActive) &&
+      window.miamiDifficultyMode === EASY_MODE;
   }
 
   function collideWithCenterPost() {
@@ -113,128 +110,50 @@
     baseDrawBallWithCenterPost();
   };
 
-  // Keep difficulty deliberately simple: HARD changes one thing only — the
-  // center safety post is absent visually and physically.
-  const controlStrip = document.querySelector('.control-strip');
-  if (controlStrip) {
-    const modeButton = document.createElement('button');
-    modeButton.id = 'miami-difficulty-button';
-    modeButton.type = 'button';
-    modeButton.setAttribute('aria-label', 'Difficulty mode');
+  // Normal play is always HARD: the center safety post is absent.
+  // EASY is intentionally available only while hidden service/test mode is active.
+  function setDifficultyMode(mode) {
+    if (mode !== EASY_MODE && mode !== HARD_MODE) return false;
+    if (mode === EASY_MODE && !window.miamiTestModeActive) return false;
 
-    const style = document.createElement('style');
-    style.textContent = `
-      #miami-difficulty-button {
-        grid-column: 2;
-        grid-row: 2;
-        justify-self: center;
-        align-self: center;
-        width: auto;
-        min-width: 0;
-        min-height: 1.45rem;
-        margin: 0;
-        padding: 0.18rem 0.42rem;
-        border: 1px solid rgba(34, 223, 243, 0.68);
-        border-radius: 3px;
-        background: rgba(5, 16, 34, 0.88);
-        color: #f7fbff;
-        font: 700 0.5rem system-ui, sans-serif;
-        letter-spacing: 0.08em;
-        line-height: 1;
-        white-space: nowrap;
-        cursor: pointer;
-        box-shadow: 0 0 12px rgba(34, 223, 243, 0.2);
+    window.miamiDifficultyMode = mode;
+    window.dispatchEvent(new CustomEvent('miami-difficulty-change', {
+      detail: {
+        mode,
+        centerPost: mode === EASY_MODE
       }
+    }));
+    return true;
+  }
 
-      #miami-difficulty-button[aria-pressed="true"] {
-        border-color: rgba(255, 60, 172, 0.78);
-        color: #ff9bd2;
-        box-shadow:
-          inset 0 0 18px rgba(255, 60, 172, 0.1),
-          0 0 14px rgba(255, 60, 172, 0.24);
-      }
+  window.miamiSetDifficultyMode = setDifficultyMode;
 
-      #miami-difficulty-button:focus-visible {
-        outline: 2px solid #c9b8ff;
-        outline-offset: 2px;
-      }
-
-      #miami-difficulty-button:disabled {
-        opacity: 0.46;
-        cursor: default;
-      }
-
-      @media (max-width: 430px) {
-        #miami-difficulty-button {
-          min-height: 1.3rem;
-          padding: 0.14rem 0.28rem;
-          font-size: 0.42rem;
-          letter-spacing: 0.045em;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    let difficultyLocked = false;
-
-    function syncModeButton() {
-      const hard = window.miamiDifficultyMode === HARD_MODE;
-      modeButton.textContent = hard ? 'MODE HARD' : 'MODE EASY';
-      modeButton.setAttribute('aria-pressed', String(hard));
-      modeButton.title = hard
-        ? 'Hard mode: center safety post removed'
-        : 'Easy mode: center safety post active';
-      modeButton.disabled = difficultyLocked;
+  const baseResetGameWithDifficulty = resetGame;
+  resetGame = function resetGameWithDifficulty() {
+    if (!window.miamiTestModeActive) {
+      window.miamiDifficultyMode = HARD_MODE;
     }
+    baseResetGameWithDifficulty();
+  };
 
-    function setDifficultyMode(mode) {
-      if (difficultyLocked) return false;
-      if (mode !== EASY_MODE && mode !== HARD_MODE) return false;
-      window.miamiDifficultyMode = mode;
-      syncModeButton();
-      window.dispatchEvent(new CustomEvent('miami-difficulty-change', {
-        detail: {
-          mode,
-          centerPost: mode === EASY_MODE
-        }
-      }));
-      return true;
-    }
+  window.addEventListener('miami-test-mode-change', event => {
+    if (event.detail?.active) return;
+    if (window.miamiDifficultyMode === HARD_MODE) return;
 
-    window.miamiSetDifficultyMode = setDifficultyMode;
-
-    modeButton.addEventListener('click', () => {
-      setDifficultyMode(
-        window.miamiDifficultyMode === HARD_MODE ? EASY_MODE : HARD_MODE
-      );
-      modeButton.blur();
-    });
-
-    const baseUpdateWithDifficultyLock = update;
-    update = function updateWithDifficultyLock(dt) {
-      baseUpdateWithDifficultyLock(dt);
-      if (!difficultyLocked && !ball.ready) {
-        difficultyLocked = true;
-        syncModeButton();
+    window.miamiDifficultyMode = HARD_MODE;
+    window.dispatchEvent(new CustomEvent('miami-difficulty-change', {
+      detail: {
+        mode: HARD_MODE,
+        centerPost: false
       }
-    };
+    }));
+  });
 
-    const baseResetGameWithDifficultyUnlock = resetGame;
-    resetGame = function resetGameWithDifficultyUnlock() {
-      difficultyLocked = false;
-      baseResetGameWithDifficultyUnlock();
-      syncModeButton();
-    };
-
-    controlStrip.appendChild(modeButton);
-    syncModeButton();
-
-    const instructions = document.querySelector('.instruction-content');
-    if (instructions) {
-      instructions.append(document.createTextNode(
-        ' Difficulty: EASY keeps the center safety post; HARD removes that post completely. Mode locks after the first launch and resets for a new game.'
-      ));
-    }
+  const instructions = document.querySelector('.instruction-content');
+  if (instructions) {
+    instructions.append(document.createTextNode(
+      ' Normal play uses HARD geometry with no center safety post. EASY geometry is available only in hidden Test Mode.'
+    ));
   }
 })();
 
