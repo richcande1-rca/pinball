@@ -114,7 +114,7 @@ function makeFlipper(side) {
     // playfield rather than on the full canvas including the shooter lane.
     pivotX: PLAYFIELD_CENTER + (isLeft ? -95 : 95),
     pivotY: 620,
-    length: 83,
+    length: 79,
     radius: 11,
     restAngle: isLeft ? 0.34 : Math.PI - 0.34,
     activeAngle: isLeft ? -0.48 : Math.PI + 0.48,
