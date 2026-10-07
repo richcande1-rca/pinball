@@ -40,12 +40,6 @@
   const freezeCtx = freezeFrame.getContext('2d');
 
   const blockedKeys = new Set([
-    'ArrowLeft',
-    'ArrowRight',
-    'KeyZ',
-    'KeyX',
-    'Slash',
-    'NumpadDivide',
     'Space',
     'Enter'
   ]);
@@ -55,7 +49,9 @@
   }
 
   function releaseForTransition() {
-    if (typeof releaseAllControls === 'function') releaseAllControls();
+    if (typeof releaseAllControls === 'function') {
+      releaseAllControls({ preserveFlippers: true });
+    }
   }
 
   function livePhysicalBallCount() {
@@ -287,9 +283,7 @@
   }
 
   function isGameControlTarget(target) {
-    return target === leftFlipperButton ||
-      target === rightFlipperButton ||
-      target === launchButton;
+    return target === launchButton;
   }
 
   function blockTransitionPointer(event) {
