@@ -39,6 +39,10 @@
       captiveExtraBallAwarded &&
       captiveHitProgress >= CAPTIVE_EXTRA_BALL_HITS
     ) {
+      // Once this live ball has earned both allowed awards, the completed
+      // ladder stays lit but later captive hits must not create phantom pip slots.
+      if (extraBallsEarnedThisLiveBall >= MAX_EXTRA_BALLS_PER_LIVE_BALL) return;
+
       extraBallsEarnedThisGame += 1;
       extraBallsEarnedThisLiveBall += 1;
 
