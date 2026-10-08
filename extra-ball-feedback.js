@@ -182,6 +182,15 @@
   // The captive mechanism already dispatches this impact after updating its
   // five-hit progress and award state. Detect the false->true award transition
   // here rather than changing the established gameplay logic.
+  // A carried 4/5 ladder can complete on the very first captive hit of the
+  // next live ball. Re-arm presentation state at drain so that award still
+  // gets its normal celebration.
+  window.addEventListener('miami-drain', () => {
+    extraBallSeen = false;
+    extraBallCelebrationStartedAt = -Infinity;
+    if (ballStatus) ballStatus.classList.remove('miami-extra-ball-flash');
+  });
+
   window.addEventListener('miami-impact', event => {
     const detail = event.detail || {};
     if (Number(detail.index) !== 8) return;
