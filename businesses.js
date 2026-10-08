@@ -43,6 +43,10 @@
     flashStartedAt: -Infinity
   };
 
+  // Preserve Ocho's characteristic feed while preventing pixel-identical
+  // repeat exits. This is a one-time angle variation at ejection only.
+  const CAFE_OCHO_EXIT_VARIANCE = 2 * Math.PI / 180;
+
   function resetOceanDriveBusinesses() {
     for (const target of reefHotel.targets) {
       target.lit = false;
@@ -242,8 +246,10 @@
     cafeOcho.holdRemaining = Math.max(0, cafeOcho.holdRemaining - dt);
     if (cafeOcho.holdRemaining > 0) return;
 
-    const ux = Math.cos(cafeOcho.ejectAngle);
-    const uy = Math.sin(cafeOcho.ejectAngle);
+    const ejectAngle = cafeOcho.ejectAngle +
+      (Math.random() * 2 - 1) * CAFE_OCHO_EXIT_VARIANCE;
+    const ux = Math.cos(ejectAngle);
+    const uy = Math.sin(ejectAngle);
     const clearance = cafeOcho.radius + ball.radius + 3;
     cafeOcho.active = false;
     cafeOcho.flashStartedAt = performance.now();
