@@ -19,9 +19,9 @@
       dropped: false, armed: true, flashStartedAt: -Infinity,
       shape: 'down-triangle',
       vertices: [
-        { x: 202, y: 499 },
-        { x: 218, y: 499 },
-        { x: 210, y: 511 }
+        { x: 201, y: 501 },
+        { x: 219, y: 501 },
+        { x: 210, y: 510 }
       ]
     },
 
@@ -37,16 +37,34 @@
     }
 
     if (!target.collisionSegments) {
-      target.collisionSegments = target.vertices.map((point, index, points) => {
-        const next = points[(index + 1) % points.length];
-        return {
-          x1: point.x,
-          y1: point.y,
-          x2: next.x,
-          y2: next.y,
+      const [left, right, tip] = target.vertices;
+
+      // Cross the two sloped collision faces one pixel behind the visible tip.
+      // That approximates a sharp wedge with the existing capsule-segment
+      // solver: a centered hit sees a sloped face instead of a round endpoint.
+      target.collisionSegments = [
+        {
+          x1: left.x,
+          y1: left.y,
+          x2: tip.x + 1,
+          y2: tip.y + 1,
           radius: target.radius
-        };
-      });
+        },
+        {
+          x1: right.x,
+          y1: right.y,
+          x2: tip.x - 1,
+          y2: tip.y + 1,
+          radius: target.radius
+        },
+        {
+          x1: left.x,
+          y1: left.y,
+          x2: right.x,
+          y2: right.y,
+          radius: target.radius
+        }
+      ];
     }
     return target.collisionSegments;
   }
