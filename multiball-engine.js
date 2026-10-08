@@ -470,10 +470,12 @@
       ball.x < 345 &&
       ball.y < 135
     ) {
+      const exitAngle = RAMP_EXIT.angle +
+        (Math.random() * 2 - 1) * RAMP_EXIT.angleVariance;
       ball.x = RAMP_EXIT.x;
       ball.y = RAMP_EXIT.y;
-      ball.vx = -Math.cos(RAMP_EXIT.angle) * RAMP_EXIT.speed;
-      ball.vy = Math.sin(RAMP_EXIT.angle) * RAMP_EXIT.speed;
+      ball.vx = -Math.cos(exitAngle) * RAMP_EXIT.speed;
+      ball.vy = Math.sin(exitAngle) * RAMP_EXIT.speed;
       shooterRoute = 'released';
       ballHasEnteredPlayfield = true;
     }
