@@ -21,7 +21,7 @@
   // is unusually long. Normal-speed play keeps the existing cheap overlap test.
   const CLOCK_SWEEP_MIN_STEP = 10;
   const CLOCK_SWEEP_MIN_STEP_SQ = CLOCK_SWEEP_MIN_STEP * CLOCK_SWEEP_MIN_STEP;
-  const BOTTOM_PEG_INDEX = 3;
+  const BOTTOM_PEG_INDEX = PEG_LAMP_INDICES.indexOf(6);
   const BOTTOM_DRAIN_CONE_HALF_ANGLE = 10 * Math.PI / 180;
   const BOTTOM_DRAIN_DEFLECTION_ANGLE = 12 * Math.PI / 180;
 
