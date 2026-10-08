@@ -21,6 +21,9 @@
   // is unusually long. Normal-speed play keeps the existing cheap overlap test.
   const CLOCK_SWEEP_MIN_STEP = 10;
   const CLOCK_SWEEP_MIN_STEP_SQ = CLOCK_SWEEP_MIN_STEP * CLOCK_SWEEP_MIN_STEP;
+  const BOTTOM_PEG_INDEX = 3;
+  const BOTTOM_DRAIN_CONE_HALF_ANGLE = 10 * Math.PI / 180;
+  const BOTTOM_DRAIN_DEFLECTION_ANGLE = 12 * Math.PI / 180;
 
   const upperBarrierHits = new Set();
   const lowerBarrierHits = new Set();
@@ -350,6 +353,24 @@
       magneticTarget.state !== 'holding';
   }
 
+  function deflectBottomPegFromCenterDrain(pegIndex) {
+    if (pegIndex !== BOTTOM_PEG_INDEX || ball.vy <= 0) return;
+
+    const speed = Math.hypot(ball.vx, ball.vy);
+    if (speed < 0.0001) return;
+
+    const angleFromStraightDown = Math.atan2(Math.abs(ball.vx), ball.vy);
+    if (angleFromStraightDown >= BOTTOM_DRAIN_CONE_HALF_ANGLE) return;
+
+    // Preserve the outgoing speed, but keep a nearly vertical return from the
+    // mandatory bottom Clock peg just outside the straight-down drain cone.
+    const side = Math.abs(ball.vx) > 1
+      ? Math.sign(ball.vx)
+      : (Math.random() < 0.5 ? -1 : 1);
+    ball.vx = side * Math.sin(BOTTOM_DRAIN_DEFLECTION_ANGLE) * speed;
+    ball.vy = Math.cos(BOTTOM_DRAIN_DEFLECTION_ANGLE) * speed;
+  }
+
   function collideWithClockPeg(
     peg,
     pegIndex,
@@ -430,6 +451,7 @@
 
     ball.vx += kickX * peg.kick;
     ball.vy += kickY * peg.kick;
+    deflectBottomPegFromCenterDrain(pegIndex);
     peg.dropped = true;
     peg.flashStartedAt = now;
     state.remaining = pegs.reduce(
