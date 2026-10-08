@@ -1,5 +1,6 @@
 // Miami Nights: allow up to two five-hit captive-ball extra-ball awards per live ball.
-// The first award resets the five-hit ladder; the second locks awards until drain.
+// Partial ladder progress survives a drain. The first award resets the ladder;
+// the second locks awards until drain, then the next live ball starts at 0/5.
 
 (() => {
   if (window.miamiCaptiveRepeatInstalled) return;
@@ -63,10 +64,20 @@
   });
 
   window.addEventListener('miami-drain', () => {
+    const completedLockedCycle =
+      captiveExtraBallAwarded &&
+      captiveHitProgress >= CAPTIVE_EXTRA_BALL_HITS;
+
     extraBallsEarnedThisLiveBall = 0;
-    captiveHitProgress = 0;
-    captiveExtraBallAwarded = false;
     captiveExtraBallFlashStartedAt = -Infinity;
+
+    // Unfinished 1/5-4/5 progress belongs to the game, not the live ball.
+    // A completed second-award lock is consumed by the drain so the next
+    // live ball begins a fresh ladder instead of instantly re-awarding.
+    if (completedLockedCycle) {
+      captiveHitProgress = 0;
+      captiveExtraBallAwarded = false;
+    }
   });
 
   const baseResetGameWithRepeatableExtraBall = resetGame;
