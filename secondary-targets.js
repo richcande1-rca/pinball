@@ -12,7 +12,18 @@
     // solid hit and return only when the next ball is set up.
     { x1: 112, y1: 430, x2: 126, y2: 430, radius: 3.25, value: 300, accent: 'cyan', group: 'center', groupIndex: 0, drop: true, dropped: false, armed: true, flashStartedAt: -Infinity },
     { x1: 294, y1: 430, x2: 308, y2: 430, radius: 3.25, value: 300, accent: 'magenta', group: 'center', groupIndex: 1, drop: true, dropped: false, armed: true, flashStartedAt: -Infinity },
-    { x1: 203, y1: 505, x2: 217, y2: 505, radius: 3.25, value: 300, accent: 'lavender', group: 'center', groupIndex: 2, drop: true, dropped: false, armed: true, flashStartedAt: -Infinity },
+    {
+      x1: 203, y1: 505, x2: 217, y2: 505,
+      radius: 3.25, value: 300, accent: 'lavender',
+      group: 'center', groupIndex: 2, drop: true,
+      dropped: false, armed: true, flashStartedAt: -Infinity,
+      shape: 'down-triangle',
+      vertices: [
+        { x: 202, y: 499 },
+        { x: 218, y: 499 },
+        { x: 210, y: 511 }
+      ]
+    },
 
     // Two flush standups beneath the captive-ball cage. They live on the side
     // wall so the captive-ball shot itself remains completely unobstructed.
@@ -20,22 +31,45 @@
     { x1: 44, y1: 386, x2: 44, y2: 402, radius: 3.25, value: 300, accent: 'cyan', group: 'captive-side', groupIndex: 1, drop: false, armed: true, flashStartedAt: -Infinity }
   ];
 
+  function targetSegments(target) {
+    if (target.shape !== 'down-triangle' || !Array.isArray(target.vertices)) {
+      return [target];
+    }
+
+    if (!target.collisionSegments) {
+      target.collisionSegments = target.vertices.map((point, index, points) => {
+        const next = points[(index + 1) % points.length];
+        return {
+          x1: point.x,
+          y1: point.y,
+          x2: next.x,
+          y2: next.y,
+          radius: target.radius
+        };
+      });
+    }
+    return target.collisionSegments;
+  }
+
   // Precompute cheap AABBs once. Most physics ticks now reject a target with a
   // few comparisons instead of running closest-point geometry and Math.hypot.
   for (const target of secondaryTargets) {
+    const segments = targetSegments(target);
+    const xs = segments.flatMap(segment => [segment.x1, segment.x2]);
+    const ys = segments.flatMap(segment => [segment.y1, segment.y2]);
     const contactPad = ball.radius + target.radius + 2;
     const rearmPad = contactPad + 12;
     target.broadPhase = {
-      minX: Math.min(target.x1, target.x2) - contactPad,
-      maxX: Math.max(target.x1, target.x2) + contactPad,
-      minY: Math.min(target.y1, target.y2) - contactPad,
-      maxY: Math.max(target.y1, target.y2) + contactPad
+      minX: Math.min(...xs) - contactPad,
+      maxX: Math.max(...xs) + contactPad,
+      minY: Math.min(...ys) - contactPad,
+      maxY: Math.max(...ys) + contactPad
     };
     target.rearmPhase = {
-      minX: Math.min(target.x1, target.x2) - rearmPad,
-      maxX: Math.max(target.x1, target.x2) + rearmPad,
-      minY: Math.min(target.y1, target.y2) - rearmPad,
-      maxY: Math.max(target.y1, target.y2) + rearmPad
+      minX: Math.min(...xs) - rearmPad,
+      maxX: Math.max(...xs) + rearmPad,
+      minY: Math.min(...ys) - rearmPad,
+      maxY: Math.max(...ys) + rearmPad
     };
   }
 
@@ -51,18 +85,24 @@
   }
 
   function targetContact(target) {
-    const closest = closestPointOnSegment(
-      ball.x,
-      ball.y,
-      target.x1,
-      target.y1,
-      target.x2,
-      target.y2
-    );
-    return {
-      closest,
-      distance: Math.hypot(ball.x - closest.x, ball.y - closest.y)
-    };
+    let best = null;
+
+    for (const segment of targetSegments(target)) {
+      const closest = closestPointOnSegment(
+        ball.x,
+        ball.y,
+        segment.x1,
+        segment.y1,
+        segment.x2,
+        segment.y2
+      );
+      const distance = Math.hypot(ball.x - closest.x, ball.y - closest.y);
+      if (!best || distance < best.distance) {
+        best = { segment, closest, distance };
+      }
+    }
+
+    return best;
   }
 
   function currentScoreMultiplier() {
@@ -107,7 +147,7 @@
     }
 
     const touching = resolveSegmentCollision(
-      target,
+      contact.segment,
       { x: 0, y: 0 },
       incomingNormalSpeed < 45 ? 0.34 : 0.78
     );
@@ -177,10 +217,22 @@
   };
 
   function drawSecondaryTarget(target) {
-    const centerX = (target.x1 + target.x2) / 2;
-    const centerY = (target.y1 + target.y2) / 2;
-    const width = Math.hypot(target.x2 - target.x1, target.y2 - target.y1);
-    const angle = Math.atan2(target.y2 - target.y1, target.x2 - target.x1);
+    const isTriangle =
+      target.shape === 'down-triangle' &&
+      Array.isArray(target.vertices);
+    const centerX = isTriangle
+      ? target.vertices.reduce((sum, point) => sum + point.x, 0) / target.vertices.length
+      : (target.x1 + target.x2) / 2;
+    const centerY = isTriangle
+      ? target.vertices.reduce((sum, point) => sum + point.y, 0) / target.vertices.length
+      : (target.y1 + target.y2) / 2;
+    const width = isTriangle
+      ? Math.max(...target.vertices.map(point => point.x)) -
+        Math.min(...target.vertices.map(point => point.x))
+      : Math.hypot(target.x2 - target.x1, target.y2 - target.y1);
+    const angle = isTriangle
+      ? 0
+      : Math.atan2(target.y2 - target.y1, target.x2 - target.x1);
     const accent = MIAMI_COLORS[target.accent] || MIAMI_COLORS.lavender;
     const age = performance.now() - target.flashStartedAt;
     const flash = age >= 0 && age < 260 ? 1 - age / 260 : 0;
@@ -206,6 +258,38 @@
     }
 
     ctx.save();
+
+    if (isTriangle) {
+      ctx.fillStyle = '#02050d';
+      ctx.strokeStyle = MIAMI_COLORS.structure;
+      ctx.lineWidth = 3.2;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(target.vertices[0].x, target.vertices[0].y);
+      for (let index = 1; index < target.vertices.length; index += 1) {
+        ctx.lineTo(target.vertices[index].x, target.vertices[index].y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = flash > 0 ? '#f4ffff' : '#07101d';
+      ctx.strokeStyle = flash > 0 ? '#ffffff' : accent;
+      ctx.lineWidth = 1.8;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = window.miamiMobilePerformanceMode ? 0 : (5 + flash * 14);
+      ctx.beginPath();
+      ctx.moveTo(target.vertices[0].x, target.vertices[0].y);
+      for (let index = 1; index < target.vertices.length; index += 1) {
+        ctx.lineTo(target.vertices[index].x, target.vertices[index].y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
     ctx.translate(centerX, centerY);
     ctx.rotate(angle);
 
