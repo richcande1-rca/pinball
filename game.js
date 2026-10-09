@@ -281,7 +281,9 @@ const magneticTarget = {
   captureDuration: 0.7,
   cooldownRemaining: 0,
   ejectAngle: 145 * Math.PI / 180,
+  ejectAngleVariance: 10 * Math.PI / 180,
   ejectSpeed: 650,
+  ejectSpeedVariance: 30,
   flashStartedAt: -Infinity
 };
 
@@ -1382,8 +1384,13 @@ function updateMagneticTarget(dt) {
   magneticTarget.holdRemaining -= dt;
 
   if (magneticTarget.holdRemaining <= 0) {
-    const ux = Math.cos(magneticTarget.ejectAngle);
-    const uy = Math.sin(magneticTarget.ejectAngle);
+    // Vary each cannon release once; free-flight physics stays untouched.
+    const ejectAngle = magneticTarget.ejectAngle +
+      (Math.random() * 2 - 1) * magneticTarget.ejectAngleVariance;
+    const ejectSpeed = magneticTarget.ejectSpeed +
+      (Math.random() * 2 - 1) * magneticTarget.ejectSpeedVariance;
+    const ux = Math.cos(ejectAngle);
+    const uy = Math.sin(ejectAngle);
     const clearance = magneticTarget.radius + ball.radius + 2;
 
     magneticTarget.state = 'cooldown';
@@ -1391,10 +1398,10 @@ function updateMagneticTarget(dt) {
     magneticTarget.flashStartedAt = performance.now();
     ball.x = magneticTarget.x + ux * clearance;
     ball.y = magneticTarget.y + uy * clearance;
-    ball.vx = ux * magneticTarget.ejectSpeed;
-    ball.vy = uy * magneticTarget.ejectSpeed;
+    ball.vx = ux * ejectSpeed;
+    ball.vy = uy * ejectSpeed;
     window.dispatchEvent(new CustomEvent('miami-magnet-eject', {
-      detail: { speed: magneticTarget.ejectSpeed }
+      detail: { speed: ejectSpeed }
     }));
   }
 
