@@ -28,6 +28,16 @@
   const DISCO_RAY_COUNT = 8;
   const DISCO_RING_COUNT = 4;
 
+  // Keep the 240 Hz ball simulation untouched. During multiball, omit costly
+  // shadow paints and some overlapping disco geometry; color/animation remain.
+  function reduceRushEffects() {
+    return Boolean(
+      window.miamiReducedRenderEffects ||
+      window.miamiMultiballEngine?.state?.companion?.active ||
+      window.miamiMultiballState?.phase === 'multiball'
+    );
+  }
+
   const state = {
     active: false,
     pendingUntil: -Infinity,
@@ -180,9 +190,10 @@
 
   function drawDiscoRays(now) {
     const mobile = Boolean(window.miamiReducedRenderEffects);
+    const reduced = reduceRushEffects();
     const elapsed = now - state.startedAt;
     const rotation = elapsed / 820;
-    const rayCount = mobile ? 4 : DISCO_RAY_COUNT;
+    const rayCount = reduced ? 4 : DISCO_RAY_COUNT;
     const reach = 520;
 
     ctx.save();
@@ -197,7 +208,7 @@
       ctx.globalAlpha = (mobile ? 0.07 : 0.10) + wave * (mobile ? 0.05 : 0.08);
       ctx.strokeStyle = accent;
       ctx.lineWidth = 5 + wave * 7;
-      if (!mobile) {
+      if (!reduced) {
         ctx.shadowColor = accent;
         ctx.shadowBlur = 10 + wave * 10;
       }
@@ -216,9 +227,10 @@
 
   function drawDiscoRings(now) {
     const mobile = Boolean(window.miamiReducedRenderEffects);
+    const reduced = reduceRushEffects();
     const elapsed = now - state.startedAt;
 
-    for (let index = 0; index < DISCO_RING_COUNT; index += 1) {
+    for (let index = 0; index < DISCO_RING_COUNT; index += reduced ? 2 : 1) {
       const phase = ((elapsed / 1000) + index / DISCO_RING_COUNT) % 1;
       const accent = index % 2 === 0 ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
 
@@ -226,7 +238,7 @@
       ctx.globalAlpha = (1 - phase) * (mobile ? 0.22 : 0.34);
       ctx.strokeStyle = accent;
       ctx.lineWidth = 1.5 + (1 - phase) * 2;
-      if (!mobile) {
+      if (!reduced) {
         ctx.shadowColor = accent;
         ctx.shadowBlur = 7;
       }
@@ -283,7 +295,10 @@
     const runner = Math.floor((now - state.startedAt) / 90) % CLOCK_LAMPS;
     const runner2 = (runner + 6) % CLOCK_LAMPS;
     const mobile = Boolean(window.miamiReducedRenderEffects);
+    const reduced = reduceRushEffects();
 
+    // One context save/restore for the full lamp ring instead of 12 per frame.
+    ctx.save();
     for (let index = 0; index < CLOCK_LAMPS; index += 1) {
       const angle = -Math.PI / 2 + index * Math.PI * 2 / CLOCK_LAMPS;
       const x = CENTER_X + Math.cos(angle) * CLOCK_RADIUS_X;
@@ -292,21 +307,18 @@
       const accent = index % 2 === 0 ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
       const runnerHit = index === runner || index === runner2;
 
-      ctx.save();
       ctx.globalAlpha = lit ? 0.92 : 0.16;
       ctx.fillStyle = runnerHit && lit ? '#ffffff' : (lit ? accent : '#09101b');
       ctx.strokeStyle = lit ? '#ffffff' : MIAMI_COLORS.structure;
       ctx.lineWidth = runnerHit && lit ? 2.5 : 1.3;
-      if (!mobile && lit) {
-        ctx.shadowColor = accent;
-        ctx.shadowBlur = runnerHit ? 16 : 8;
-      }
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = !reduced && lit ? (runnerHit ? 16 : 8) : 0;
       ctx.beginPath();
       ctx.arc(x, y, runnerHit && lit ? 5.5 : 4.3, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      ctx.restore();
     }
+    ctx.restore();
 
     const pulse = 0.5 + 0.5 * Math.sin(now / 95);
     ctx.save();
@@ -338,39 +350,35 @@
   }
 
   function drawRushPerimeter(now) {
-    const mobile = Boolean(window.miamiReducedRenderEffects);
+    const reduced = reduceRushEffects();
     const elapsed = now - state.startedAt;
     const beatPhase = (elapsed % BEAT_MS) / BEAT_MS;
     const beatFlash = 1 - clamp(beatPhase / 0.24, 0, 1);
     const chasePhase = elapsed / 135;
 
+    // Draw the entire animated chase inside one context state. The previous
+    // per-lamp save/restore added dozens of canvas state transitions per frame.
+    ctx.save();
     for (let index = 0; index < PERIMETER_POINTS.length; index += 1) {
       const point = PERIMETER_POINTS[index];
       const accent = index % 2 === 0 ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
       const wave = 0.5 + 0.5 * Math.sin(chasePhase - index * 0.78);
       const hot = wave > 0.82;
 
-      ctx.save();
       ctx.globalAlpha = 0.24 + wave * 0.72;
       ctx.fillStyle = hot ? '#ffffff' : accent;
-      if (!mobile && hot) {
-        ctx.shadowColor = accent;
-        ctx.shadowBlur = 11;
-      }
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = !reduced && hot ? 11 : 0;
       ctx.beginPath();
       ctx.arc(point.x, point.y, 1.8 + wave * 2.1, 0, Math.PI * 2);
       ctx.fill();
-      ctx.restore();
     }
 
-    ctx.save();
     ctx.globalAlpha = 0.16 + beatFlash * 0.18;
     ctx.strokeStyle = beatFlash > 0.48 ? MIAMI_COLORS.magenta : MIAMI_COLORS.cyan;
     ctx.lineWidth = 2 + beatFlash * 2.5;
-    if (!mobile) {
-      ctx.shadowColor = ctx.strokeStyle;
-      ctx.shadowBlur = 10;
-    }
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.shadowBlur = reduced ? 0 : 10;
     ctx.strokeRect(TABLE.left + 4, TABLE.top + 4, TABLE.right - TABLE.left - 8, 612);
     ctx.restore();
   }
@@ -385,7 +393,7 @@
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5 + strength * 2.5;
     ctx.shadowColor = strength > 0.5 ? MIAMI_COLORS.cyan : MIAMI_COLORS.magenta;
-    ctx.shadowBlur = window.miamiReducedRenderEffects ? 0 : 13;
+    ctx.shadowBlur = reduceRushEffects() ? 0 : 13;
     ctx.beginPath();
     ctx.arc(
       state.lastImpactX,
