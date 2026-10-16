@@ -10,9 +10,10 @@
 
   const REQUIRED_AMBUSH_CLEARS = 3;
   const DURATION_MS = 30000;
+  const COMPLETION_BONUS = 150000;
   const INTRO_MS = 1300;
   const SAVE_FLASH_MS = 650;
-  const END_FLASH_MS = 1100;
+  const END_FLASH_MS = 1700;
 
   const state = {
     ambushClears: 0,
@@ -54,8 +55,16 @@
     state.endFlashUntil = performance.now() + END_FLASH_MS;
     window.miamiGodModeActive = false;
 
+    // Award once on successful timer completion. The fixed bonus is not
+    // subject to GOD MODE's 5X multiplier or AMBUSH's PRESSURE penalty.
+    score += COMPLETION_BONUS;
+    if (window.miamiAmbushState) {
+      window.miamiAmbushState.lastScoreSeen = score;
+    }
+    syncStatusDisplay();
+
     window.dispatchEvent(new CustomEvent('miami-god-mode-end', {
-      detail: { saves: state.saves }
+      detail: { saves: state.saves, completionBonus: COMPLETION_BONUS }
     }));
   }
 
@@ -102,7 +111,6 @@
   const baseUpdateWithGodMode = update;
   update = function updateWithGodMode(dt) {
     const godScoring = state.active && !gameOver;
-    const scoreBeforeUpdate = score;
 
     if (godScoring) {
       state.remainingMs = Math.max(
@@ -112,6 +120,8 @@
       if (state.remainingMs <= 0) finishGodMode();
     }
 
+    // Snapshot after the fixed completion bonus to keep it out of 5X scoring.
+    const scoreBeforeUpdate = score;
     baseUpdateWithGodMode(dt);
 
     if (godScoring) {
@@ -208,7 +218,9 @@
       ctx.shadowBlur = 14;
       ctx.fillStyle = '#fff6cf';
       ctx.font = '900 18px system-ui, sans-serif';
-      ctx.fillText('GOD MODE OVER', canvas.width / 2, canvas.height * 0.34);
+      ctx.fillText('GOD MODE COMPLETE', canvas.width / 2, canvas.height * 0.34);
+      ctx.font = '900 16px ui-monospace, monospace';
+      ctx.fillText('+150,000', canvas.width / 2, canvas.height * 0.34 + 27);
     }
 
     ctx.restore();
@@ -244,7 +256,7 @@
   const instructions = document.querySelector('.instruction-content');
   if (instructions) {
     instructions.append(document.createTextNode(
-      ' GOD MODE: clear AMBUSH three times in one game to earn 30 seconds with no drains and 5X scoring on all positive points. Saved balls return immediately and mode progress stays intact.'
+      ' GOD MODE: clear AMBUSH three times in one game to earn 30 seconds with no drains and 5X scoring on all positive points. Saved balls return immediately and mode progress stays intact. Finishing GOD MODE awards a fixed 150,000-point bonus.'
     ));
   }
 })();
