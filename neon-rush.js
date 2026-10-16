@@ -294,6 +294,7 @@
     const litCount = Math.max(1, Math.ceil((1 - progress) * CLOCK_LAMPS));
     const runner = Math.floor((now - state.startedAt) / 90) % CLOCK_LAMPS;
     const runner2 = (runner + 6) % CLOCK_LAMPS;
+    const mobile = Boolean(window.miamiReducedRenderEffects);
     const reduced = reduceRushEffects();
 
     // One context save/restore for the full lamp ring instead of 12 per frame.
